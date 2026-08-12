@@ -95,33 +95,15 @@ if (heroSlides.length) {
   restartHeroTimer();
 }
 
-/* Reviews carousel */
-const reviews = Array.from(document.querySelectorAll("[data-reviews] .review"));
-const prevBtn = document.querySelector("[data-review-prev]");
-const nextBtn = document.querySelector("[data-review-next]");
-let reviewIndex = reviews.findIndex((r) => r.classList.contains("is-active"));
-if (reviewIndex < 0) reviewIndex = 0;
-
-const showReview = (index) => {
-  if (!reviews.length) return;
-  reviews.forEach((review, i) => {
-    review.classList.toggle("is-active", i === index);
+/* Instagram reel: hide poster once embed paints */
+const igEmbed = document.querySelector("[data-ig-embed]");
+const reelFallback = document.querySelector("[data-reel-fallback]");
+if (igEmbed && reelFallback) {
+  const hideFallback = () => {
+    reelFallback.hidden = true;
+  };
+  igEmbed.addEventListener("load", () => {
+    window.setTimeout(hideFallback, 600);
   });
-  reviewIndex = index;
-};
-
-prevBtn?.addEventListener("click", () => {
-  const next = (reviewIndex - 1 + reviews.length) % reviews.length;
-  showReview(next);
-});
-
-nextBtn?.addEventListener("click", () => {
-  const next = (reviewIndex + 1) % reviews.length;
-  showReview(next);
-});
-
-if (reviews.length > 1) {
-  window.setInterval(() => {
-    showReview((reviewIndex + 1) % reviews.length);
-  }, 7000);
+  window.setTimeout(hideFallback, 3500);
 }
