@@ -864,30 +864,41 @@
               >
             </div>
           </div>
-          <a
-            class="phone-frame phone-frame--link reveal"
-            href="https://www.instagram.com/reel/DS5b_pXDovL/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Ver reel de Armonivet en Instagram"
-          >
-            <span class="phone-notch" aria-hidden="true"></span>
-            <span class="phone-screen phone-screen--poster">
+          <div class="phone-frame reveal" aria-label="Video de Armonivet en formato móvil">
+            <div class="phone-notch" aria-hidden="true"></div>
+            <div class="phone-screen">
               <img
                 class="reel-cover"
                 src="./reel-tudia.jpg"
-                alt="Dra. Bárbara Castillo compartiendo tips en televisión"
+                alt=""
                 width="361"
                 height="640"
+                decoding="async"
+                data-reel-cover
               />
-              <span class="reel-shade" aria-hidden="true"></span>
-              <span class="reel-play" aria-hidden="true">▶</span>
-              <span class="reel-meta">
+              <iframe
+                class="reel-embed"
+                title="Reel Armonivet · Tips para perros en ola de calor"
+                src="https://www.instagram.com/reel/DS5b_pXDovL/embed"
+                loading="eager"
+                allowfullscreen
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                data-ig-embed
+              ></iframe>
+              <button
+                type="button"
+                class="reel-launch"
+                data-reel-launch
+                aria-label="Reproducir video en el teléfono"
+              >
+                <span class="reel-play" aria-hidden="true">▶</span>
+              </button>
+              <div class="reel-meta" aria-hidden="true">
                 <strong>@armonivet</strong>
                 <span>En Tu Día · Canal 13</span>
-              </span>
-            </span>
-          </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
