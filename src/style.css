@@ -1258,8 +1258,8 @@ p {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.25rem 1.5rem;
-  justify-content: flex-start;
+  gap: 1.1rem 1.35rem;
+  justify-content: center;
 }
 
 .media-layout--video {
@@ -1270,13 +1270,13 @@ p {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 1 1 280px;
-  max-width: 34rem;
+  flex: 0 1 32rem;
+  max-width: 32rem;
 }
 
 .media-copy p {
   color: var(--muted);
-  max-width: 34rem;
+  max-width: 32rem;
 }
 
 .media-links {
@@ -1286,16 +1286,17 @@ p {
   gap: 0.9rem 1.2rem;
 }
 
+/* Proporción tipo iPhone (~9:19.5), más angosto que 9:16 “tablet” */
 .phone-frame {
-  --phone-w: 340px;
-  --phone-h: 604px;
+  --phone-w: 268px;
+  --phone-h: 580px;
   width: var(--phone-w);
   height: var(--phone-h);
   flex-shrink: 0;
   margin-inline: 0;
   background: #111;
-  border-radius: 40px;
-  padding: 14px 12px 16px;
+  border-radius: 34px;
+  padding: 10px 9px 12px;
   box-shadow:
     0 20px 50px rgba(16, 24, 28, 0.28),
     inset 0 0 0 2px #2a2a2a;
@@ -1305,11 +1306,11 @@ p {
 
 .phone-notch {
   position: absolute;
-  top: 18px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 38%;
-  height: 18px;
+  width: 34%;
+  height: 16px;
   background: #111;
   border-radius: 999px;
   z-index: 3;
@@ -1322,22 +1323,25 @@ p {
   height: 100%;
   border-radius: 26px;
   overflow: hidden;
-  background: #0b0b0b;
+  background: #000;
 }
 
-/* Instagram embed needs native tall height; scale into the phone */
+/*
+  El embed de Instagram trae márgenes laterales; lo escalamos de más
+  y recortamos para llenar el ancho del teléfono sin barras negras.
+*/
 .phone-screen iframe {
   position: absolute;
-  top: -10px;
+  top: -28px;
   left: 50%;
   z-index: 2;
-  width: 360px;
-  height: 800px;
+  width: 300px;
+  height: 740px;
   border: 0;
   display: block;
-  transform: translateX(-50%) scale(0.9);
+  transform: translateX(-50%) scale(0.98);
   transform-origin: top center;
-  background: #fff;
+  background: #000;
 }
 
 .reel-fallback {
@@ -1591,13 +1595,13 @@ p {
   }
 
   .phone-frame {
-    --phone-w: min(300px, 82vw);
-    --phone-h: min(533px, calc(82vw * 16 / 9));
+    --phone-w: min(250px, 72vw);
+    --phone-h: min(540px, calc(72vw * 19.5 / 9));
     margin-inline: auto;
   }
 
   .phone-screen iframe {
-    transform: translateX(-50%) scale(0.82);
+    transform: translateX(-50%) scale(0.8);
   }
 
   .review-card {
