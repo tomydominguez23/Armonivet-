@@ -1534,14 +1534,24 @@ p {
 
 /* Motion */
 .reveal {
-  opacity: 0;
-  transform: translateY(18px);
+  opacity: 1;
+  transform: none;
+}
+
+/* Animación suave solo como mejora, sin ocultar contenido si falla JS */
+html.js .reveal {
   transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
 
-.reveal.is-visible {
+html.js .reveal:not(.is-visible) {
+  /* Mantener visibles para no “perder” imágenes */
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
+}
+
+html.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 @keyframes heroZoom {
@@ -1704,7 +1714,9 @@ p {
     transition: none !important;
   }
 
-  .reveal {
+  .reveal,
+  html.js .reveal:not(.is-visible),
+  html.js .reveal.is-visible {
     opacity: 1;
     transform: none;
   }

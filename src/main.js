@@ -1,10 +1,10 @@
-import { trackPageVisit, bindConversionTracking } from "./lib/analytics.js";
-import { hydrateSiteContent } from "./lib/content.js";
-
+/* Core UI first — without Supabase imports so the page works on static hosting */
 const header = document.querySelector("[data-header]");
 const navToggle = document.querySelector("[data-nav-toggle]");
 const mobileNav = document.querySelector("[data-mobile-nav]");
 const yearEl = document.querySelector("[data-year]");
+
+document.documentElement.classList.add("js");
 
 if (yearEl) {
   yearEl.textContent = String(new Date().getFullYear());
@@ -113,24 +113,22 @@ reelLaunch?.addEventListener("click", () => {
 });
 
 igEmbed?.addEventListener("load", () => {
-  // Small delay so Instagram paints the media frame
   window.setTimeout(showPhoneReel, 400);
 });
 
-// If the cover image fails, still try to show the embed
 reelCover?.addEventListener("error", () => {
   showPhoneReel();
 });
 
-// Fallback: don't leave the phone black forever
 window.setTimeout(showPhoneReel, 2800);
 
-/* Analytics + contenido dinámico desde Supabase */
-trackPageVisit();
-bindConversionTracking();
-hydrateSiteContent()
-  .then(() => {
-    // Re-bind after DOM updates from CMS content
+/* Analytics + CMS: carga diferida para no romper la UI si falla el bundling */
+import("./lib/analytics.js")
+  .then(({ trackPageVisit, bindConversionTracking }) => {
+    trackPageVisit();
     bindConversionTracking();
+    return import("./lib/content.js").then(({ hydrateSiteContent }) =>
+      hydrateSiteContent().then(() => bindConversionTracking())
+    );
   })
-  .catch((err) => console.warn("[content]", err));
+  .catch((err) => console.warn("[supabase-init]", err));

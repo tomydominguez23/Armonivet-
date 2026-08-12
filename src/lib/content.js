@@ -9,10 +9,21 @@ function formatCLP(n) {
   }).format(Number(n));
 }
 
+function isSafeImageUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  // Evita pisar imágenes locales con rutas rotas desde CMS
+  return /^https?:\/\//i.test(url) || url.startsWith("/") || url.startsWith("./") || url.startsWith("../");
+}
+
+function setImgSrc(img, url) {
+  if (!img || !isSafeImageUrl(url)) return;
+  img.src = url;
+}
+
 export async function hydrateSiteContent() {
   if (!isSupabaseConfigured || !supabase) return;
 
-  const [{ data: services }, { data: zones }, { data: extras }, { data: media }, { data: settingsRow }] =
+  const [{ data: services, error: servicesError }, { data: zones }, { data: extras }, { data: media }, { data: settingsRow }] =
     await Promise.all([
       supabase.from("services").select("*").eq("active", true).order("sort_order"),
       supabase.from("pricing_zones").select("*").eq("active", true).order("sort_order"),
@@ -20,6 +31,11 @@ export async function hydrateSiteContent() {
       supabase.from("site_media").select("*"),
       supabase.from("site_settings").select("value").eq("key", "business").maybeSingle(),
     ]);
+
+  if (servicesError) {
+    console.warn("[content] services", servicesError);
+    return;
+  }
 
   const mediaMap = Object.fromEntries((media || []).map((m) => [m.slot, m]));
   const settings = settingsRow?.value || {};
@@ -33,39 +49,37 @@ export async function hydrateSiteContent() {
   document.querySelectorAll("[data-hero-slide]").forEach((slide, i) => {
     const slot = mediaMap[`hero_${i + 1}`];
     const img = slide.querySelector(".hero-bg-img");
-    if (slot?.url && img) img.src = slot.url;
+    setImgSrc(img, slot?.url);
   });
 
   // Gallery
   document.querySelectorAll(".gallery-grid figure img").forEach((img, i) => {
     const slot = mediaMap[`gallery_${i + 1}`];
     if (slot?.url) {
-      img.src = slot.url;
+      setImgSrc(img, slot.url);
       if (slot.alt_text) img.alt = slot.alt_text;
     }
   });
 
-  // Doctor photo
+  // Doctor photo — prefer absolute URL; keep local asset if CMS has relative path
   const doctor = document.querySelector(".about-doctor img");
-  if (doctor && mediaMap.about_doctor?.url) {
+  if (doctor && mediaMap.about_doctor?.url && /^https?:\/\//i.test(mediaMap.about_doctor.url)) {
     doctor.src = mediaMap.about_doctor.url;
   }
 
   const midBanner = document.querySelector(".mid-banner-photo img");
-  if (midBanner && mediaMap.mid_banner?.url) {
-    midBanner.src = mediaMap.mid_banner.url;
-  }
+  setImgSrc(midBanner, mediaMap.mid_banner?.url);
 
-  // Offers / services cards
+  // Offers / services cards — only replace if we have image URLs
   const offerGrid = document.querySelector("[data-offers-grid]") || document.querySelector(".offer-grid");
   const offerServices = (services || []).filter((s) => s.section === "ofertas" || s.section === "ambos").slice(0, 4);
-  if (offerGrid && offerServices.length) {
+  if (offerGrid && offerServices.length && offerServices.every((s) => isSafeImageUrl(s.image_url))) {
     offerGrid.innerHTML = offerServices
       .map(
         (s) => `
       <article class="offer-card reveal is-visible">
         <figure>
-          <img src="${s.image_url || ""}" alt="${s.title}" />
+          <img src="${s.image_url}" alt="${s.title}" />
           ${s.tag ? `<span class="offer-tag">${s.tag}</span>` : ""}
         </figure>
         <div class="offer-body">
@@ -83,12 +97,12 @@ export async function hydrateSiteContent() {
 
   const serviceCards = document.querySelector("[data-services-grid]") || document.querySelector(".service-cards");
   const listServices = (services || []).filter((s) => s.section === "servicios" || s.section === "ambos");
-  if (serviceCards && listServices.length) {
+  if (serviceCards && listServices.length && listServices.every((s) => isSafeImageUrl(s.image_url))) {
     serviceCards.innerHTML = listServices
       .map(
         (s, idx) => `
       <article class="service-card reveal is-visible">
-        <img src="${s.image_url || ""}" alt="${s.title}" />
+        <img src="${s.image_url}" alt="${s.title}" />
         <div>
           <span class="service-index">${String(idx + 1).padStart(2, "0")}</span>
           <h3>${s.title}</h3>
@@ -102,13 +116,13 @@ export async function hydrateSiteContent() {
 
   // Pricing zones
   const zonePanels = document.querySelector("[data-zones-grid]") || document.querySelector(".zone-panels");
-  if (zonePanels && zones?.length) {
+  if (zonePanels && zones?.length && zones.every((z) => isSafeImageUrl(z.image_url))) {
     zonePanels.innerHTML = zones
       .map(
         (z) => `
       <article class="zone-card reveal is-visible${z.featured ? " featured" : ""}" role="listitem">
         <div class="zone-media">
-          <img src="${z.image_url || ""}" alt="${z.name}" />
+          <img src="${z.image_url}" alt="${z.name}" />
           <span class="zone-badge">${z.badge || z.name}</span>
         </div>
         <div class="zone-body">
