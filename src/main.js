@@ -98,6 +98,33 @@ if (heroSlides.length) {
   restartHeroTimer();
 }
 
+/* Reel inside phone: reveal Instagram embed when ready */
+const phoneFrame = document.querySelector(".phone-frame");
+const reelLaunch = document.querySelector("[data-reel-launch]");
+const igEmbed = document.querySelector("[data-ig-embed]");
+const reelCover = document.querySelector("[data-reel-cover]");
+
+const showPhoneReel = () => {
+  phoneFrame?.classList.add("is-playing");
+};
+
+reelLaunch?.addEventListener("click", () => {
+  showPhoneReel();
+});
+
+igEmbed?.addEventListener("load", () => {
+  // Small delay so Instagram paints the media frame
+  window.setTimeout(showPhoneReel, 400);
+});
+
+// If the cover image fails, still try to show the embed
+reelCover?.addEventListener("error", () => {
+  showPhoneReel();
+});
+
+// Fallback: don't leave the phone black forever
+window.setTimeout(showPhoneReel, 2800);
+
 /* Analytics + contenido dinámico desde Supabase */
 trackPageVisit();
 bindConversionTracking();
