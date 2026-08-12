@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Admin · Armonivet</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../src/admin/admin.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Login -->
+      <section class="auth-screen" data-view="login">
+        <div class="auth-card">
+          <div class="auth-brand">
+            <img src="../logo-mark.svg" alt="" width="48" height="44" />
+            <div>
+              <p class="auth-kicker">Armonivet</p>
+              <h1>Panel de administración</h1>
+            </div>
+          </div>
+          <p class="auth-lead">Inicia sesión para ver métricas, citas, servicios y contenido de la web.</p>
+          <form data-login-form>
+            <label>
+              Correo
+              <input type="email" name="email" required autocomplete="username" placeholder="admin@armonivet.cl" />
+            </label>
+            <label>
+              Contraseña
+              <input type="password" name="password" required autocomplete="current-password" minlength="6" />
+            </label>
+            <button class="btn btn-primary" type="submit">Entrar</button>
+            <p class="form-error" data-login-error hidden></p>
+          </form>
+          <p class="auth-hint" data-config-hint hidden>
+            Falta configurar <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> en tu archivo
+            <code>.env</code>. Revisa <code>supabase/</code> para el SQL.
+          </p>
+          <a class="back-link" href="../">← Volver al sitio</a>
+        </div>
+      </section>
+
+      <!-- Shell admin -->
+      <div class="admin-shell" data-view="app" hidden>
+        <aside class="sidebar">
+          <div class="sidebar-brand">
+            <img src="../logo-mark.svg" alt="" width="36" height="32" />
+            <div>
+              <strong>Armonivet</strong>
+              <span>Admin</span>
+            </div>
+          </div>
+          <nav class="sidebar-nav" aria-label="Secciones">
+            <button type="button" class="nav-item is-active" data-nav="dashboard">Dashboard</button>
+            <button type="button" class="nav-item" data-nav="appointments">Citas</button>
+            <button type="button" class="nav-item" data-nav="channels">Canales</button>
+            <button type="button" class="nav-item" data-nav="services">Servicios</button>
+            <button type="button" class="nav-item" data-nav="pricing">Precios</button>
+            <button type="button" class="nav-item" data-nav="media">Imágenes</button>
+            <button type="button" class="nav-item" data-nav="settings">Ajustes</button>
+          </nav>
+          <div class="sidebar-foot">
+            <p data-user-email></p>
+            <button type="button" class="btn btn-ghost" data-logout>Cerrar sesión</button>
+            <a href="../">Ver sitio público</a>
+          </div>
+        </aside>
+
+        <div class="admin-main">
+          <header class="topbar">
+            <button type="button" class="menu-btn" data-menu-toggle aria-label="Abrir menú">☰</button>
+            <div>
+              <h2 data-page-title>Dashboard</h2>
+              <p data-page-sub>Métricas del negocio en tiempo real</p>
+            </div>
+            <label class="range-select">
+              Periodo
+              <select data-range>
+                <option value="7">7 días</option>
+                <option value="30" selected>30 días</option>
+                <option value="90">90 días</option>
+                <option value="365">12 meses</option>
+              </select>
+            </label>
+          </header>
+
+          <main class="content">
+            <!-- Dashboard -->
+            <section class="panel is-active" data-panel="dashboard">
+              <div class="kpi-grid" data-kpis>
+                <article class="kpi"><span>Visitas únicas</span><strong data-kpi="visits_unique">—</strong></article>
+                <article class="kpi"><span>Clics a agendar</span><strong data-kpi="click_agendar">—</strong></article>
+                <article class="kpi"><span>Citas agendadas</span><strong data-kpi="appointments">—</strong></article>
+                <article class="kpi"><span>Compras / abonos</span><strong data-kpi="paid">—</strong></article>
+                <article class="kpi"><span>Personas llegaron</span><strong data-kpi="arrived">—</strong></article>
+                <article class="kpi"><span>Ingresos estimados</span><strong data-kpi="revenue_estimated">—</strong></article>
+              </div>
+
+              <div class="charts-grid">
+                <article class="card">
+                  <h3>Visitas por día</h3>
+                  <div class="chart-bars" data-chart-visits></div>
+                </article>
+                <article class="card">
+                  <h3>Tráfico por canal</h3>
+                  <div class="channel-list" data-chart-channels></div>
+                </article>
+                <article class="card">
+                  <h3>Embudo</h3>
+                  <div class="funnel" data-funnel></div>
+                </article>
+                <article class="card">
+                  <h3>Citas por estado</h3>
+                  <div class="status-list" data-chart-status></div>
+                </article>
+              </div>
+            </section>
+
+            <!-- Citas -->
+            <section class="panel" data-panel="appointments">
+              <div class="panel-toolbar">
+                <p>Registra citas agendadas, abonos y asistencia para medir conversión real.</p>
+                <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Servicio</th>
+                      <th>Fecha</th>
+                      <th>Canal</th>
+                      <th>Estado</th>
+                      <th>Monto</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-appointments-body></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Canales -->
+            <section class="panel" data-panel="channels">
+              <div class="panel-toolbar">
+                <p>Define canales UTM para saber desde qué publicidad llegan tus clientes. Usa <code>?utm_source=instagram</code> o <code>?ref=google-ads</code>.</p>
+                <button type="button" class="btn btn-primary" data-open-channel>Nuevo canal</button>
+              </div>
+              <div class="cards-list" data-channels-list></div>
+            </section>
+
+            <!-- Servicios -->
+            <section class="panel" data-panel="services">
+              <div class="panel-toolbar">
+                <p>Edita títulos, descripciones, precios e imágenes. Los cambios se reflejan en la web pública.</p>
+                <button type="button" class="btn btn-primary" data-open-service>Nuevo servicio</button>
+              </div>
+              <div class="cards-list" data-services-list></div>
+            </section>
+
+            <!-- Precios -->
+            <section class="panel" data-panel="pricing">
+              <div class="panel-toolbar">
+                <p>Zonas de domicilio y extras de precio.</p>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-primary" data-open-zone>Nueva zona</button>
+                  <button type="button" class="btn btn-ghost" data-open-extra>Nuevo extra</button>
+                </div>
+              </div>
+              <h3 class="subhead">Zonas</h3>
+              <div class="cards-list" data-zones-list></div>
+              <h3 class="subhead">Extras</h3>
+              <div class="cards-list" data-extras-list></div>
+            </section>
+
+            <!-- Imágenes -->
+            <section class="panel" data-panel="media">
+              <div class="panel-toolbar">
+                <p>Sube o actualiza imágenes por slot (hero, galería, doctora, banners).</p>
+              </div>
+              <div class="media-grid" data-media-grid></div>
+            </section>
+
+            <!-- Ajustes -->
+            <section class="panel" data-panel="settings">
+              <form class="settings-form card" data-settings-form>
+                <h3>Datos del negocio</h3>
+                <label>Nombre <input name="name" /></label>
+                <label>Tagline <input name="tagline" /></label>
+                <label>URL Calendly <input name="calendly_url" /></label>
+                <label>URL Formulario <input name="form_url" /></label>
+                <label>Instagram <input name="instagram_url" /></label>
+                <label>Texto promo <input name="promo_text" /></label>
+                <div class="form-row">
+                  <label>Abono <input type="number" name="deposit_amount" /></label>
+                  <label>Precio mínimo <input type="number" name="min_price" /></label>
+                </div>
+                <button class="btn btn-primary" type="submit">Guardar ajustes</button>
+                <p class="form-ok" data-settings-ok hidden>Guardado</p>
+              </form>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal genérico -->
+    <dialog class="modal" data-modal>
+      <form method="dialog" class="modal-card" data-modal-form>
+        <header>
+          <h3 data-modal-title>Formulario</h3>
+          <button type="submit" value="cancel" class="icon-close" aria-label="Cerrar">×</button>
+        </header>
+        <div class="modal-body" data-modal-body></div>
+        <footer>
+          <button type="submit" value="cancel" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" value="save" class="btn btn-primary" data-modal-save>Guardar</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script type="module" src="../src/admin/admin.js"></script>
+  </body>
+</html>
