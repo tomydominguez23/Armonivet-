@@ -67,20 +67,39 @@ export async function trackPageVisit() {
   const already = sessionStorage.getItem(VISIT_FLAG) === "1";
   const ua = navigator.userAgent || "";
 
+  const payload = {
+    p_session_id: sessionId,
+    p_path: window.location.pathname + window.location.hash,
+    p_referrer: document.referrer || null,
+    p_utm_source: params.get("utm_source"),
+    p_utm_medium: params.get("utm_medium"),
+    p_utm_campaign: params.get("utm_campaign"),
+    p_channel_slug: channel,
+    p_user_agent: ua.slice(0, 280),
+    p_device: detectDevice(ua),
+    p_landing_path: window.location.pathname,
+    p_is_unique_session: !already,
+  };
+
   try {
-    await supabase.from("page_visits").insert({
-      session_id: sessionId,
-      path: window.location.pathname + window.location.hash,
-      referrer: document.referrer || null,
-      utm_source: params.get("utm_source"),
-      utm_medium: params.get("utm_medium"),
-      utm_campaign: params.get("utm_campaign"),
-      channel_slug: channel,
-      user_agent: ua.slice(0, 280),
-      device: detectDevice(ua),
-      landing_path: window.location.pathname,
-      is_unique_session: !already,
-    });
+    const { error } = await supabase.rpc("track_page_visit", payload);
+    if (error) {
+      // Fallback si aún no corrieron el SQL de RPC
+      const { error: insertError } = await supabase.from("page_visits").insert({
+        session_id: payload.p_session_id,
+        path: payload.p_path,
+        referrer: payload.p_referrer,
+        utm_source: payload.p_utm_source,
+        utm_medium: payload.p_utm_medium,
+        utm_campaign: payload.p_utm_campaign,
+        channel_slug: payload.p_channel_slug,
+        user_agent: payload.p_user_agent,
+        device: payload.p_device,
+        landing_path: payload.p_landing_path,
+        is_unique_session: payload.p_is_unique_session,
+      });
+      if (insertError) throw insertError;
+    }
     sessionStorage.setItem(VISIT_FLAG, "1");
   } catch (err) {
     console.warn("[analytics] visit", err);
@@ -90,13 +109,23 @@ export async function trackPageVisit() {
 export async function trackEvent(eventType, label = null, metadata = {}) {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    await supabase.from("conversion_events").insert({
-      session_id: getOrCreateSessionId(),
-      event_type: eventType,
-      channel_slug: getStoredChannel(),
-      label,
-      metadata,
+    const { error } = await supabase.rpc("track_conversion", {
+      p_event_type: eventType,
+      p_session_id: getOrCreateSessionId(),
+      p_channel_slug: getStoredChannel(),
+      p_label: label,
+      p_metadata: metadata,
     });
+    if (error) {
+      const { error: insertError } = await supabase.from("conversion_events").insert({
+        session_id: getOrCreateSessionId(),
+        event_type: eventType,
+        channel_slug: getStoredChannel(),
+        label,
+        metadata,
+      });
+      if (insertError) throw insertError;
+    }
   } catch (err) {
     console.warn("[analytics] event", err);
   }
