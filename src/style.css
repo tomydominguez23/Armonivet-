@@ -1255,11 +1255,11 @@ p {
 }
 
 .media-layout {
-  display: grid;
-  grid-template-columns: 1.1fr auto;
-  gap: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  gap: 1.25rem 1.5rem;
+  justify-content: flex-start;
 }
 
 .media-layout--video {
@@ -1270,11 +1270,13 @@ p {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  flex: 1 1 280px;
+  max-width: 34rem;
 }
 
 .media-copy p {
   color: var(--muted);
-  max-width: 36rem;
+  max-width: 34rem;
 }
 
 .media-links {
@@ -1285,15 +1287,15 @@ p {
 }
 
 .phone-frame {
-  --phone-w: 280px;
-  --phone-h: 498px;
+  --phone-w: 340px;
+  --phone-h: 604px;
   width: var(--phone-w);
   height: var(--phone-h);
   flex-shrink: 0;
-  margin-inline: auto;
+  margin-inline: 0;
   background: #111;
-  border-radius: 36px;
-  padding: 12px 10px 14px;
+  border-radius: 40px;
+  padding: 14px 12px 16px;
   box-shadow:
     0 20px 50px rgba(16, 24, 28, 0.28),
     inset 0 0 0 2px #2a2a2a;
@@ -1326,14 +1328,14 @@ p {
 /* Instagram embed needs native tall height; scale into the phone */
 .phone-screen iframe {
   position: absolute;
-  top: -8px;
+  top: -10px;
   left: 50%;
   z-index: 2;
-  width: 340px;
-  height: 760px;
+  width: 360px;
+  height: 800px;
   border: 0;
   display: block;
-  transform: translateX(-50%) scale(0.78);
+  transform: translateX(-50%) scale(0.9);
   transform-origin: top center;
   background: #fff;
 }
@@ -1589,12 +1591,13 @@ p {
   }
 
   .phone-frame {
-    --phone-w: min(260px, 78vw);
-    --phone-h: min(462px, calc(78vw * 16 / 9));
+    --phone-w: min(300px, 82vw);
+    --phone-h: min(533px, calc(82vw * 16 / 9));
+    margin-inline: auto;
   }
 
   .phone-screen iframe {
-    transform: translateX(-50%) scale(0.74);
+    transform: translateX(-50%) scale(0.82);
   }
 
   .review-card {
@@ -1603,7 +1606,7 @@ p {
   }
 
   .media-layout--video {
-    justify-items: center;
+    justify-content: center;
   }
 
   .hero-slide-grid {
