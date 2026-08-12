@@ -21,30 +21,48 @@
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
     <header class="site-header" data-header>
-      <div class="shell header-inner">
-        <a class="brand" href="#inicio" aria-label="Armonivet inicio">
-          <img src="./logo-mark.svg" alt="" width="44" height="40" />
-          <span>Armonivet</span>
-        </a>
-        <nav class="nav" data-nav aria-label="Principal">
-          <a href="#servicios">Servicios</a>
-          <a href="#valores">Valores</a>
-          <a href="#proceso">Reserva</a>
-          <a href="#reseñas">Reseñas</a>
-          <a href="#medios">Medios</a>
-        </nav>
-        <a
-          class="btn btn-primary header-cta"
-          href="https://calendly.com/armonivet/consulta-etologia-clinica"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Agendar hora
-        </a>
-        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="menu-movil">
-          <span class="sr-only">Abrir menú</span>
-          <span></span><span></span>
-        </button>
+      <div class="topbar">
+        <div class="shell topbar-inner">
+          <a class="brand brand-inverse" href="#inicio" aria-label="Armonivet inicio">
+            <img src="./logo-mark.svg" alt="" width="44" height="40" />
+            <span>Armonivet</span>
+          </a>
+          <nav class="nav" data-nav aria-label="Principal">
+            <a href="#servicios">Servicios</a>
+            <a href="#valores">Valores</a>
+            <a href="#proceso">Reserva</a>
+            <a href="#reseñas">Reseñas</a>
+            <a href="#medios">Medios</a>
+          </nav>
+          <div class="topbar-actions">
+            <a
+              class="icon-link"
+              href="https://www.instagram.com/armonivet/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram Armonivet"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 4.5A4.5 4.5 0 1 0 16.5 12 4.5 4.5 0 0 0 12 7.5zm0 7.2A2.7 2.7 0 1 1 14.7 12 2.7 2.7 0 0 1 12 14.7zM17.8 6.9a1.05 1.05 0 1 0 1.05 1.05A1.05 1.05 0 0 0 17.8 6.9z"
+                />
+              </svg>
+            </a>
+            <a
+              class="btn btn-header"
+              href="https://calendly.com/armonivet/consulta-etologia-clinica"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Agendar hora
+            </a>
+          </div>
+          <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="menu-movil">
+            <span class="sr-only">Abrir menú</span>
+            <span></span><span></span>
+          </button>
+        </div>
       </div>
       <div class="mobile-nav" id="menu-movil" data-mobile-nav hidden>
         <a href="#servicios">Servicios</a>
@@ -63,42 +81,179 @@
       </div>
     </header>
 
-    <main id="contenido">
-      <section class="hero" id="inicio">
-        <div class="hero-media" aria-hidden="true">
-          <img
-            src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=2000&q=80"
-            alt=""
-            width="2000"
-            height="1333"
-          />
-          <div class="hero-wash"></div>
-          <div class="hero-blobs">
-            <span class="blob blob-blue"></span>
-            <span class="blob blob-peach"></span>
-            <span class="blob blob-lime"></span>
-          </div>
+    <div class="promo-strip">
+      <div class="shell promo-inner">
+        <p><strong>Agenda tu consulta</strong> · Seguimiento 30 días incluido · Abono de confirmación $20.000</p>
+        <a
+          class="promo-cta"
+          href="https://calendly.com/armonivet/consulta-etologia-clinica"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Reservar ahora</a
+        >
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <div class="shell info-inner">
+        <p class="info-slogan">Etología clínica para mascotas felices</p>
+        <div class="info-contacts">
+          <a href="https://www.instagram.com/armonivet/" target="_blank" rel="noopener noreferrer">@armonivet</a>
+          <span aria-hidden="true">·</span>
+          <a
+            href="https://calendly.com/armonivet/consulta-etologia-clinica"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Presencial y online</a
+          >
         </div>
-        <div class="shell hero-content">
-          <div class="hero-brand reveal">
-            <img src="./logo-mark.svg" alt="" width="110" height="100" />
-            <p class="brand-word">Armonivet</p>
-          </div>
-          <h1 class="reveal delay-1">Etología clínica con cuidado y evidencia</h1>
-          <p class="hero-lead reveal delay-2">
-            Consultas conductuales para perros y gatos en Santiago: diagnóstico, plan de manejo y seguimiento cercano.
-          </p>
-          <div class="hero-actions reveal delay-3">
-            <a
-              class="btn btn-primary"
-              href="https://calendly.com/armonivet/consulta-etologia-clinica"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Agendar consulta
-            </a>
-            <a class="btn btn-ghost" href="#servicios">Ver servicios</a>
-          </div>
+      </div>
+    </div>
+
+    <main id="contenido">
+      <section class="hero" id="inicio" data-hero aria-roledescription="carrusel">
+        <div class="hero-track" data-hero-track>
+          <article class="hero-slide is-active" data-hero-slide>
+            <div class="hero-slide-bg hero-slide-bg--blue" aria-hidden="true"></div>
+            <div class="shell hero-slide-grid">
+              <figure class="hero-photo">
+                <img
+                  src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1400&q=80"
+                  alt="Dos perros felices al aire libre"
+                  width="1400"
+                  height="933"
+                />
+              </figure>
+              <div class="hero-copy">
+                <div class="hero-brand">
+                  <img src="./logo-mark.svg" alt="" width="72" height="66" />
+                  <p class="brand-word">Armonivet</p>
+                </div>
+                <h1>Etología clínica con cuidado y evidencia</h1>
+                <p class="hero-lead">
+                  Consultas conductuales para perros y gatos en Santiago, con plan de manejo y seguimiento cercano.
+                </p>
+                <a
+                  class="btn btn-primary"
+                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Agendar consulta</a
+                >
+              </div>
+            </div>
+          </article>
+
+          <article class="hero-slide" data-hero-slide>
+            <div class="hero-slide-bg hero-slide-bg--peach" aria-hidden="true"></div>
+            <div class="shell hero-slide-grid">
+              <figure class="hero-photo">
+                <img
+                  src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1400&q=80"
+                  alt="Gato atento mirando a cámara"
+                  width="1400"
+                  height="933"
+                />
+              </figure>
+              <div class="hero-copy">
+                <div class="hero-brand">
+                  <img src="./logo-mark.svg" alt="" width="72" height="66" />
+                  <p class="brand-word">Armonivet</p>
+                </div>
+                <h1>Asesoría para gatos y perros</h1>
+                <p class="hero-lead">
+                  Miedo, ruidos, mudanzas, llegada de bebé o ansiedad: un plan claro para recuperar la calma en casa.
+                </p>
+                <a
+                  class="btn btn-primary"
+                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Agendar consulta</a
+                >
+              </div>
+            </div>
+          </article>
+
+          <article class="hero-slide" data-hero-slide>
+            <div class="hero-slide-bg hero-slide-bg--lime" aria-hidden="true"></div>
+            <div class="shell hero-slide-grid">
+              <figure class="hero-photo">
+                <img
+                  src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=1400&q=80"
+                  alt="Perro atento durante una evaluación"
+                  width="1400"
+                  height="933"
+                />
+              </figure>
+              <div class="hero-copy">
+                <div class="hero-brand">
+                  <img src="./logo-mark.svg" alt="" width="72" height="66" />
+                  <p class="brand-word">Armonivet</p>
+                </div>
+                <h1>Consulta online preferente</h1>
+                <p class="hero-lead">
+                  Ideal y obligatoria en agresividad hacia personas, miedo a desconocidos y ansiedad por separación.
+                </p>
+                <a
+                  class="btn btn-primary"
+                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Agendar online</a
+                >
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <button class="hero-arrow hero-arrow--prev" type="button" data-hero-prev aria-label="Slide anterior">
+          ‹
+        </button>
+        <button class="hero-arrow hero-arrow--next" type="button" data-hero-next aria-label="Slide siguiente">
+          ›
+        </button>
+        <div class="hero-dots" data-hero-dots aria-label="Paginación del carrusel"></div>
+      </section>
+
+      <section class="benefits" aria-label="Beneficios Armonivet">
+        <div class="shell benefits-grid">
+          <article>
+            <span class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg>
+            </span>
+            <div>
+              <h3>Presencial en Santiago</h3>
+              <p>Atención a domicilio según sector</p>
+            </div>
+          </article>
+          <article>
+            <span class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M4 5h16v11H8l-4 3V5zm2 2v7.2l1.2-.9H18V7H6z"/></svg>
+            </span>
+            <div>
+              <h3>Consulta online</h3>
+              <p>Preferente en casos sensibles</p>
+            </div>
+          </article>
+          <article>
+            <span class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2 9.5 8.5 3 9l5 4.2L6.5 20 12 16.5 17.5 20 16 13.2 21 9l-6.5-.5L12 2z"/></svg>
+            </span>
+            <div>
+              <h3>Seguimiento 30 días</h3>
+              <p>Incluido en la primera consulta</p>
+            </div>
+          </article>
+          <article>
+            <span class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M7 3h10v4a5 5 0 0 1-10 0V3zm-2 8h14v10H5V11zm4 2v2h6v-2H9z"/></svg>
+            </span>
+            <div>
+              <h3>Flores de Bach</h3>
+              <p>Primer frasco si corresponde</p>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -436,6 +591,22 @@
         <p>© <span data-year></span> Armonivet. Santiago, Chile.</p>
       </div>
     </footer>
+
+    <a
+      class="whatsapp-fab"
+      href="https://www.instagram.com/armonivet/"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Escribir a Armonivet por Instagram"
+      title="Contáctanos por Instagram"
+    >
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M16.01 3C9.4 3 4 8.3 4 14.78c0 2.52.82 4.85 2.21 6.76L5 29l7.68-2.14a12.3 12.3 0 0 0 3.33.46c6.61 0 12-5.3 12-11.78C28.01 8.3 22.62 3 16.01 3zm6.93 16.68c-.29.82-1.45 1.5-2.38 1.7-.64.13-1.47.24-4.27-.92-3.58-1.48-5.88-5.1-6.06-5.34-.17-.24-1.45-1.93-1.45-3.68s.92-2.61 1.25-2.97c.33-.36.72-.45 1-.45h.72c.23 0 .54-.09.84.64.29.73 1 2.5 1.09 2.68.09.18.15.4.03.64-.12.24-.18.39-.36.6-.18.21-.38.47-.54.63-.18.18-.37.37-.16.73.21.36.93 1.53 2 2.48 1.38 1.22 2.54 1.6 2.9 1.78.36.18.57.15.78-.09.21-.24.9-1.05 1.14-1.41.24-.36.48-.3.81-.18.33.12 2.1.99 2.46 1.17.36.18.6.27.69.42.09.15.09.87-.2 1.69z"
+        />
+      </svg>
+    </a>
 
     <script type="module" src="./src/main.js"></script>
   </body>
