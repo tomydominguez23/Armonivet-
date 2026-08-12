@@ -28,43 +28,18 @@
             <span>Armonivet</span>
           </a>
 
-          <div class="search-cluster">
-            <form class="search-bar" action="https://calendly.com/armonivet/consulta-etologia-clinica" method="get" target="_blank">
-              <label class="sr-only" for="buscar">Buscar servicio</label>
-              <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
-              <button type="submit" aria-label="Buscar y agendar">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"
-                  />
-                </svg>
-              </button>
-            </form>
-            <a
-              class="ig-link"
-              href="https://www.instagram.com/armonivet/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram Armonivet"
-            >
-              <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-                <defs>
-                  <radialGradient id="igGrad" cx="30%" cy="107%" r="150%">
-                    <stop offset="0%" stop-color="#fdf497" />
-                    <stop offset="5%" stop-color="#fdf497" />
-                    <stop offset="45%" stop-color="#fd5949" />
-                    <stop offset="60%" stop-color="#d6249f" />
-                    <stop offset="90%" stop-color="#285AEB" />
-                  </radialGradient>
-                </defs>
+          <form class="search-bar" action="https://calendly.com/armonivet/consulta-etologia-clinica" method="get" target="_blank">
+            <label class="sr-only" for="buscar">Buscar servicio</label>
+            <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
+            <button type="submit" aria-label="Buscar y agendar">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                 <path
-                  fill="url(#igGrad)"
-                  d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm5 5a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8.2A3.2 3.2 0 1 1 15.2 12 3.2 3.2 0 0 1 12 15.2zM17.8 6.6a1.2 1.2 0 1 0 1.2 1.2 1.2 1.2 0 0 0-1.2-1.2z"
+                  fill="currentColor"
+                  d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"
                 />
               </svg>
-            </a>
-          </div>
+            </button>
+          </form>
 
           <div class="topbar-actions">
             <a
@@ -759,7 +734,7 @@
             <p>Historias reales de tutores que ya agendaron con Armonivet.</p>
           </div>
 
-          <div class="review-grid">
+          <div class="review-row" data-reviews-row>
             <article class="review-card reveal">
               <div class="review-card-top">
                 <div class="stars" aria-label="5 estrellas">★★★★★</div>
@@ -839,9 +814,6 @@
         <div class="shell media-layout media-layout--video">
           <div class="media-copy reveal">
             <p class="eyebrow">En los medios</p>
-            <div class="media-brands">
-              <img src="./youtube-logo.svg" alt="YouTube" width="72" height="50" />
-            </div>
             <h2>Tips de la Dra. Bárbara Castillo en televisión</h2>
             <p>
               La médico veterinario y etóloga Bárbara Castillo (@armonivet) comparte consejos para cuidar a tus mascotas
@@ -864,14 +836,17 @@
               >
             </div>
           </div>
-          <div class="media-video reveal">
-            <iframe
-              title="Reel Armonivet · Tips para perros en ola de calor"
-              src="https://www.instagram.com/reel/DS5b_pXDovL/embed"
-              loading="lazy"
-              allowfullscreen
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-            ></iframe>
+          <div class="phone-frame reveal" aria-label="Video en formato móvil">
+            <div class="phone-notch" aria-hidden="true"></div>
+            <div class="phone-screen">
+              <iframe
+                title="Reel Armonivet · Tips para perros en ola de calor"
+                src="https://www.instagram.com/reel/DS5b_pXDovL/embed"
+                loading="lazy"
+                allowfullscreen
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              ></iframe>
+            </div>
           </div>
         </div>
       </section>
