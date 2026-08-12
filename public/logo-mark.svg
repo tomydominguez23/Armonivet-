@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" role="img" aria-label="Huella Armonivet">
+  <defs>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="7" />
+    </filter>
+  </defs>
+  <g filter="url(#soft)" opacity="0.75">
+    <ellipse cx="72" cy="100" rx="48" ry="54" fill="#8FB8C9"/>
+    <ellipse cx="100" cy="118" rx="54" ry="48" fill="#E8B4A2"/>
+    <ellipse cx="130" cy="92" rx="46" ry="50" fill="#C5D4A0"/>
+  </g>
+  <g fill="none" stroke="#2E3236" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="58" cy="48" rx="15" ry="19"/>
+    <ellipse cx="88" cy="32" rx="14" ry="18"/>
+    <ellipse cx="118" cy="32" rx="14" ry="18"/>
+    <ellipse cx="148" cy="48" rx="15" ry="19"/>
+    <path d="M64 102
+      C54 86, 64 72, 86 68
+      C98 66, 112 66, 124 68
+      C146 72, 156 86, 146 102
+      C136 122, 124 142, 105 146
+      C86 142, 74 122, 64 102Z"/>
+  </g>
+</svg>
