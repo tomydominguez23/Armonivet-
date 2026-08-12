@@ -28,34 +28,45 @@
             <span>Armonivet</span>
           </a>
 
-          <form class="search-bar" action="https://calendly.com/armonivet/consulta-etologia-clinica" method="get" target="_blank">
-            <label class="sr-only" for="buscar">Buscar servicio</label>
-            <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
-            <button type="submit" aria-label="Buscar y agendar">
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"
-                />
-              </svg>
-            </button>
-          </form>
-
-          <div class="topbar-actions">
+          <div class="search-cluster">
+            <form class="search-bar" action="https://calendly.com/armonivet/consulta-etologia-clinica" method="get" target="_blank">
+              <label class="sr-only" for="buscar">Buscar servicio</label>
+              <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
+              <button type="submit" aria-label="Buscar y agendar">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"
+                  />
+                </svg>
+              </button>
+            </form>
             <a
-              class="icon-link"
+              class="ig-link"
               href="https://www.instagram.com/armonivet/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Instagram"
+              aria-label="Instagram Armonivet"
             >
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                <defs>
+                  <radialGradient id="igGrad" cx="30%" cy="107%" r="150%">
+                    <stop offset="0%" stop-color="#fdf497" />
+                    <stop offset="5%" stop-color="#fdf497" />
+                    <stop offset="45%" stop-color="#fd5949" />
+                    <stop offset="60%" stop-color="#d6249f" />
+                    <stop offset="90%" stop-color="#285AEB" />
+                  </radialGradient>
+                </defs>
                 <path
-                  fill="currentColor"
-                  d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 4.5A4.5 4.5 0 1 0 16.5 12 4.5 4.5 0 0 0 12 7.5zm0 7.2A2.7 2.7 0 1 1 14.7 12 2.7 2.7 0 0 1 12 14.7zM17.8 6.9a1.05 1.05 0 1 0 1.05 1.05A1.05 1.05 0 0 0 17.8 6.9z"
+                  fill="url(#igGrad)"
+                  d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm5 5a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8.2A3.2 3.2 0 1 1 15.2 12 3.2 3.2 0 0 1 12 15.2zM17.8 6.6a1.2 1.2 0 1 0 1.2 1.2 1.2 1.2 0 0 0-1.2-1.2z"
                 />
               </svg>
             </a>
+          </div>
+
+          <div class="topbar-actions">
             <a
               class="btn btn-header"
               href="https://calendly.com/armonivet/consulta-etologia-clinica"
@@ -108,13 +119,6 @@
         <p>
           <strong>Desde $40.000</strong> · Consulta + seguimiento 30 días · Flores de Bach si corresponde
         </p>
-        <a
-          class="promo-cta"
-          href="https://calendly.com/armonivet/consulta-etologia-clinica"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Agendar ahora</a
-        >
       </div>
     </div>
 
@@ -458,20 +462,13 @@
               >Quiero agendar</a
             >
           </div>
-          <div class="about-mosaic reveal">
-            <img
-              src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80"
-              alt="Perro atento en consulta"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1543852786-1cf66240b85a?auto=format&fit=crop&w=700&q=80"
-              alt="Gato en ambiente cálido"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?auto=format&fit=crop&w=700&q=80"
-              alt="Perro en exterior"
-            />
-          </div>
+          <figure class="about-doctor reveal">
+            <img src="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
+            <figcaption>
+              <strong>Dra. Bárbara Castillo</strong>
+              <span>Médico Veterinario · Dipl. Etología Clínica</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -559,18 +556,10 @@
             <article class="zone-card reveal" role="listitem">
               <div class="zone-media">
                 <img
-                  src="https://images.unsplash.com/photo-1464082354059-27db6ce50048?auto=format&fit=crop&w=900&q=80"
-                  alt="Barrio residencial Sector A · Ñuñoa y Macul"
+                  src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80"
+                  alt="Perros felices en plaza · Sector A"
                 />
                 <span class="zone-badge">Sector A</span>
-              </div>
-              <div class="zone-map">
-                <iframe
-                  title="Mapa Sector A · Ñuñoa y Macul"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-70.635%2C-33.495%2C-70.555%2C-33.440&amp;layer=mapnik&amp;marker=-33.457%2C-70.595"
-                ></iframe>
               </div>
               <div class="zone-body">
                 <p class="price-sector">Desde</p>
@@ -584,23 +573,24 @@
                   >Agendar Sector A</a
                 >
               </div>
+              <div class="zone-map">
+                <iframe
+                  title="Google Maps Sector A · Ñuñoa y Macul"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Ñuñoa,+Santiago,+Chile&hl=es&z=13&output=embed"
+                ></iframe>
+              </div>
             </article>
 
             <article class="zone-card reveal featured" role="listitem">
               <div class="zone-media">
                 <img
-                  src="https://images.unsplash.com/photo-1444723121867-7a241cacace9?auto=format&fit=crop&w=900&q=80"
-                  alt="Zona urbana Sector B · Providencia y aledañas"
+                  src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80"
+                  alt="Perro en casa con su tutor · Sector B"
                 />
                 <span class="zone-badge">Sector B · Popular</span>
-              </div>
-              <div class="zone-map">
-                <iframe
-                  title="Mapa Sector B · Providencia y comunas aledañas"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-70.660%2C-33.470%2C-70.560%2C-33.400&amp;layer=mapnik&amp;marker=-33.426%2C-70.610"
-                ></iframe>
               </div>
               <div class="zone-body">
                 <p class="price-sector">Desde</p>
@@ -618,23 +608,24 @@
                   >Agendar Sector B</a
                 >
               </div>
+              <div class="zone-map">
+                <iframe
+                  title="Google Maps Sector B · Providencia"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=13&output=embed"
+                ></iframe>
+              </div>
             </article>
 
             <article class="zone-card reveal" role="listitem">
               <div class="zone-media">
                 <img
-                  src="https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=900&q=80"
-                  alt="Zona oriente Sector C · Lo Barnechea y aledañas"
+                  src="https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=900&q=80"
+                  alt="Perro corriendo en parque · Sector C"
                 />
                 <span class="zone-badge">Sector C</span>
-              </div>
-              <div class="zone-map">
-                <iframe
-                  title="Mapa Sector C · Oriente y comunas extendidas"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-70.620%2C-33.460%2C-70.480%2C-33.320&amp;layer=mapnik&amp;marker=-33.370%2C-70.520"
-                ></iframe>
               </div>
               <div class="zone-body">
                 <p class="price-sector">Desde</p>
@@ -650,6 +641,15 @@
                   rel="noopener noreferrer"
                   >Agendar Sector C</a
                 >
+              </div>
+              <div class="zone-map">
+                <iframe
+                  title="Google Maps Sector C · Las Condes y oriente"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed"
+                ></iframe>
               </div>
             </article>
           </div>
@@ -759,71 +759,119 @@
             <p>Historias reales de tutores que ya agendaron con Armonivet.</p>
           </div>
 
-          <div class="review-track" data-reviews>
-            <figure class="review reveal is-active">
-              <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=400&q=80" alt="" />
+          <div class="review-grid">
+            <article class="review-card reveal">
+              <div class="review-card-top">
+                <div class="stars" aria-label="5 estrellas">★★★★★</div>
+                <span class="quote-mark" aria-hidden="true">”</span>
+              </div>
               <blockquote>
-                “Llegamos desesperados por la ansiedad de separación de Luna. En pocas semanas vimos cambios reales y
-                sentimos apoyo constante en el seguimiento.”
+                Llegamos desesperados por la ansiedad de separación de Luna. En pocas semanas vimos cambios reales y
+                sentimos apoyo constante en el seguimiento.
               </blockquote>
-              <figcaption>Camila R. — tutora de Luna (Border Collie)</figcaption>
-            </figure>
-            <figure class="review reveal">
-              <img src="https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=400&q=80" alt="" />
-              <blockquote>
-                “La consulta online nos ayudó a entender el miedo de nuestro gato a visitas. Claras, humanas y con un
-                plan que sí se puede aplicar en casa.”
-              </blockquote>
-              <figcaption>Diego y Paula — tutores de Misha</figcaption>
-            </figure>
-            <figure class="review reveal">
-              <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=400&q=80" alt="" />
-              <blockquote>
-                “Como cachorro, Simón nos tenía sobrepasados. El entrenamiento básico y la mirada clínica de Armonivet
-                ordenaron la rutina de toda la familia.”
-              </blockquote>
-              <figcaption>Francisca M. — tutora de Simón</figcaption>
-            </figure>
-            <figure class="review reveal">
-              <img src="https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&w=400&q=80" alt="" />
-              <blockquote>
-                “Nos prepararon para la llegada del bebé y evitamos muchos conflictos. Se nota la experiencia y el
-                cariño por cada paciente.”
-              </blockquote>
-              <figcaption>Andrés T. — tutor de Kira</figcaption>
-            </figure>
-          </div>
+              <div class="review-author">
+                <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=200&q=80" alt="Luna" />
+                <div>
+                  <strong>Camila R.</strong>
+                  <span>Tutora de Luna · Border Collie</span>
+                </div>
+              </div>
+            </article>
 
-          <div class="review-nav">
-            <button type="button" data-review-prev aria-label="Reseña anterior">←</button>
-            <button type="button" data-review-next aria-label="Reseña siguiente">→</button>
+            <article class="review-card reveal">
+              <div class="review-card-top">
+                <div class="stars" aria-label="5 estrellas">★★★★★</div>
+                <span class="quote-mark" aria-hidden="true">”</span>
+              </div>
+              <blockquote>
+                La consulta online nos ayudó a entender el miedo de nuestro gato a visitas. Claras, humanas y con un
+                plan que sí se puede aplicar en casa.
+              </blockquote>
+              <div class="review-author">
+                <img src="https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=200&q=80" alt="Misha" />
+                <div>
+                  <strong>Diego y Paula</strong>
+                  <span>Tutores de Misha · Gato</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="review-card reveal">
+              <div class="review-card-top">
+                <div class="stars" aria-label="5 estrellas">★★★★★</div>
+                <span class="quote-mark" aria-hidden="true">”</span>
+              </div>
+              <blockquote>
+                Como cachorro, Simón nos tenía sobrepasados. El entrenamiento básico y la mirada clínica de Armonivet
+                ordenaron la rutina de toda la familia.
+              </blockquote>
+              <div class="review-author">
+                <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=200&q=80" alt="Simón" />
+                <div>
+                  <strong>Francisca M.</strong>
+                  <span>Tutora de Simón · Cachorro</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="review-card reveal">
+              <div class="review-card-top">
+                <div class="stars" aria-label="5 estrellas">★★★★★</div>
+                <span class="quote-mark" aria-hidden="true">”</span>
+              </div>
+              <blockquote>
+                Nos prepararon para la llegada del bebé y evitamos muchos conflictos. Se nota la experiencia y el
+                cariño por cada paciente.
+              </blockquote>
+              <div class="review-author">
+                <img src="https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&w=200&q=80" alt="Kira" />
+                <div>
+                  <strong>Andrés T.</strong>
+                  <span>Tutor de Kira · Perro familiar</span>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
       </section>
 
       <section class="media" id="medios">
-        <div class="shell media-layout">
+        <div class="shell media-layout media-layout--video">
           <div class="media-copy reveal">
             <p class="eyebrow">En los medios</p>
-            <h2>Armonivet también ha estado en Canal 13</h2>
-            <p>Más confianza para tu decisión: experiencia visible en televisión e Instagram.</p>
-            <a
-              class="text-link"
-              href="https://www.instagram.com/armonivet/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Ver @armonivet →</a
-            >
-          </div>
-          <div class="media-visual reveal">
-            <div class="media-badge" aria-hidden="true">
-              <p class="channel">Canal 13</p>
-              <p class="channel-note">Presencia en televisión</p>
+            <div class="media-brands">
+              <img src="./youtube-logo.svg" alt="YouTube" width="72" height="50" />
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=900&q=80"
-              alt="Presencia en medios y redes"
-            />
+            <h2>Tips de la Dra. Bárbara Castillo en televisión</h2>
+            <p>
+              La médico veterinario y etóloga Bárbara Castillo (@armonivet) comparte consejos para cuidar a tus mascotas
+              en ola de calor, en Tu Día.
+            </p>
+            <div class="media-links">
+              <a
+                class="btn btn-buy btn-buy--sm"
+                href="https://www.instagram.com/reel/DS5b_pXDovL/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Ver video completo</a
+              >
+              <a
+                class="text-link"
+                href="https://www.instagram.com/armonivet/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Ir a @armonivet →</a
+              >
+            </div>
+          </div>
+          <div class="media-video reveal">
+            <iframe
+              title="Reel Armonivet · Tips para perros en ola de calor"
+              src="https://www.instagram.com/reel/DS5b_pXDovL/embed"
+              loading="lazy"
+              allowfullscreen
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+            ></iframe>
           </div>
         </div>
       </section>
