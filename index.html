@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./src/style.css" />
@@ -23,14 +23,14 @@
     <header class="site-header" data-header>
       <div class="topbar">
         <div class="shell topbar-inner">
-          <a class="brand brand-inverse" href="#inicio" aria-label="Armonivet inicio">
-            <img src="./logo-mark.svg" alt="" width="44" height="40" />
+          <a class="brand" href="#inicio" aria-label="Armonivet inicio">
+            <img src="./logo-mark.svg" alt="" width="40" height="36" />
             <span>Armonivet</span>
           </a>
 
           <form class="search-bar" action="https://calendly.com/armonivet/consulta-etologia-clinica" method="get" target="_blank">
             <label class="sr-only" for="buscar">Buscar servicio</label>
-            <input id="buscar" type="search" placeholder="Busca consulta, online, gatos, entrenamiento..." />
+            <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
             <button type="submit" aria-label="Buscar y agendar">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                 <path
@@ -75,7 +75,7 @@
 
       <nav class="cat-nav" aria-label="Categorías">
         <div class="shell cat-nav-inner">
-          <a href="#ofertas">Ofertas</a>
+          <a href="#ofertas">Destacados</a>
           <a href="#servicios">Perros</a>
           <a href="#servicios">Gatos</a>
           <a href="#servicios">Online</a>
@@ -87,7 +87,7 @@
       </nav>
 
       <div class="mobile-nav" id="menu-movil" data-mobile-nav hidden>
-        <a href="#ofertas">Ofertas</a>
+        <a href="#ofertas">Destacados</a>
         <a href="#servicios">Servicios</a>
         <a href="#valores">Precios</a>
         <a href="#proceso">Cómo reservar</a>
@@ -103,43 +103,18 @@
       </div>
     </header>
 
-    <div class="promo-strip promo-strip--urgent">
+    <div class="promo-strip">
       <div class="shell promo-inner">
-        <div class="promo-copy">
-          <span class="promo-badge">DESDE $40.000</span>
-          <p>
-            <strong>CONSULTA + SEGUIMIENTO 30 DÍAS</strong>
-            · Flores de Bach incluidas si corresponde · Agenda hoy
-          </p>
-        </div>
+        <p>
+          <strong>Desde $40.000</strong> · Consulta + seguimiento 30 días · Flores de Bach si corresponde
+        </p>
         <a
           class="promo-cta"
           href="https://calendly.com/armonivet/consulta-etologia-clinica"
           target="_blank"
           rel="noopener noreferrer"
-          >AGENDAR</a
+          >Agendar ahora</a
         >
-      </div>
-    </div>
-
-    <div class="info-bar">
-      <div class="shell info-inner">
-        <p class="info-slogan">La consulta de etología para mascotas felices</p>
-        <div class="info-contacts">
-          <div class="info-box">
-            <strong>Agenda online</strong>
-            <a
-              href="https://calendly.com/armonivet/consulta-etologia-clinica"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Calendly Armonivet</a
-            >
-          </div>
-          <div class="info-box">
-            <strong>Redes</strong>
-            <a href="https://www.instagram.com/armonivet/" target="_blank" rel="noopener noreferrer">@armonivet</a>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -147,21 +122,19 @@
       <section class="hero" id="inicio" data-hero aria-roledescription="carrusel">
         <div class="hero-track" data-hero-track>
           <article class="hero-slide is-active" data-hero-slide>
-            <div class="hero-slide-bg hero-slide-bg--blue" aria-hidden="true"></div>
+            <img
+              class="hero-bg-img"
+              src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=2000&q=80"
+              alt=""
+              aria-hidden="true"
+            />
+            <div class="hero-overlay"></div>
             <div class="shell hero-slide-grid">
-              <figure class="hero-photo">
-                <img
-                  src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1400&q=80"
-                  alt="Dos perros felices al aire libre"
-                  width="1400"
-                  height="933"
-                />
-              </figure>
               <div class="hero-copy">
-                <p class="hero-kicker">Armonivet</p>
-                <h1>CONSULTA DE ETOLOGÍA CLÍNICA</h1>
+                <p class="hero-kicker">Armonivet · Etología clínica</p>
+                <h1>Consulta profesional para el comportamiento de tu mascota</h1>
                 <p class="hero-lead">
-                  Evalúa el comportamiento de tu perro o gato y recibe un plan claro + seguimiento 30 días.
+                  Diagnóstico, plan de manejo y seguimiento 30 días. Presencial en Santiago u online.
                 </p>
                 <div class="hero-deal">
                   <div>
@@ -173,7 +146,7 @@
                     href="https://calendly.com/armonivet/consulta-etologia-clinica"
                     target="_blank"
                     rel="noopener noreferrer"
-                    >AGENDAR</a
+                    >Agendar consulta</a
                   >
                 </div>
               </div>
@@ -181,21 +154,19 @@
           </article>
 
           <article class="hero-slide" data-hero-slide>
-            <div class="hero-slide-bg hero-slide-bg--peach" aria-hidden="true"></div>
+            <img
+              class="hero-bg-img"
+              src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=2000&q=80"
+              alt=""
+              aria-hidden="true"
+            />
+            <div class="hero-overlay"></div>
             <div class="shell hero-slide-grid">
-              <figure class="hero-photo">
-                <img
-                  src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1400&q=80"
-                  alt="Gato atento mirando a cámara"
-                  width="1400"
-                  height="933"
-                />
-              </figure>
               <div class="hero-copy">
-                <p class="hero-kicker">Especial gatos y perros</p>
-                <h1>MIEDO, ANSIEDAD Y CONVIVENCIA</h1>
+                <p class="hero-kicker">Perros y gatos</p>
+                <h1>Miedo, ansiedad y convivencia en casa</h1>
                 <p class="hero-lead">
-                  Mudanzas, ruidos, llegada de bebé o visitas: recupera la calma en casa con un plan profesional.
+                  Mudanzas, ruidos, llegada de bebé o visitas: un plan claro para recuperar la calma.
                 </p>
                 <div class="hero-deal">
                   <div>
@@ -207,7 +178,7 @@
                     href="https://calendly.com/armonivet/consulta-etologia-clinica"
                     target="_blank"
                     rel="noopener noreferrer"
-                    >AGENDAR</a
+                    >Agendar ahora</a
                   >
                 </div>
               </div>
@@ -215,25 +186,23 @@
           </article>
 
           <article class="hero-slide" data-hero-slide>
-            <div class="hero-slide-bg hero-slide-bg--lime" aria-hidden="true"></div>
+            <img
+              class="hero-bg-img"
+              src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=2000&q=80"
+              alt=""
+              aria-hidden="true"
+            />
+            <div class="hero-overlay"></div>
             <div class="shell hero-slide-grid">
-              <figure class="hero-photo">
-                <img
-                  src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=1400&q=80"
-                  alt="Perro atento durante una evaluación"
-                  width="1400"
-                  height="933"
-                />
-              </figure>
               <div class="hero-copy">
                 <p class="hero-kicker">Modalidad preferente</p>
-                <h1>CONSULTA ONLINE</h1>
+                <h1>Consulta online con respaldo clínico</h1>
                 <p class="hero-lead">
-                  Obligatoria en agresividad hacia personas, miedo a desconocidos y ansiedad por separación.
+                  Recomendada en agresividad hacia personas, miedo a desconocidos y ansiedad por separación.
                 </p>
                 <div class="hero-deal">
                   <div>
-                    <span class="deal-label">Reserva con</span>
+                    <span class="deal-label">Confirma con</span>
                     <span class="deal-price deal-price--sm">Abono $20.000</span>
                   </div>
                   <a
@@ -241,7 +210,7 @@
                     href="https://calendly.com/armonivet/consulta-etologia-clinica"
                     target="_blank"
                     rel="noopener noreferrer"
-                    >AGENDAR ONLINE</a
+                    >Agendar online</a
                   >
                 </div>
               </div>
@@ -299,8 +268,8 @@
         <div class="shell">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Ofertas destacadas</p>
-              <h2>Elige tu consulta y agenda</h2>
+              <p class="eyebrow">Destacados</p>
+              <h2>Elige tu consulta y agenda hoy</h2>
             </div>
             <a
               class="text-link"
@@ -414,9 +383,9 @@
       <section class="mid-banner" aria-label="Banner promocional">
         <div class="shell mid-banner-inner">
           <div>
-            <p class="mid-kicker">Incluye en tu consulta</p>
+            <p class="mid-kicker">Incluido en tu reserva</p>
             <h2>Evaluación + Flores de Bach* + 30 días de seguimiento</h2>
-            <p>Confirma con abono de $20.000 y asegura tu hora hoy.</p>
+            <p>Confirma con abono de $20.000 y asegura tu hora.</p>
           </div>
           <a
             class="btn btn-buy"
@@ -432,7 +401,7 @@
         <div class="shell about-grid">
           <div class="about-copy reveal">
             <p class="eyebrow">Quiénes somos</p>
-            <h2>Profesional de confianza para vender tranquilidad en casa</h2>
+            <h2>Respaldo profesional para recuperar la calma en casa</h2>
             <p>
               Armonivet es el trabajo de la Dra. Bárbara Castillo: médica veterinaria, diplomada en Etología Clínica y
               entrenadora canina profesional. Atención ética, cercana y orientada a resultados reales.
@@ -466,7 +435,7 @@
         <div class="shell">
           <div class="section-intro reveal">
             <p class="eyebrow">Servicios</p>
-            <h2>Todo lo que puedes comprar hoy</h2>
+            <h2>Servicios disponibles para agendar</h2>
             <p>Soluciones claras para perros y gatos, presencial u online.</p>
           </div>
           <div class="service-rows">
