@@ -1291,6 +1291,7 @@ p {
 .phone-frame {
   --phone-w: 248px;
   --phone-h: 536px;
+  --phone-inner-w: 232px;
   width: var(--phone-w);
   height: var(--phone-h);
   flex-shrink: 0;
@@ -1303,16 +1304,6 @@ p {
     inset 0 0 0 1.5px #3a3a3a;
   position: relative;
   align-self: center;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
-}
-
-.phone-frame--link:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 28px 56px rgba(16, 24, 28, 0.34),
-    inset 0 0 0 1.5px #3a3a3a;
 }
 
 .phone-notch {
@@ -1324,7 +1315,7 @@ p {
   height: 14px;
   background: #0e0e0e;
   border-radius: 999px;
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -1338,40 +1329,67 @@ p {
   display: block;
 }
 
-.phone-screen--poster {
-  isolation: isolate;
-}
-
 .reel-cover {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center top;
   display: block;
-  transition: transform 0.55s var(--ease);
+  transition: opacity 0.35s ease;
 }
 
-.phone-frame--link:hover .reel-cover {
-  transform: scale(1.04);
+.phone-frame.is-playing .reel-cover {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.reel-shade {
+/* Embed nativo de Instagram, escalado al ancho del teléfono */
+.reel-embed {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  width: 326px;
+  height: 720px;
+  border: 0;
+  display: block;
+  background: transparent;
+  transform: translateX(-50%) scale(0.712);
+  transform-origin: top center;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.phone-frame.is-playing .reel-embed {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reel-launch {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   background:
-    linear-gradient(180deg, rgba(8, 12, 16, 0.2) 0%, transparent 28%),
-    linear-gradient(0deg, rgba(8, 12, 16, 0.72) 0%, transparent 42%);
+    linear-gradient(180deg, rgba(8, 12, 16, 0.18) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(8, 12, 16, 0.7) 0%, transparent 42%);
+  display: grid;
+  place-items: center;
+  transition: opacity 0.3s ease;
+}
+
+.phone-frame.is-playing .reel-launch {
+  opacity: 0;
   pointer-events: none;
 }
 
 .reel-play {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  left: 50%;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -1382,18 +1400,18 @@ p {
   font-size: 1.2rem;
   padding-left: 3px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  transform: translate(-50%, -50%);
   transition: transform 0.3s var(--ease), background 0.3s ease;
 }
 
-.phone-frame--link:hover .reel-play {
-  transform: translate(-50%, -50%) scale(1.06);
+.reel-launch:hover .reel-play,
+.reel-launch:focus-visible .reel-play {
+  transform: scale(1.06);
   background: #fff;
 }
 
 .reel-meta {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   left: 0.85rem;
   right: 0.85rem;
   bottom: 0.95rem;
@@ -1401,6 +1419,11 @@ p {
   display: grid;
   gap: 0.15rem;
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.phone-frame.is-playing .reel-meta {
+  opacity: 0;
 }
 
 .reel-meta strong {
@@ -1637,7 +1660,12 @@ p {
   .phone-frame {
     --phone-w: min(236px, 68vw);
     --phone-h: min(510px, calc(68vw * 19.5 / 9));
+    --phone-inner-w: calc(var(--phone-w) - 16px);
     margin-inline: auto;
+  }
+
+  .reel-embed {
+    transform: translateX(-50%) scale(0.68);
   }
 
   .review-card {
