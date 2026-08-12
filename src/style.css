@@ -1527,6 +1527,11 @@ p {
     aspect-ratio: 1 / 1;
   }
 
+  .media-video,
+  .media-video iframe {
+    min-height: 420px;
+  }
+
   .hero-slide-grid {
     padding: 2.4rem 0 3rem;
   }
