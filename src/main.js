@@ -95,15 +95,3 @@ if (heroSlides.length) {
   restartHeroTimer();
 }
 
-/* Instagram reel: hide poster once embed paints */
-const igEmbed = document.querySelector("[data-ig-embed]");
-const reelFallback = document.querySelector("[data-reel-fallback]");
-if (igEmbed && reelFallback) {
-  const hideFallback = () => {
-    reelFallback.hidden = true;
-  };
-  igEmbed.addEventListener("load", () => {
-    window.setTimeout(hideFallback, 600);
-  });
-  window.setTimeout(hideFallback, 3500);
-}
