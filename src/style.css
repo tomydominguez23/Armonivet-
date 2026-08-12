@@ -1474,7 +1474,7 @@ p {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
 }
 

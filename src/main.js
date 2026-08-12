@@ -1,3 +1,6 @@
+import { trackPageVisit, bindConversionTracking } from "./lib/analytics.js";
+import { hydrateSiteContent } from "./lib/content.js";
+
 const header = document.querySelector("[data-header]");
 const navToggle = document.querySelector("[data-nav-toggle]");
 const mobileNav = document.querySelector("[data-mobile-nav]");
@@ -122,3 +125,12 @@ reelCover?.addEventListener("error", () => {
 // Fallback: don't leave the phone black forever
 window.setTimeout(showPhoneReel, 2800);
 
+/* Analytics + contenido dinámico desde Supabase */
+trackPageVisit();
+bindConversionTracking();
+hydrateSiteContent()
+  .then(() => {
+    // Re-bind after DOM updates from CMS content
+    bindConversionTracking();
+  })
+  .catch((err) => console.warn("[content]", err));
