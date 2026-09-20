@@ -132,3 +132,8 @@ import("./lib/analytics.js")
     );
   })
   .catch((err) => console.warn("[supabase-init]", err));
+
+/* Chat Genesis: reemplaza el botón WhatsApp con el widget de pre-consulta */
+import("./lib/genesis-chat.js")
+  .then(({ default: initGenesisChat }) => initGenesisChat())
+  .catch((err) => console.warn("[genesis-chat]", err));

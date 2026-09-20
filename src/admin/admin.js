@@ -2,6 +2,9 @@ import { isSupabaseConfigured, requireSupabase, supabase } from "../lib/supabase
 
 const titles = {
   dashboard: ["Dashboard", "Métricas del negocio en tiempo real"],
+  leads: ["Leads", "Leads capturados desde Genesis y otros canales"],
+  clients: ["Clientes", "Gestión de clientes y cuestionarios"],
+  followups: ["Seguimiento", "Controles pendientes y recordatorios"],
   appointments: ["Citas", "Agenda, abonos y asistencia"],
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
@@ -115,6 +118,9 @@ $("[data-range]")?.addEventListener("change", (e) => {
 
 async function loadSection(section) {
   if (section === "dashboard") return loadDashboard();
+  if (section === "leads") return loadLeads();
+  if (section === "clients") return loadClients();
+  if (section === "followups") return loadFollowups();
   if (section === "appointments") return loadAppointments();
   if (section === "channels") return loadChannels();
   if (section === "services") return loadServices();
@@ -126,20 +132,35 @@ async function loadSection(section) {
 /* -------------------- Dashboard -------------------- */
 async function loadDashboard() {
   const client = requireSupabase();
-  const { data, error } = await client.rpc("admin_dashboard_stats", { days: state.days });
 
-  let stats = data;
-  if (error || !stats) {
+  let stats = null;
+  let v2Result = null;
+
+  const { data: v2Data, error: v2Error } = await client.rpc("admin_dashboard_v2", { days: state.days });
+  if (!v2Error && v2Data) {
+    v2Result = v2Data;
+    stats = v2Data;
+  }
+
+  if (!stats) {
+    const { data, error } = await client.rpc("admin_dashboard_stats", { days: state.days });
+    if (!error && data) stats = data;
+  }
+
+  if (!stats) {
     stats = await fallbackStats(client, state.days);
   }
 
   const map = {
+    leads_new: stats.leads_new ?? 0,
+    leads_total: stats.leads_total ?? 0,
     visits_unique: stats.visits_unique,
     click_agendar: stats.click_agendar,
-    appointments: stats.appointments,
+    appointments_total: stats.appointments_total ?? stats.appointments ?? 0,
     paid: stats.paid,
     arrived: stats.arrived,
-    revenue_estimated: formatCLP(stats.revenue_estimated),
+    revenue: formatCLP(stats.revenue ?? stats.revenue_estimated ?? 0),
+    followups_pending: stats.followups_pending ?? 0,
   };
   Object.entries(map).forEach(([k, v]) => {
     const el = $(`[data-kpi="${k}"]`);
@@ -150,6 +171,55 @@ async function loadDashboard() {
   renderChannels(stats.by_channel || []);
   renderFunnel(stats);
   renderStatus(stats.appointments_by_status || []);
+
+  const recentLeadsEl = $("[data-recent-leads]");
+  if (recentLeadsEl) {
+    const recentLeads = v2Result?.recent_leads || [];
+    if (!recentLeads.length) {
+      recentLeadsEl.innerHTML = `<p class="empty">Sin leads recientes</p>`;
+    } else {
+      recentLeadsEl.innerHTML = recentLeads
+        .map(
+          (l) => `<div class="mini-card">
+          <strong>${escapeHtml(l.name || "Sin nombre")}</strong>
+          <small>${escapeHtml(l.phone || l.email || "—")} · ${escapeHtml(l.channel_slug || "directo")}</small>
+          <span class="badge ${l.status || "nuevo"}">${escapeHtml(l.status || "nuevo")}</span>
+        </div>`
+        )
+        .join("");
+    }
+  }
+
+  const needFollowupEl = $("[data-need-followup]");
+  if (needFollowupEl) {
+    const needFollowup = v2Result?.clients_need_followup || [];
+    if (!needFollowup.length) {
+      needFollowupEl.innerHTML = `<p class="empty">Sin seguimientos pendientes</p>`;
+    } else {
+      needFollowupEl.innerHTML = needFollowup
+        .map(
+          (c) => `<div class="mini-card">
+          <strong>${escapeHtml(c.name || c.pet_name || "Sin nombre")}</strong>
+          <small>${escapeHtml(c.phone || "—")} · próximo: ${formatDate(c.next_followup_at)}</small>
+        </div>`
+        )
+        .join("");
+    }
+  }
+
+  const alertsEl = $("[data-topbar-alerts]");
+  if (alertsEl) {
+    const alerts = [];
+    const overdueCount = stats.followups_overdue ?? 0;
+    const newLeadsCount = stats.leads_new ?? 0;
+    if (overdueCount > 0) {
+      alerts.push(`<span class="topbar-alert topbar-alert--danger">${overdueCount} control${overdueCount > 1 ? "es" : ""} vencido${overdueCount > 1 ? "s" : ""}</span>`);
+    }
+    if (newLeadsCount > 0) {
+      alerts.push(`<span class="topbar-alert topbar-alert--info">${newLeadsCount} lead${newLeadsCount > 1 ? "s" : ""} nuevo${newLeadsCount > 1 ? "s" : ""}</span>`);
+    }
+    alertsEl.innerHTML = alerts.join("");
+  }
 }
 
 async function fallbackStats(client, days) {
@@ -232,8 +302,9 @@ function renderFunnel(stats) {
   const root = $("[data-funnel]");
   const steps = [
     ["Visitas", stats.visits_unique || 0],
+    ["Leads", stats.leads_total || 0],
     ["Clics agendar", stats.click_agendar || 0],
-    ["Citas", stats.appointments || 0],
+    ["Citas", stats.appointments_total || stats.appointments || 0],
     ["Compraron / abonaron", stats.paid || 0],
     ["Llegaron", stats.arrived || 0],
   ];
@@ -357,6 +428,584 @@ function openAppointmentModal(row) {
         await requireSupabase().from("appointments").insert(payload);
       }
       await loadAppointments();
+    },
+  });
+}
+
+/* -------------------- Leads -------------------- */
+let _leadsDebounce = null;
+
+async function loadLeads() {
+  const filter = $("[data-leads-filter]")?.value || "";
+  let query = requireSupabase()
+    .from("leads")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (filter) query = query.eq("status", filter);
+  const { data, error } = await query;
+  const body = $("[data-leads-body]");
+  if (!body) return;
+  if (error) {
+    body.innerHTML = `<tr><td colspan="8">${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  if (!data?.length) {
+    body.innerHTML = `<tr><td colspan="8" class="empty">No hay leads registrados.</td></tr>`;
+    return;
+  }
+  body.innerHTML = data
+    .map(
+      (l) => `<tr>
+      <td><strong>${escapeHtml(l.name || "Sin nombre")}</strong></td>
+      <td>${escapeHtml(l.phone || "—")}<br><small>${escapeHtml(l.email || "")}</small></td>
+      <td>${escapeHtml(l.pet_type || "—")}${l.pet_name ? " · " + escapeHtml(l.pet_name) : ""}</td>
+      <td>${escapeHtml(l.consultation_reason || "—")}</td>
+      <td>${escapeHtml(l.channel_slug || "directo")}</td>
+      <td><span class="badge ${l.status || "nuevo"}">${escapeHtml(l.status || "nuevo")}</span></td>
+      <td>${formatDate(l.created_at)}</td>
+      <td class="entity-actions">
+        <button class="btn btn-ghost" data-view-lead="${l.id}">Ver</button>
+        <button class="btn btn-ghost" data-contact-lead="${l.id}">Contactar</button>
+        <button class="btn btn-ghost" data-schedule-lead="${l.id}">Agendar</button>
+        <button class="btn btn-danger" data-discard-lead="${l.id}">Descartar</button>
+      </td>
+    </tr>`
+    )
+    .join("");
+
+  body.querySelectorAll("[data-view-lead]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lead = data.find((x) => x.id === btn.dataset.viewLead);
+      if (lead) openLeadDetailModal(lead);
+    });
+  });
+  body.querySelectorAll("[data-contact-lead]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await requireSupabase().from("leads").update({ status: "contactado" }).eq("id", btn.dataset.contactLead);
+      loadLeads();
+    });
+  });
+  body.querySelectorAll("[data-schedule-lead]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lead = data.find((x) => x.id === btn.dataset.scheduleLead);
+      if (lead) {
+        openAppointmentModal({
+          client_name: lead.name || "",
+          client_email: lead.email || "",
+          client_phone: lead.phone || "",
+          pet_name: lead.pet_name || "",
+          pet_type: lead.pet_type || "",
+          channel_slug: lead.channel_slug || "directo",
+          service_title: lead.consultation_reason || "",
+        });
+      }
+    });
+  });
+  body.querySelectorAll("[data-discard-lead]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("¿Descartar este lead?")) return;
+      await requireSupabase().from("leads").update({ status: "descartado" }).eq("id", btn.dataset.discardLead);
+      loadLeads();
+    });
+  });
+}
+
+$("[data-leads-filter]")?.addEventListener("change", () => loadLeads());
+
+$("[data-open-lead]")?.addEventListener("click", () => {
+  openModal({
+    title: "Nuevo lead",
+    fields: `
+      <label>Nombre <input name="name" required /></label>
+      <div class="form-row">
+        <label>Email <input name="email" type="email" /></label>
+        <label>Teléfono <input name="phone" /></label>
+      </div>
+      <div class="form-row">
+        <label>Mascota <input name="pet_name" /></label>
+        <label>Tipo <input name="pet_type" placeholder="perro/gato" /></label>
+      </div>
+      <label>Motivo consulta <textarea name="consultation_reason" rows="2"></textarea></label>
+      <label>Canal <input name="channel_slug" value="directo" /></label>
+      <label>Estado
+        <select name="status">
+          <option value="nuevo" selected>nuevo</option>
+          <option value="contactado">contactado</option>
+          <option value="en_proceso">en_proceso</option>
+          <option value="convertido">convertido</option>
+          <option value="descartado">descartado</option>
+        </select>
+      </label>
+      <label>Notas <textarea name="notes" rows="2"></textarea></label>
+    `,
+    onSave: async (fd) => {
+      const payload = {
+        name: String(fd.get("name") || "").trim(),
+        email: String(fd.get("email") || "").trim() || null,
+        phone: String(fd.get("phone") || "").trim() || null,
+        pet_name: String(fd.get("pet_name") || "").trim() || null,
+        pet_type: String(fd.get("pet_type") || "").trim() || null,
+        consultation_reason: String(fd.get("consultation_reason") || "").trim() || null,
+        channel_slug: String(fd.get("channel_slug") || "").trim() || null,
+        status: String(fd.get("status") || "nuevo"),
+        notes: String(fd.get("notes") || "").trim() || null,
+      };
+      await requireSupabase().from("leads").insert(payload);
+      await loadLeads();
+    },
+  });
+});
+
+function openLeadDetailModal(lead) {
+  const fields = [
+    ["Nombre", lead.name],
+    ["Email", lead.email],
+    ["Teléfono", lead.phone],
+    ["Mascota", lead.pet_name],
+    ["Tipo mascota", lead.pet_type],
+    ["Motivo consulta", lead.consultation_reason],
+    ["Canal", lead.channel_slug],
+    ["Estado", lead.status],
+    ["Notas", lead.notes],
+    ["Creado", formatDate(lead.created_at)],
+    ["Actualizado", formatDate(lead.updated_at)],
+  ];
+
+  openModal({
+    title: `Lead: ${escapeHtml(lead.name || "Sin nombre")}`,
+    fields: `
+      <div class="detail-view">
+        ${fields
+          .map(
+            ([label, value]) =>
+              `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value || "—")}</span></div>`
+          )
+          .join("")}
+      </div>
+      <div class="form-row" style="margin-top:1rem;gap:.5rem">
+        <button type="button" class="btn btn-ghost" data-modal-contact-lead="${lead.id}">Contactar</button>
+        <button type="button" class="btn btn-ghost" data-modal-schedule-lead="${lead.id}">Agendar cita</button>
+        <button type="button" class="btn btn-danger" data-modal-discard-lead="${lead.id}">Descartar</button>
+      </div>
+    `,
+    onSave: async () => {},
+  });
+
+  setTimeout(() => {
+    $(`[data-modal-contact-lead="${lead.id}"]`)?.addEventListener("click", async () => {
+      await requireSupabase().from("leads").update({ status: "contactado" }).eq("id", lead.id);
+      $("[data-modal]").close();
+      loadLeads();
+    });
+    $(`[data-modal-schedule-lead="${lead.id}"]`)?.addEventListener("click", () => {
+      $("[data-modal]").close();
+      openAppointmentModal({
+        client_name: lead.name || "",
+        client_email: lead.email || "",
+        client_phone: lead.phone || "",
+        pet_name: lead.pet_name || "",
+        pet_type: lead.pet_type || "",
+        channel_slug: lead.channel_slug || "directo",
+        service_title: lead.consultation_reason || "",
+      });
+    });
+    $(`[data-modal-discard-lead="${lead.id}"]`)?.addEventListener("click", async () => {
+      await requireSupabase().from("leads").update({ status: "descartado" }).eq("id", lead.id);
+      $("[data-modal]").close();
+      loadLeads();
+    });
+  }, 0);
+}
+
+/* -------------------- Clients -------------------- */
+let _clientsDebounce = null;
+
+async function loadClients() {
+  const search = $("[data-clients-search]")?.value || "";
+  const filter = $("[data-clients-filter]")?.value || "";
+  let query = requireSupabase()
+    .from("clients")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(100);
+  if (filter) query = query.eq("status", filter);
+  if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,pet_name.ilike.%${search}%`);
+  const { data, error } = await query;
+  const body = $("[data-clients-body]");
+  if (!body) return;
+  if (error) {
+    body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  if (!data?.length) {
+    body.innerHTML = `<tr><td colspan="7" class="empty">No hay clientes registrados.</td></tr>`;
+    return;
+  }
+  body.innerHTML = data
+    .map(
+      (c) => `<tr>
+      <td><strong>${escapeHtml(c.name || "—")}</strong>${c.tutor_name ? "<br><small>Tutor: " + escapeHtml(c.tutor_name) + "</small>" : ""}</td>
+      <td>${escapeHtml(c.pet_name || "—")}${c.pet_type ? " · " + escapeHtml(c.pet_type) : ""}</td>
+      <td>${escapeHtml(c.phone || "—")}<br><small>${escapeHtml(c.email || "")}</small></td>
+      <td><span class="badge ${c.status || "activo"}">${escapeHtml(c.status || "activo")}</span></td>
+      <td>${formatDate(c.last_contact_at)}</td>
+      <td>${formatDate(c.next_followup_at)}</td>
+      <td class="entity-actions">
+        <button class="btn btn-ghost" data-view-client="${c.id}">Ver ficha</button>
+        <button class="btn btn-ghost" data-followup-client="${c.id}">Seguimiento</button>
+        <button class="btn btn-ghost" data-edit-client-status="${c.id}">Editar estado</button>
+        <button class="btn btn-ghost" data-schedule-client="${c.id}">Agendar</button>
+      </td>
+    </tr>`
+    )
+    .join("");
+
+  body.querySelectorAll("[data-view-client]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const client = data.find((x) => x.id === btn.dataset.viewClient);
+      if (client) openClientDetailModal(client);
+    });
+  });
+  body.querySelectorAll("[data-followup-client]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const client = data.find((x) => x.id === btn.dataset.followupClient);
+      if (client) openFollowupModal(null, client.id);
+    });
+  });
+  body.querySelectorAll("[data-edit-client-status]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const client = data.find((x) => x.id === btn.dataset.editClientStatus);
+      if (!client) return;
+      openModal({
+        title: `Cambiar estado: ${escapeHtml(client.name || client.pet_name || "")}`,
+        fields: `
+          <label>Estado
+            <select name="status">
+              ${["activo", "inactivo", "pendiente", "completado"]
+                .map((s) => `<option value="${s}" ${client.status === s ? "selected" : ""}>${s}</option>`)
+                .join("")}
+            </select>
+          </label>
+        `,
+        onSave: async (fd) => {
+          await requireSupabase().from("clients").update({ status: String(fd.get("status")) }).eq("id", client.id);
+          await loadClients();
+        },
+      });
+    });
+  });
+  body.querySelectorAll("[data-schedule-client]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const client = data.find((x) => x.id === btn.dataset.scheduleClient);
+      if (client) {
+        openAppointmentModal({
+          client_name: client.name || client.tutor_name || "",
+          client_email: client.email || "",
+          client_phone: client.phone || "",
+          pet_name: client.pet_name || "",
+          pet_type: client.pet_type || "",
+        });
+      }
+    });
+  });
+}
+
+$("[data-clients-search]")?.addEventListener("input", (e) => {
+  clearTimeout(_clientsDebounce);
+  _clientsDebounce = setTimeout(() => loadClients(), 350);
+});
+$("[data-clients-filter]")?.addEventListener("change", () => loadClients());
+
+$("[data-open-client]")?.addEventListener("click", () => {
+  openModal({
+    title: "Nuevo cliente",
+    fields: `
+      <label>Nombre <input name="name" required /></label>
+      <label>Nombre tutor <input name="tutor_name" /></label>
+      <div class="form-row">
+        <label>Email <input name="email" type="email" /></label>
+        <label>Teléfono <input name="phone" /></label>
+      </div>
+      <div class="form-row">
+        <label>Mascota <input name="pet_name" /></label>
+        <label>Tipo <input name="pet_type" placeholder="perro/gato" /></label>
+      </div>
+      <div class="form-row">
+        <label>Raza <input name="pet_breed" /></label>
+        <label>Edad <input name="pet_age" /></label>
+      </div>
+      <label>Peso (kg) <input name="pet_weight" type="number" step="0.1" /></label>
+      <label>Dirección <input name="address" /></label>
+      <label>Comuna <input name="comuna" /></label>
+      <label>Cuestionario / notas <textarea name="questionnaire_notes" rows="3"></textarea></label>
+      <label>Estado
+        <select name="status">
+          <option value="activo" selected>activo</option>
+          <option value="inactivo">inactivo</option>
+          <option value="pendiente">pendiente</option>
+          <option value="completado">completado</option>
+        </select>
+      </label>
+    `,
+    onSave: async (fd) => {
+      const payload = {
+        name: String(fd.get("name") || "").trim(),
+        tutor_name: String(fd.get("tutor_name") || "").trim() || null,
+        email: String(fd.get("email") || "").trim() || null,
+        phone: String(fd.get("phone") || "").trim() || null,
+        pet_name: String(fd.get("pet_name") || "").trim() || null,
+        pet_type: String(fd.get("pet_type") || "").trim() || null,
+        pet_breed: String(fd.get("pet_breed") || "").trim() || null,
+        pet_age: String(fd.get("pet_age") || "").trim() || null,
+        pet_weight: fd.get("pet_weight") ? Number(fd.get("pet_weight")) : null,
+        address: String(fd.get("address") || "").trim() || null,
+        comuna: String(fd.get("comuna") || "").trim() || null,
+        questionnaire_notes: String(fd.get("questionnaire_notes") || "").trim() || null,
+        status: String(fd.get("status") || "activo"),
+      };
+      await requireSupabase().from("clients").insert(payload);
+      await loadClients();
+    },
+  });
+});
+
+function openClientDetailModal(client) {
+  const personalFields = [
+    ["Nombre", client.name],
+    ["Tutor", client.tutor_name],
+    ["Email", client.email],
+    ["Teléfono", client.phone],
+    ["Dirección", client.address],
+    ["Comuna", client.comuna],
+    ["Estado", client.status],
+  ];
+  const petFields = [
+    ["Nombre mascota", client.pet_name],
+    ["Tipo", client.pet_type],
+    ["Raza", client.pet_breed],
+    ["Edad", client.pet_age],
+    ["Peso", client.pet_weight ? `${client.pet_weight} kg` : null],
+    ["Tamaño", client.pet_size],
+    ["Temperamento", client.pet_temperament],
+  ];
+  const questionnaireFields = [
+    ["Alimentación", client.q_food],
+    ["Actividad física", client.q_exercise],
+    ["Condiciones médicas", client.q_medical],
+    ["Alergias", client.q_allergies],
+    ["Medicamentos", client.q_medications],
+    ["Vacunas al día", client.q_vaccines],
+    ["Esterilizado", client.q_neutered],
+    ["Último baño", client.q_last_bath],
+    ["Frecuencia baño", client.q_bath_frequency],
+    ["Notas cuestionario", client.questionnaire_notes],
+  ];
+  const metaFields = [
+    ["Último contacto", formatDate(client.last_contact_at)],
+    ["Próximo seguimiento", formatDate(client.next_followup_at)],
+    ["Creado", formatDate(client.created_at)],
+    ["Actualizado", formatDate(client.updated_at)],
+  ];
+
+  const renderSection = (title, fields) => {
+    const rows = fields
+      .filter(([, v]) => v != null && v !== "" && v !== "—")
+      .map(
+        ([label, value]) =>
+          `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(String(value))}</span></div>`
+      )
+      .join("");
+    if (!rows) return "";
+    return `<h4 style="margin:1rem 0 .5rem;border-bottom:1px solid #e0e0e0;padding-bottom:.25rem">${escapeHtml(title)}</h4>${rows}`;
+  };
+
+  openModal({
+    title: `Ficha: ${escapeHtml(client.name || client.pet_name || "Cliente")}`,
+    fields: `
+      <div class="detail-view">
+        ${renderSection("Datos personales", personalFields)}
+        ${renderSection("Mascota", petFields)}
+        ${renderSection("Cuestionario", questionnaireFields)}
+        ${renderSection("Fechas", metaFields)}
+      </div>
+    `,
+    onSave: async () => {},
+  });
+}
+
+/* -------------------- Followups -------------------- */
+async function loadFollowups() {
+  const filter = $("[data-followups-filter]")?.value || "pending";
+  let query = requireSupabase()
+    .from("followups")
+    .select("*, clients(name, pet_name, phone)")
+    .order("scheduled_at", { ascending: true });
+
+  if (filter === "pending") query = query.eq("completed", false);
+  else if (filter === "overdue") query = query.eq("completed", false).lt("scheduled_at", new Date().toISOString());
+  else if (filter === "today") {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    query = query.gte("scheduled_at", start.toISOString()).lte("scheduled_at", end.toISOString());
+  } else if (filter === "completed") {
+    query = query.eq("completed", true);
+  }
+
+  const { data, error } = await query.limit(100);
+  const body = $("[data-followups-body]");
+  if (!body) return;
+  if (error) {
+    body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  if (!data?.length) {
+    body.innerHTML = `<tr><td colspan="7" class="empty">No hay seguimientos para este filtro.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data
+    .map((f) => {
+      const clientName = f.clients?.name || "—";
+      const petName = f.clients?.pet_name || "";
+      const isOverdue = !f.completed && f.scheduled_at && new Date(f.scheduled_at) < new Date();
+      return `<tr class="${isOverdue ? "row-overdue" : ""}">
+      <td><strong>${escapeHtml(clientName)}</strong>${petName ? "<br><small>" + escapeHtml(petName) + "</small>" : ""}</td>
+      <td><span class="badge ${f.type || "general"}">${escapeHtml(f.type || "general")}</span></td>
+      <td>${escapeHtml((f.content || "").slice(0, 80))}${(f.content || "").length > 80 ? "…" : ""}</td>
+      <td>${formatDate(f.scheduled_at)}</td>
+      <td><span class="badge ${f.completed ? "completada" : isOverdue ? "vencido" : "pendiente"}">${f.completed ? "completado" : isOverdue ? "vencido" : "pendiente"}</span></td>
+      <td>${escapeHtml(f.clients?.phone || "—")}</td>
+      <td class="entity-actions">
+        ${!f.completed ? `<button class="btn btn-ghost" data-complete-followup="${f.id}">Completar</button>` : ""}
+        <button class="btn btn-ghost" data-edit-followup="${f.id}">Editar</button>
+        <button class="btn btn-danger" data-del-followup="${f.id}">Eliminar</button>
+      </td>
+    </tr>`;
+    })
+    .join("");
+
+  const alertsEl = $("[data-followup-alerts]");
+  if (alertsEl) {
+    const now = new Date();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const allPending = data.filter((f) => !f.completed);
+    const overdueCount = allPending.filter((f) => f.scheduled_at && new Date(f.scheduled_at) < now).length;
+    const todayCount = allPending.filter((f) => {
+      if (!f.scheduled_at) return false;
+      const d = new Date(f.scheduled_at);
+      return d >= todayStart && d <= todayEnd;
+    }).length;
+
+    let newLeadsCount = 0;
+    try {
+      const { count } = await requireSupabase()
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "nuevo");
+      newLeadsCount = count || 0;
+    } catch (_) {}
+
+    const cards = [];
+    if (overdueCount > 0) {
+      cards.push(`<div class="alert-card alert-card--danger">${overdueCount} control${overdueCount > 1 ? "es" : ""} vencido${overdueCount > 1 ? "s" : ""}</div>`);
+    }
+    if (todayCount > 0) {
+      cards.push(`<div class="alert-card alert-card--warning">${todayCount} seguimiento${todayCount > 1 ? "s" : ""} para hoy</div>`);
+    }
+    if (newLeadsCount > 0) {
+      cards.push(`<div class="alert-card alert-card--info">${newLeadsCount} lead${newLeadsCount > 1 ? "s" : ""} nuevo${newLeadsCount > 1 ? "s" : ""} sin contactar</div>`);
+    }
+    alertsEl.innerHTML = cards.join("");
+  }
+
+  body.querySelectorAll("[data-complete-followup]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await requireSupabase()
+        .from("followups")
+        .update({ completed: true, completed_at: new Date().toISOString() })
+        .eq("id", btn.dataset.completeFollowup);
+      loadFollowups();
+    });
+  });
+  body.querySelectorAll("[data-edit-followup]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = data.find((x) => x.id === btn.dataset.editFollowup);
+      if (row) openFollowupModal(row, row.client_id);
+    });
+  });
+  body.querySelectorAll("[data-del-followup]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar este seguimiento?")) return;
+      await requireSupabase().from("followups").delete().eq("id", btn.dataset.delFollowup);
+      loadFollowups();
+    });
+  });
+}
+
+$("[data-followups-filter]")?.addEventListener("change", () => loadFollowups());
+
+$("[data-open-followup]")?.addEventListener("click", () => openFollowupModal(null, null));
+
+async function openFollowupModal(row, clientId) {
+  let clientOptions = "";
+  try {
+    const { data: clients } = await requireSupabase()
+      .from("clients")
+      .select("id, name, pet_name")
+      .order("name")
+      .limit(500);
+    clientOptions = (clients || [])
+      .map(
+        (c) =>
+          `<option value="${c.id}" ${(clientId || row?.client_id) === c.id ? "selected" : ""}>${escapeHtml(c.name || "—")}${c.pet_name ? " (" + escapeHtml(c.pet_name) + ")" : ""}</option>`
+      )
+      .join("");
+  } catch (_) {}
+
+  openModal({
+    title: row ? "Editar seguimiento" : "Nuevo seguimiento",
+    fields: `
+      <label>Cliente
+        <select name="client_id" required>
+          <option value="">— Seleccionar cliente —</option>
+          ${clientOptions}
+        </select>
+      </label>
+      <label>Tipo
+        <select name="type">
+          ${["control", "vacuna", "recordatorio", "seguimiento", "general"]
+            .map((t) => `<option value="${t}" ${row?.type === t ? "selected" : ""}>${t}</option>`)
+            .join("")}
+        </select>
+      </label>
+      <label>Contenido <textarea name="content" rows="3" required>${escapeHtml(row?.content || "")}</textarea></label>
+      <label>Fecha programada <input name="scheduled_at" type="datetime-local" value="${toLocalInput(row?.scheduled_at)}" required /></label>
+      ${row ? `<label><input type="checkbox" name="completed" ${row.completed ? "checked" : ""} /> Completado</label>` : ""}
+    `,
+    onSave: async (fd) => {
+      const payload = {
+        client_id: String(fd.get("client_id") || "").trim(),
+        type: String(fd.get("type") || "general"),
+        content: String(fd.get("content") || "").trim(),
+        scheduled_at: fd.get("scheduled_at") ? new Date(String(fd.get("scheduled_at"))).toISOString() : null,
+        completed: fd.get("completed") === "on",
+      };
+      if (payload.completed && !row?.completed) {
+        payload.completed_at = new Date().toISOString();
+      }
+      if (row?.id) {
+        await requireSupabase().from("followups").update(payload).eq("id", row.id);
+      } else {
+        await requireSupabase().from("followups").insert(payload);
+      }
+      await loadFollowups();
     },
   });
 }
