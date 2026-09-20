@@ -59,6 +59,9 @@
           </div>
           <nav class="sidebar-nav" aria-label="Secciones">
             <button type="button" class="nav-item is-active" data-nav="dashboard">Dashboard</button>
+            <button type="button" class="nav-item" data-nav="leads">Leads</button>
+            <button type="button" class="nav-item" data-nav="clients">Clientes</button>
+            <button type="button" class="nav-item" data-nav="followups">Seguimiento</button>
             <button type="button" class="nav-item" data-nav="appointments">Citas</button>
             <button type="button" class="nav-item" data-nav="channels">Canales</button>
             <button type="button" class="nav-item" data-nav="services">Servicios</button>
@@ -80,6 +83,7 @@
               <h2 data-page-title>Dashboard</h2>
               <p data-page-sub>Métricas del negocio en tiempo real</p>
             </div>
+            <div class="topbar-alerts" data-topbar-alerts></div>
             <label class="range-select">
               Periodo
               <select data-range>
@@ -96,11 +100,13 @@
             <section class="panel is-active" data-panel="dashboard">
               <div class="kpi-grid" data-kpis>
                 <article class="kpi"><span>Visitas únicas</span><strong data-kpi="visits_unique">—</strong></article>
-                <article class="kpi"><span>Clics a agendar</span><strong data-kpi="click_agendar">—</strong></article>
-                <article class="kpi"><span>Citas agendadas</span><strong data-kpi="appointments">—</strong></article>
-                <article class="kpi"><span>Compras / abonos</span><strong data-kpi="paid">—</strong></article>
-                <article class="kpi"><span>Personas llegaron</span><strong data-kpi="arrived">—</strong></article>
-                <article class="kpi"><span>Ingresos estimados</span><strong data-kpi="revenue_estimated">—</strong></article>
+                <article class="kpi"><span>Leads nuevos</span><strong data-kpi="leads_new">—</strong></article>
+                <article class="kpi"><span>Clics agendar</span><strong data-kpi="click_agendar">—</strong></article>
+                <article class="kpi"><span>Citas activas</span><strong data-kpi="appointments_total">—</strong></article>
+                <article class="kpi"><span>Abonos pagados</span><strong data-kpi="paid">—</strong></article>
+                <article class="kpi"><span>Llegaron</span><strong data-kpi="arrived">—</strong></article>
+                <article class="kpi"><span>Ingresos</span><strong data-kpi="revenue">—</strong></article>
+                <article class="kpi"><span>Seguim. pendientes</span><strong data-kpi="followups_pending">—</strong></article>
               </div>
 
               <div class="charts-grid">
@@ -120,6 +126,123 @@
                   <h3>Citas por estado</h3>
                   <div class="status-list" data-chart-status></div>
                 </article>
+              </div>
+
+              <div class="dashboard-lists">
+                <article class="card">
+                  <h3>Leads recientes</h3>
+                  <div class="mini-list" data-recent-leads></div>
+                </article>
+                <article class="card">
+                  <h3>Clientes requieren seguimiento</h3>
+                  <div class="mini-list" data-need-followup></div>
+                </article>
+              </div>
+            </section>
+
+            <!-- Leads -->
+            <section class="panel" data-panel="leads">
+              <div class="panel-toolbar">
+                <p>Leads capturados desde el chat Genesis, formularios y otros canales.</p>
+                <div class="btn-row">
+                  <select data-leads-filter class="filter-select">
+                    <option value="">Todos</option>
+                    <option value="nuevo">Nuevos</option>
+                    <option value="contactado">Contactados</option>
+                    <option value="calificado">Calificados</option>
+                    <option value="agendado">Agendados</option>
+                    <option value="descartado">Descartados</option>
+                  </select>
+                  <button type="button" class="btn btn-primary" data-open-lead>Nuevo lead</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Contacto</th>
+                      <th>Mascota</th>
+                      <th>Motivo</th>
+                      <th>Canal</th>
+                      <th>Estado</th>
+                      <th>Fecha</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-leads-body></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Clientes -->
+            <section class="panel" data-panel="clients">
+              <div class="panel-toolbar">
+                <p>Gestión de clientes: historial, seguimiento y datos completos del cuestionario.</p>
+                <div class="btn-row">
+                  <input type="search" placeholder="Buscar por nombre, teléfono..." data-clients-search class="search-input" />
+                  <select data-clients-filter class="filter-select">
+                    <option value="">Todos</option>
+                    <option value="lead">Lead</option>
+                    <option value="agendado">Agendado</option>
+                    <option value="abonado">Abonado</option>
+                    <option value="atendido">Atendido</option>
+                    <option value="en_seguimiento">En seguimiento</option>
+                    <option value="control_pendiente">Control pendiente</option>
+                    <option value="completado">Completado</option>
+                    <option value="perdido">Perdido</option>
+                  </select>
+                  <button type="button" class="btn btn-primary" data-open-client>Nuevo cliente</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Mascota</th>
+                      <th>Contacto</th>
+                      <th>Estado</th>
+                      <th>Último contacto</th>
+                      <th>Próx. seguimiento</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-clients-body></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Seguimiento -->
+            <section class="panel" data-panel="followups">
+              <div class="panel-toolbar">
+                <p>Seguimientos pendientes y controles programados. Filtra clientes sin seguimiento reciente.</p>
+                <div class="btn-row">
+                  <select data-followups-filter class="filter-select">
+                    <option value="pending">Pendientes</option>
+                    <option value="all">Todos</option>
+                    <option value="overdue">Vencidos</option>
+                    <option value="today">Hoy</option>
+                  </select>
+                  <button type="button" class="btn btn-primary" data-open-followup>Nuevo seguimiento</button>
+                </div>
+              </div>
+              <div class="alert-cards" data-followup-alerts></div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Mascota</th>
+                      <th>Tipo</th>
+                      <th>Contenido</th>
+                      <th>Programado</th>
+                      <th>Estado</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-followups-body></tbody>
+                </table>
               </div>
             </section>
 
