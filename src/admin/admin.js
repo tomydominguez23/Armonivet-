@@ -13,7 +13,7 @@ const titles = {
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
   pricing: ["Precios", "Zonas de domicilio y extras"],
-  media: ["Imágenes", "Slots visuales del sitio"],
+  media: ["Imágenes", "Galería visual de la web: hero, servicios y zonas"],
   settings: ["Ajustes", "Enlaces y datos del negocio"],
 };
 
@@ -33,6 +33,8 @@ const state = {
   section: "dashboard",
   days: 30,
   editing: null,
+  mediaFilter: "all",
+  mediaItems: [],
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -1606,8 +1608,11 @@ async function loadServices() {
   }
   root.innerHTML = (data || [])
     .map(
-      (s) => `<article class="entity-card">
-      <img src="${escapeAttr(s.image_url || "")}" alt="" />
+      (s) => `<article class="entity-card entity-card--photo">
+      <button type="button" class="entity-photo" data-change-service-image="${s.id}" title="Cambiar imagen">
+        <img src="${escapeAttr(s.image_url || "")}" alt="${escapeAttr(s.title)}" />
+        <span>Cambiar foto</span>
+      </button>
       <div>
         <h4>${escapeHtml(s.title)}</h4>
         <p>${escapeHtml(s.price_label || (s.price_from != null ? formatCLP(s.price_from) : "Sin precio"))} · ${escapeHtml(s.section)}</p>
@@ -1623,6 +1628,25 @@ async function loadServices() {
 
   root.querySelectorAll("[data-edit-service]").forEach((btn) => {
     btn.addEventListener("click", () => openServiceModal(data.find((x) => x.id === btn.dataset.editService)));
+  });
+  root.querySelectorAll("[data-change-service-image]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const s = data.find((x) => x.id === btn.dataset.changeServiceImage);
+      if (s) {
+        openMediaEditor({
+          kind: "service",
+          id: s.id,
+          slot: s.id,
+          title: s.title,
+          url: s.image_url || "",
+          alt_text: s.title,
+          group: "services",
+          where: `Servicio · ${s.section}`,
+          aspect: "photo",
+          raw: s,
+        });
+      }
+    });
   });
   root.querySelectorAll("[data-del-service]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -1699,8 +1723,11 @@ async function loadPricing() {
   const zonesRoot = $("[data-zones-list]");
   zonesRoot.innerHTML = (zones || [])
     .map(
-      (z) => `<article class="entity-card">
-      <img src="${escapeAttr(z.image_url || "")}" alt="" />
+      (z) => `<article class="entity-card entity-card--photo">
+      <button type="button" class="entity-photo" data-change-zone-image="${z.id}" title="Cambiar imagen">
+        <img src="${escapeAttr(z.image_url || "")}" alt="${escapeAttr(z.name)}" />
+        <span>Cambiar foto</span>
+      </button>
       <div>
         <h4>${escapeHtml(z.name)} · ${formatCLP(z.price)}</h4>
         <p>${escapeHtml(z.zones_text || "")}</p>
@@ -1715,6 +1742,25 @@ async function loadPricing() {
 
   zonesRoot.querySelectorAll("[data-edit-zone]").forEach((btn) => {
     btn.addEventListener("click", () => openZoneModal(zones.find((x) => x.id === btn.dataset.editZone)));
+  });
+  zonesRoot.querySelectorAll("[data-change-zone-image]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const z = zones.find((x) => x.id === btn.dataset.changeZoneImage);
+      if (z) {
+        openMediaEditor({
+          kind: "zone",
+          id: z.id,
+          slot: z.id,
+          title: z.name,
+          url: z.image_url || "",
+          alt_text: z.name,
+          group: "zones",
+          where: "Zona de precio",
+          aspect: "photo",
+          raw: z,
+        });
+      }
+    });
   });
   zonesRoot.querySelectorAll("[data-del-zone]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -1819,64 +1865,450 @@ function openExtraModal(row) {
 }
 
 /* -------------------- Media -------------------- */
+const MEDIA_GROUPS = [
+  { id: "hero", label: "Carrusel de inicio", where: "Portada · slides del hero", aspect: "wide" },
+  { id: "gallery", label: "Galería", where: "Sección “Así acompañamos…”", aspect: "square" },
+  { id: "about", label: "Doctora", where: "Bloque Sobre Armonivet", aspect: "portrait" },
+  { id: "banner", label: "Banners", where: "Banner intermedio de la web", aspect: "wide" },
+  { id: "services", label: "Servicios y ofertas", where: "Tarjetas de consulta y servicios", aspect: "photo" },
+  { id: "zones", label: "Zonas de precio", where: "Precios por comuna", aspect: "photo" },
+];
+
+const KNOWN_SLOTS = [
+  { slot: "hero_1", group: "hero", title: "Hero 1 · slide principal" },
+  { slot: "hero_2", group: "hero", title: "Hero 2" },
+  { slot: "hero_3", group: "hero", title: "Hero 3" },
+  { slot: "gallery_1", group: "gallery", title: "Galería 1" },
+  { slot: "gallery_2", group: "gallery", title: "Galería 2" },
+  { slot: "gallery_3", group: "gallery", title: "Galería 3" },
+  { slot: "gallery_4", group: "gallery", title: "Galería 4" },
+  { slot: "gallery_5", group: "gallery", title: "Galería 5" },
+  { slot: "gallery_6", group: "gallery", title: "Galería 6" },
+  { slot: "about_doctor", group: "about", title: "Foto Dra. Bárbara" },
+  { slot: "mid_banner", group: "banner", title: "Banner medio" },
+];
+
+function slotGroup(slot) {
+  if (String(slot).startsWith("hero")) return "hero";
+  if (String(slot).startsWith("gallery")) return "gallery";
+  if (String(slot).includes("doctor") || String(slot).includes("about")) return "about";
+  if (String(slot).includes("banner")) return "banner";
+  return "banner";
+}
+
+function mediaPreviewSrc(url) {
+  if (!url) return "";
+  if (url.startsWith("./") || url.startsWith("../")) {
+    const base = `${window.location.origin}${window.location.pathname.replace(/admin(?:\/index\.html)?\/?$/, "")}`;
+    return new URL(url, base.endsWith("/") ? base : `${base}/`).toString();
+  }
+  return url;
+}
+
 async function loadMedia() {
-  const { data, error } = await requireSupabase().from("site_media").select("*").order("slot");
   const root = $("[data-media-grid]");
+  if (!root) return;
+  const client = requireSupabase();
+  const [{ data: slots, error }, { data: services }, { data: zones }] = await Promise.all([
+    client.from("site_media").select("*").order("slot"),
+    client.from("services").select("id,title,image_url,section,active").order("sort_order"),
+    client.from("pricing_zones").select("id,name,image_url,active").order("sort_order"),
+  ]);
   if (error) {
-    root.innerHTML = `<p class="empty">${error.message}</p>`;
+    root.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
     return;
   }
-  root.innerHTML = (data || [])
-    .map(
-      (m) => `<article class="media-card">
-      <img src="${escapeAttr(m.url)}" alt="${escapeAttr(m.alt_text || m.slot)}" />
-      <div class="body">
-        <strong>${escapeHtml(m.title || m.slot)}</strong>
-        <small>${escapeHtml(m.slot)}</small>
-        <label>Nueva imagen
-          <input type="file" accept="image/*" data-upload-slot="${m.id}" data-slot-name="${escapeAttr(m.slot)}" />
-        </label>
-        <button class="btn btn-ghost" data-edit-media="${m.id}">Editar URL / alt</button>
-      </div>
-    </article>`
-    )
-    .join("") || `<p class="empty">Sin slots de media. Ejecuta seed.sql</p>`;
 
-  root.querySelectorAll("[data-upload-slot]").forEach((input) => {
-    input.addEventListener("change", async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const url = await uploadImage(file, `site/${input.dataset.slotName}-${Date.now()}-${file.name}`);
-      await requireSupabase().from("site_media").update({ url }).eq("id", input.dataset.uploadSlot);
-      loadMedia();
+  const items = [];
+  const slotMap = Object.fromEntries((slots || []).map((s) => [s.slot, s]));
+  KNOWN_SLOTS.forEach((known) => {
+    const row = slotMap[known.slot];
+    const group = MEDIA_GROUPS.find((g) => g.id === known.group);
+    items.push({
+      kind: "slot",
+      id: row?.id || known.slot,
+      slot: known.slot,
+      title: row?.title || known.title,
+      url: row?.url || "",
+      alt_text: row?.alt_text || "",
+      group: known.group,
+      where: group?.where || "",
+      aspect: group?.aspect || "photo",
+      missing: !row,
+      raw: row,
     });
   });
+  (slots || []).forEach((row) => {
+    if (KNOWN_SLOTS.some((k) => k.slot === row.slot)) return;
+    const groupId = slotGroup(row.slot);
+    const group = MEDIA_GROUPS.find((g) => g.id === groupId);
+    items.push({
+      kind: "slot",
+      id: row.id,
+      slot: row.slot,
+      title: row.title || row.slot,
+      url: row.url,
+      alt_text: row.alt_text || "",
+      group: groupId,
+      where: group?.where || "Web pública",
+      aspect: group?.aspect || "photo",
+      raw: row,
+    });
+  });
+  (services || []).forEach((s) => {
+    items.push({
+      kind: "service",
+      id: s.id,
+      slot: s.id,
+      title: s.title,
+      url: s.image_url || "",
+      alt_text: s.title,
+      group: "services",
+      where: `Servicio · ${s.section}${s.active === false ? " (oculto)" : ""}`,
+      aspect: "photo",
+      raw: s,
+    });
+  });
+  (zones || []).forEach((z) => {
+    items.push({
+      kind: "zone",
+      id: z.id,
+      slot: z.id,
+      title: z.name,
+      url: z.image_url || "",
+      alt_text: z.name,
+      group: "zones",
+      where: `Zona de precio${z.active === false ? " (oculta)" : ""}`,
+      aspect: "photo",
+      raw: z,
+    });
+  });
+  state.mediaItems = items;
+  await renderMediaStudio();
+}
 
-  root.querySelectorAll("[data-edit-media]").forEach((btn) => {
+async function renderMediaStudio() {
+  const root = $("[data-media-grid]");
+  if (!root) return;
+  const q = ($("[data-media-search]")?.value || "").trim().toLowerCase();
+  const filter = state.mediaFilter || "all";
+  const visible = state.mediaItems.filter((item) => {
+    if (filter !== "all" && item.group !== filter) return false;
+    if (!q) return true;
+    return `${item.title} ${item.slot} ${item.where} ${item.alt_text}`.toLowerCase().includes(q);
+  });
+
+  const groups = MEDIA_GROUPS.filter((g) => visible.some((i) => i.group === g.id));
+  if (!groups.length) {
+    root.innerHTML = `<p class="empty">No hay imágenes en este filtro.</p>`;
+    return;
+  }
+
+  root.innerHTML = groups
+    .map((group) => {
+      const cards = visible
+        .filter((i) => i.group === group.id)
+        .map((item) => {
+          const src = mediaPreviewSrc(item.url);
+          return `<article class="media-card media-card--${item.aspect}" data-media-id="${escapeAttr(String(item.id))}" data-media-kind="${item.kind}">
+            <button type="button" class="media-preview" data-media-zoom="${escapeAttr(String(item.id))}" aria-label="Ver grande">
+              ${src ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(item.alt_text || item.title)}" />` : `<span class="media-placeholder">Sin imagen</span>`}
+              <span class="media-chip">${escapeHtml(group.label)}</span>
+            </button>
+            <div class="body">
+              <strong>${escapeHtml(item.title)}</strong>
+              <small>${escapeHtml(item.where)}${item.slot && item.kind === "slot" ? ` · ${escapeHtml(item.slot)}` : ""}</small>
+              <div class="media-actions">
+                <label class="btn btn-primary btn-file">
+                  Subir archivo
+                  <input type="file" accept="image/*" data-upload-item="${escapeAttr(`${item.kind}:${item.id}`)}" />
+                </label>
+                <button type="button" class="btn btn-ghost" data-edit-item="${escapeAttr(`${item.kind}:${item.id}`)}">Editar</button>
+                ${src ? `<button type="button" class="btn btn-ghost" data-copy-url="${escapeAttr(src)}">Copiar URL</button>` : ""}
+              </div>
+            </div>
+          </article>`;
+        })
+        .join("");
+      return `<section class="media-group"><header><h3>${escapeHtml(group.label)}</h3><p>${escapeHtml(group.where)}</p></header><div class="media-grid">${cards}</div></section>`;
+    })
+    .join("");
+
+  bindMediaStudio(root);
+  checkMediaBucket();
+}
+
+function findMediaItem(kind, id) {
+  return state.mediaItems.find((i) => i.kind === kind && String(i.id) === String(id));
+}
+
+function parseMediaKey(value) {
+  const [kind, ...rest] = String(value || "").split(":");
+  return { kind, id: rest.join(":") };
+}
+
+function bindMediaStudio(root) {
+  root.querySelectorAll("[data-upload-item]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      const { kind, id } = parseMediaKey(input.dataset.uploadItem);
+      const item = findMediaItem(kind, id);
+      if (!file || !item) return;
+      try {
+        await saveMediaFile(item, file);
+      } catch (err) {
+        alert(err.message || "No se pudo subir la imagen");
+      }
+    });
+  });
+  root.querySelectorAll("[data-edit-item]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const row = data.find((x) => x.id === btn.dataset.editMedia);
-      openModal({
-        title: `Editar ${row.slot}`,
-        fields: `
-          <label>Título <input name="title" value="${escapeAttr(row.title || "")}" /></label>
-          <label>URL <input name="url" required value="${escapeAttr(row.url || "")}" /></label>
-          <label>Alt <input name="alt_text" value="${escapeAttr(row.alt_text || "")}" /></label>
-        `,
-        onSave: async (fd) => {
-          await requireSupabase()
-            .from("site_media")
-            .update({
-              title: String(fd.get("title") || "").trim() || null,
-              url: String(fd.get("url") || "").trim(),
-              alt_text: String(fd.get("alt_text") || "").trim() || null,
-            })
-            .eq("id", row.id);
-          await loadMedia();
-        },
-      });
+      const { kind, id } = parseMediaKey(btn.dataset.editItem);
+      const item = findMediaItem(kind, id);
+      if (item) openMediaEditor(item);
+    });
+  });
+  root.querySelectorAll("[data-media-zoom]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const item = state.mediaItems.find((i) => String(i.id) === String(btn.dataset.mediaZoom));
+      if (item?.url) openLightbox(item);
+    });
+  });
+  root.querySelectorAll("[data-copy-url]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copyUrl);
+        btn.textContent = "Copiada";
+        setTimeout(() => {
+          btn.textContent = "Copiar URL";
+        }, 1200);
+      } catch {
+        prompt("URL de la imagen", btn.dataset.copyUrl);
+      }
+    });
+  });
+  root.querySelectorAll(".media-card").forEach((card) => {
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      card.classList.add("is-drop");
+    });
+    card.addEventListener("dragleave", () => card.classList.remove("is-drop"));
+    card.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      card.classList.remove("is-drop");
+      const file = e.dataTransfer?.files?.[0];
+      const item = findMediaItem(card.dataset.mediaKind, card.dataset.mediaId);
+      if (!file || !item) return;
+      try {
+        await saveMediaFile(item, file);
+      } catch (err) {
+        alert(err.message || "No se pudo subir la imagen");
+      }
     });
   });
 }
+
+async function checkMediaBucket() {
+  const el = $("[data-media-status]");
+  if (!el) return;
+  try {
+    const { error } = await requireSupabase().storage.getBucket("site-images");
+    if (error && /not found|NoSuchBucket/i.test(`${error.message} ${error.error || ""}`)) {
+      el.hidden = false;
+      el.className = "media-status is-warn";
+      el.innerHTML = `No se encontró el bucket <code>site-images</code>. Podés pegar una URL; subir archivo puede fallar.`;
+      return;
+    }
+    el.hidden = true;
+  } catch {
+    el.hidden = true;
+  }
+}
+
+async function refreshAfterMedia() {
+  if (state.section === "services") return loadServices();
+  if (state.section === "pricing") return loadPricing();
+  return loadMedia();
+}
+
+async function saveMediaFile(item, file) {
+  const folder = item.kind === "service" ? "services" : item.kind === "zone" ? "zones" : "site";
+  const name = item.slot || item.id;
+  const url = await uploadImage(file, `${folder}/${name}-${Date.now()}-${file.name}`);
+  await persistMediaUrl(item, url, item.title, item.alt_text);
+  await refreshAfterMedia();
+}
+
+async function persistMediaUrl(item, url, title, altText) {
+  const client = requireSupabase();
+  if (item.kind === "service") {
+    const { error } = await client.from("services").update({ image_url: url }).eq("id", item.id);
+    if (error) throw error;
+    return;
+  }
+  if (item.kind === "zone") {
+    const { error } = await client.from("pricing_zones").update({ image_url: url }).eq("id", item.id);
+    if (error) throw error;
+    return;
+  }
+  if (item.missing || !item.raw?.id) {
+    const { error } = await client.from("site_media").insert({
+      slot: item.slot,
+      title: title || item.title,
+      url,
+      alt_text: altText || null,
+    });
+    if (error) throw error;
+    return;
+  }
+  const { error } = await client
+    .from("site_media")
+    .update({ url, title: title || item.title, alt_text: altText || null })
+    .eq("id", item.raw.id);
+  if (error) throw error;
+}
+
+function openMediaEditor(item) {
+  const src = mediaPreviewSrc(item.url);
+  openModal({
+    title: `Imagen · ${item.title}`,
+    wide: true,
+    fields: `
+      <div class="media-editor">
+        <div class="media-editor-preview">
+          ${src ? `<img data-media-live-preview src="${escapeAttr(src)}" alt="" />` : `<div class="media-placeholder" data-media-live-preview>Sin imagen todavía</div>`}
+          <p class="media-drop-hint">Arrastrá una foto aquí o usá los campos de la derecha.</p>
+        </div>
+        <div class="media-editor-fields">
+          <p class="media-where">${escapeHtml(item.where)}</p>
+          <label>Título <input name="title" value="${escapeAttr(item.title || "")}" /></label>
+          <label>Texto alternativo (accesibilidad)
+            <input name="alt_text" value="${escapeAttr(item.alt_text || "")}" placeholder="Describe la foto" />
+          </label>
+          <label>URL de la imagen
+            <input name="url" data-media-url-input value="${escapeAttr(item.url || "")}" placeholder="https://… o subí un archivo" />
+          </label>
+          <label class="btn btn-primary btn-file">
+            Elegir archivo del computador
+            <input type="file" name="image_file" accept="image/*" data-media-file />
+          </label>
+          <div class="btn-row">
+            ${item.url ? `<a class="btn btn-ghost" href="${escapeAttr(src)}" target="_blank" rel="noopener">Abrir original</a>` : ""}
+            ${item.kind === "service" ? `<button type="button" class="btn btn-ghost" data-goto="services" value="cancel">Ir a servicios</button>` : ""}
+            ${item.kind === "zone" ? `<button type="button" class="btn btn-ghost" data-goto="pricing" value="cancel">Ir a precios</button>` : ""}
+          </div>
+        </div>
+      </div>
+    `,
+    onSave: async (fd) => {
+      const file = fd.get("image_file");
+      let url = String(fd.get("url") || "").trim();
+      const title = String(fd.get("title") || "").trim() || item.title;
+      const altText = String(fd.get("alt_text") || "").trim();
+      if (file && file.size) {
+        const folder = item.kind === "service" ? "services" : item.kind === "zone" ? "zones" : "site";
+        url = await uploadImage(file, `${folder}/${item.slot || item.id}-${Date.now()}-${file.name}`);
+      }
+      if (!url) throw new Error("Agrega una URL o sube un archivo");
+      await persistMediaUrl(item, url, title, altText);
+      await refreshAfterMedia();
+    },
+    afterOpen: () => {
+      const pane = $(".media-editor-preview");
+      const urlInput = $("[data-media-url-input]");
+      const fileInput = $("[data-media-file]");
+      const setPreview = (next) => {
+        if (!next || !pane) return;
+        let img = pane.querySelector("img[data-media-live-preview]");
+        if (!img) {
+          img = document.createElement("img");
+          img.dataset.mediaLivePreview = "";
+          pane.querySelector("[data-media-live-preview]")?.replaceWith(img);
+          if (!img.isConnected) pane.prepend(img);
+        }
+        img.src = next;
+      };
+      urlInput?.addEventListener("input", () => setPreview(urlInput.value.trim()));
+      fileInput?.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        if (file) setPreview(URL.createObjectURL(file));
+      });
+      pane?.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        pane.classList.add("is-drop");
+      });
+      pane?.addEventListener("dragleave", () => pane.classList.remove("is-drop"));
+      pane?.addEventListener("drop", (e) => {
+        e.preventDefault();
+        pane.classList.remove("is-drop");
+        const file = e.dataTransfer?.files?.[0];
+        if (!file || !fileInput) return;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+        setPreview(URL.createObjectURL(file));
+      });
+    },
+  });
+}
+
+function openLightbox(item) {
+  const box = $("[data-lightbox]");
+  if (!box) return;
+  $("[data-lightbox-img]").src = mediaPreviewSrc(item.url);
+  $("[data-lightbox-caption]").textContent = `${item.title} · ${item.where}`;
+  box.showModal();
+}
+
+$("[data-lightbox-close]")?.addEventListener("click", () => $("[data-lightbox]")?.close());
+$("[data-lightbox]")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.close();
+});
+
+$$("[data-media-filter]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    state.mediaFilter = btn.dataset.mediaFilter || "all";
+    $$("[data-media-filter]").forEach((b) => b.classList.toggle("is-active", b === btn));
+    renderMediaStudio();
+  });
+});
+
+$("[data-media-search]")?.addEventListener("input", () => {
+  clearTimeout(state._mediaSearch);
+  state._mediaSearch = setTimeout(() => renderMediaStudio(), 180);
+});
+$("[data-media-refresh]")?.addEventListener("click", () => loadMedia());
+
+$("[data-open-media-slot]")?.addEventListener("click", () => {
+  openModal({
+    title: "Nuevo espacio de imagen",
+    fields: `
+      <label>Nombre interno (slot)
+        <input name="slot" required placeholder="gallery_7 o instagram_1" />
+      </label>
+      <label>Título <input name="title" required placeholder="Foto para…" /></label>
+      <label>Texto alternativo <input name="alt_text" /></label>
+      <label>URL <input name="url" placeholder="https://…" /></label>
+      <label>Subir archivo <input type="file" name="image_file" accept="image/*" /></label>
+      <p class="empty">Los slots conocidos (hero_1, gallery_1…) aparecen solos en la web. Un slot nuevo se guarda y podés usarlo después.</p>
+    `,
+    onSave: async (fd) => {
+      let url = String(fd.get("url") || "").trim();
+      const file = fd.get("image_file");
+      const slot = String(fd.get("slot") || "").trim().toLowerCase().replace(/\s+/g, "_");
+      if (file && file.size) url = await uploadImage(file, `site/${slot}-${Date.now()}-${file.name}`);
+      if (!url) throw new Error("Agrega una URL o sube un archivo");
+      const { error } = await requireSupabase().from("site_media").insert({
+        slot,
+        title: String(fd.get("title") || "").trim(),
+        url,
+        alt_text: String(fd.get("alt_text") || "").trim() || null,
+      });
+      if (error) throw error;
+      await loadMedia();
+    },
+  });
+});
 
 /* -------------------- Settings -------------------- */
 async function loadSettings() {
@@ -1917,12 +2349,14 @@ $("[data-settings-form]")?.addEventListener("submit", async (e) => {
 /* -------------------- Modal + helpers -------------------- */
 let modalSaveHandler = null;
 
-function openModal({ title, fields, onSave }) {
+function openModal({ title, fields, onSave, wide = false, afterOpen }) {
   const modal = $("[data-modal]");
+  modal.classList.toggle("is-wide", Boolean(wide));
   $("[data-modal-title]").textContent = title;
   $("[data-modal-body]").innerHTML = fields;
   modalSaveHandler = onSave;
   modal.showModal();
+  afterOpen?.();
 }
 
 $("[data-modal-form]")?.addEventListener("submit", async (e) => {
@@ -1944,13 +2378,23 @@ $("[data-modal-form]")?.addEventListener("submit", async (e) => {
 });
 
 async function uploadImage(file, path) {
+  if (!file) throw new Error("No hay archivo");
+  if (!String(file.type || "").startsWith("image/")) throw new Error("El archivo no es una imagen");
+  if (file.size > 8 * 1024 * 1024) throw new Error("La imagen supera 8 MB. Subí una más liviana.");
   const client = requireSupabase();
   const clean = path.replace(/[^a-zA-Z0-9._/-]/g, "-");
   const { error } = await client.storage.from("site-images").upload(clean, file, {
     upsert: true,
     cacheControl: "3600",
+    contentType: file.type || "image/jpeg",
   });
-  if (error) throw error;
+  if (error) {
+    const msg = error.message || "No se pudo subir";
+    if (/bucket|not found/i.test(msg)) {
+      throw new Error("Falta el bucket site-images en Supabase Storage.");
+    }
+    throw new Error(msg);
+  }
   const { data } = client.storage.from("site-images").getPublicUrl(clean);
   return data.publicUrl;
 }

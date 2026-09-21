@@ -455,9 +455,24 @@
             <!-- Imágenes -->
             <section class="panel" data-panel="media">
               <div class="panel-toolbar">
-                <p>Sube o actualiza imágenes por slot (hero, galería, doctora, banners).</p>
+                <p>Vista previa grande de cada foto de la web. Subí un archivo, pegá una URL o arrastrá la imagen sobre la tarjeta.</p>
+                <div class="btn-row">
+                  <input type="search" placeholder="Buscar imagen…" data-media-search class="search-input" />
+                  <button type="button" class="btn btn-ghost" data-media-refresh>Actualizar</button>
+                  <button type="button" class="btn btn-primary" data-open-media-slot>Nuevo espacio</button>
+                </div>
               </div>
-              <div class="media-grid" data-media-grid></div>
+              <div class="media-status" data-media-status hidden></div>
+              <div class="media-tabs" data-media-tabs>
+                <button type="button" class="media-tab is-active" data-media-filter="all">Todas</button>
+                <button type="button" class="media-tab" data-media-filter="hero">Inicio / hero</button>
+                <button type="button" class="media-tab" data-media-filter="gallery">Galería</button>
+                <button type="button" class="media-tab" data-media-filter="about">Doctora</button>
+                <button type="button" class="media-tab" data-media-filter="banner">Banners</button>
+                <button type="button" class="media-tab" data-media-filter="services">Servicios</button>
+                <button type="button" class="media-tab" data-media-filter="zones">Zonas</button>
+              </div>
+              <div class="media-studio" data-media-grid></div>
             </section>
 
             <!-- Ajustes -->
@@ -496,6 +511,12 @@
           <button type="submit" value="save" class="btn btn-primary" data-modal-save>Guardar</button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog class="lightbox" data-lightbox>
+      <button type="button" class="icon-close lightbox-close" data-lightbox-close aria-label="Cerrar">×</button>
+      <img data-lightbox-img alt="" />
+      <p data-lightbox-caption></p>
     </dialog>
 
     <script type="module" src="../src/admin/admin.js"></script>
