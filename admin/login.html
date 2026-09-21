@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Iniciar sesión · Armonivet Admin</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../src/admin/admin.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-layout">
+      <aside class="login-aside">
+        <div class="login-aside-inner">
+          <img src="../logo-mark.svg" alt="Armonivet" width="56" height="50" />
+          <p class="auth-kicker">Armonivet</p>
+          <h1>Panel clínico y comercial</h1>
+          <p>
+            Agenda, leads de Genesis, seguimiento de controles y métricas de la web en un solo lugar para la Dra.
+            Bárbara.
+          </p>
+          <ul class="login-points">
+            <li>Agenda del día y citas por abonar</li>
+            <li>Leads y cuestionarios pre-consulta</li>
+            <li>Controles pendientes y clientes sin seguimiento</li>
+            <li>Visitas, canales y conversión</li>
+          </ul>
+        </div>
+      </aside>
+      <section class="auth-screen login-form-wrap">
+        <div class="auth-card">
+          <div class="auth-brand">
+            <img src="../logo-mark.svg" alt="" width="48" height="44" />
+            <div>
+              <p class="auth-kicker">Acceso privado</p>
+              <h1>Iniciar sesión</h1>
+            </div>
+          </div>
+          <p class="auth-lead">Usa el correo y la contraseña de tu usuario de administración.</p>
+          <form data-login-form>
+            <label>
+              Correo
+              <input type="email" name="email" required autocomplete="username" placeholder="tu@correo.cl" />
+            </label>
+            <label>
+              Contraseña
+              <input type="password" name="password" required autocomplete="current-password" minlength="6" />
+            </label>
+            <button class="btn btn-primary" type="submit">Entrar al panel</button>
+            <p class="form-error" data-login-error hidden></p>
+          </form>
+          <p class="auth-hint" data-config-hint hidden>
+            Falta configurar <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code>.
+          </p>
+          <a class="back-link" href="../">← Volver al sitio público</a>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="../src/admin/login.js"></script>
+  </body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Admin · Armonivet</title>
+    <title>Dashboard · Armonivet</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,38 +16,7 @@
   </head>
   <body>
     <div id="app">
-      <!-- Login -->
-      <section class="auth-screen" data-view="login">
-        <div class="auth-card">
-          <div class="auth-brand">
-            <img src="../logo-mark.svg" alt="" width="48" height="44" />
-            <div>
-              <p class="auth-kicker">Armonivet</p>
-              <h1>Panel de administración</h1>
-            </div>
-          </div>
-          <p class="auth-lead">Inicia sesión para ver métricas, citas, servicios y contenido de la web.</p>
-          <form data-login-form>
-            <label>
-              Correo
-              <input type="email" name="email" required autocomplete="username" placeholder="admin@armonivet.cl" />
-            </label>
-            <label>
-              Contraseña
-              <input type="password" name="password" required autocomplete="current-password" minlength="6" />
-            </label>
-            <button class="btn btn-primary" type="submit">Entrar</button>
-            <p class="form-error" data-login-error hidden></p>
-          </form>
-          <p class="auth-hint" data-config-hint hidden>
-            Falta configurar <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> en tu archivo
-            <code>.env</code>. Revisa <code>supabase/</code> para el SQL.
-          </p>
-          <a class="back-link" href="../">← Volver al sitio</a>
-        </div>
-      </section>
-
-      <!-- Shell admin -->
+      <p class="boot-status" data-boot-status>Cargando panel…</p>
       <div class="admin-shell" data-view="app" hidden>
         <aside class="sidebar">
           <div class="sidebar-brand">
@@ -58,11 +27,17 @@
             </div>
           </div>
           <nav class="sidebar-nav" aria-label="Secciones">
+            <p class="nav-group">Operación</p>
             <button type="button" class="nav-item is-active" data-nav="dashboard">Dashboard</button>
+            <button type="button" class="nav-item" data-nav="agenda">Agenda</button>
             <button type="button" class="nav-item" data-nav="leads">Leads</button>
             <button type="button" class="nav-item" data-nav="clients">Clientes</button>
             <button type="button" class="nav-item" data-nav="followups">Seguimiento</button>
             <button type="button" class="nav-item" data-nav="appointments">Citas</button>
+            <p class="nav-group">Genesis</p>
+            <button type="button" class="nav-item" data-nav="genesis">Chats</button>
+            <button type="button" class="nav-item" data-nav="intakes">Cuestionarios</button>
+            <p class="nav-group">Web</p>
             <button type="button" class="nav-item" data-nav="channels">Canales</button>
             <button type="button" class="nav-item" data-nav="services">Servicios</button>
             <button type="button" class="nav-item" data-nav="pricing">Precios</button>
@@ -81,7 +56,7 @@
             <button type="button" class="menu-btn" data-menu-toggle aria-label="Abrir menú">☰</button>
             <div>
               <h2 data-page-title>Dashboard</h2>
-              <p data-page-sub>Métricas del negocio en tiempo real</p>
+              <p data-page-sub>Resumen operativo del consultorio</p>
             </div>
             <div class="topbar-alerts" data-topbar-alerts></div>
             <label class="range-select">
@@ -98,15 +73,75 @@
           <main class="content">
             <!-- Dashboard -->
             <section class="panel is-active" data-panel="dashboard">
-              <div class="kpi-grid" data-kpis>
-                <article class="kpi"><span>Visitas únicas</span><strong data-kpi="visits_unique">—</strong></article>
-                <article class="kpi"><span>Leads nuevos</span><strong data-kpi="leads_new">—</strong></article>
-                <article class="kpi"><span>Clics agendar</span><strong data-kpi="click_agendar">—</strong></article>
-                <article class="kpi"><span>Citas activas</span><strong data-kpi="appointments_total">—</strong></article>
-                <article class="kpi"><span>Abonos pagados</span><strong data-kpi="paid">—</strong></article>
-                <article class="kpi"><span>Llegaron</span><strong data-kpi="arrived">—</strong></article>
-                <article class="kpi"><span>Ingresos</span><strong data-kpi="revenue">—</strong></article>
-                <article class="kpi"><span>Seguim. pendientes</span><strong data-kpi="followups_pending">—</strong></article>
+              <div class="dash-hero">
+                <div>
+                  <p class="dash-kicker" data-dash-date></p>
+                  <h3>Hoy en el consultorio</h3>
+                  <p data-dash-summary>Cargando resumen…</p>
+                </div>
+                <div class="quick-actions">
+                  <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
+                  <button type="button" class="btn btn-ghost" data-open-lead>Nuevo lead</button>
+                  <button type="button" class="btn btn-ghost" data-open-followup>Seguimiento</button>
+                </div>
+              </div>
+
+              <div class="dash-alerts" data-dash-alerts></div>
+
+              <div class="kpi-grid kpi-grid--wide">
+                <article class="kpi">
+                  <span>Visitas únicas</span>
+                  <strong data-kpi="visits_unique">—</strong>
+                  <em data-kpi-sub="visits_total"></em>
+                </article>
+                <article class="kpi">
+                  <span>Leads</span>
+                  <strong data-kpi="leads_total">—</strong>
+                  <em data-kpi-sub="leads_new"></em>
+                </article>
+                <article class="kpi">
+                  <span>Citas del periodo</span>
+                  <strong data-kpi="appointments_total">—</strong>
+                  <em data-kpi-sub="appointments_today"></em>
+                </article>
+                <article class="kpi">
+                  <span>Abonos</span>
+                  <strong data-kpi="paid">—</strong>
+                  <em data-kpi-sub="unpaid"></em>
+                </article>
+                <article class="kpi">
+                  <span>Llegaron</span>
+                  <strong data-kpi="arrived">—</strong>
+                  <em data-kpi-sub="no_show"></em>
+                </article>
+                <article class="kpi">
+                  <span>Ingresos</span>
+                  <strong data-kpi="revenue">—</strong>
+                  <em data-kpi-sub="ticket"></em>
+                </article>
+                <article class="kpi">
+                  <span>Controles pendientes</span>
+                  <strong data-kpi="followups_pending">—</strong>
+                  <em data-kpi-sub="controls_overdue"></em>
+                </article>
+                <article class="kpi">
+                  <span>Chats Genesis</span>
+                  <strong data-kpi="chats_active">—</strong>
+                  <em data-kpi-sub="intakes_done"></em>
+                </article>
+              </div>
+
+              <div class="rate-grid" data-conversion-rates></div>
+
+              <div class="charts-grid">
+                <article class="card">
+                  <h3>Agenda de hoy</h3>
+                  <div class="agenda-list" data-today-agenda></div>
+                </article>
+                <article class="card">
+                  <h3>Próximos 7 días</h3>
+                  <div class="agenda-list" data-week-agenda></div>
+                </article>
               </div>
 
               <div class="charts-grid">
@@ -115,12 +150,12 @@
                   <div class="chart-bars" data-chart-visits></div>
                 </article>
                 <article class="card">
-                  <h3>Tráfico por canal</h3>
-                  <div class="channel-list" data-chart-channels></div>
+                  <h3>Embudo de conversión</h3>
+                  <div class="funnel" data-funnel></div>
                 </article>
                 <article class="card">
-                  <h3>Embudo</h3>
-                  <div class="funnel" data-funnel></div>
+                  <h3>Tráfico por canal</h3>
+                  <div class="channel-list" data-chart-channels></div>
                 </article>
                 <article class="card">
                   <h3>Citas por estado</h3>
@@ -128,15 +163,85 @@
                 </article>
               </div>
 
-              <div class="dashboard-lists">
+              <article class="card pipeline-card">
+                <h3>Pipeline de clientes</h3>
+                <div class="pipeline" data-client-pipeline></div>
+              </article>
+
+              <div class="dashboard-lists dashboard-lists--4">
                 <article class="card">
-                  <h3>Leads recientes</h3>
+                  <header class="card-head">
+                    <h3>Leads recientes</h3>
+                    <button type="button" class="btn btn-ghost" data-goto="leads">Ver todos</button>
+                  </header>
                   <div class="mini-list" data-recent-leads></div>
                 </article>
                 <article class="card">
-                  <h3>Clientes requieren seguimiento</h3>
+                  <header class="card-head">
+                    <h3>Requieren seguimiento</h3>
+                    <button type="button" class="btn btn-ghost" data-goto="followups">Ver todos</button>
+                  </header>
                   <div class="mini-list" data-need-followup></div>
                 </article>
+                <article class="card">
+                  <header class="card-head">
+                    <h3>Sin abono</h3>
+                    <button type="button" class="btn btn-ghost" data-goto="appointments">Ver citas</button>
+                  </header>
+                  <div class="mini-list" data-unpaid-list></div>
+                </article>
+                <article class="card">
+                  <header class="card-head">
+                    <h3>Genesis y fichas</h3>
+                    <button type="button" class="btn btn-ghost" data-goto="genesis">Ver chats</button>
+                  </header>
+                  <div class="mini-list" data-genesis-preview></div>
+                </article>
+              </div>
+            </section>
+
+            <!-- Agenda -->
+            <section class="panel" data-panel="agenda">
+              <div class="panel-toolbar">
+                <p>Citas de hoy, esta semana y pendientes de abono o asistencia.</p>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
+                </div>
+              </div>
+              <div class="alert-cards" data-agenda-alerts></div>
+              <h3 class="subhead">Hoy</h3>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Cliente</th>
+                      <th>Mascota</th>
+                      <th>Servicio</th>
+                      <th>Estado</th>
+                      <th>Monto</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-agenda-today-body></tbody>
+                </table>
+              </div>
+              <h3 class="subhead">Próximos 14 días</h3>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Mascota</th>
+                      <th>Servicio</th>
+                      <th>Estado</th>
+                      <th>Abono</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-agenda-week-body></tbody>
+                </table>
               </div>
             </section>
 
@@ -178,7 +283,7 @@
             <!-- Clientes -->
             <section class="panel" data-panel="clients">
               <div class="panel-toolbar">
-                <p>Gestión de clientes: historial, seguimiento y datos completos del cuestionario.</p>
+                <p>Fichas clínicas: historial, seguimiento y datos del cuestionario pre-consulta.</p>
                 <div class="btn-row">
                   <input type="search" placeholder="Buscar por nombre, teléfono..." data-clients-search class="search-input" />
                   <select data-clients-filter class="filter-select">
@@ -266,6 +371,50 @@
                     </tr>
                   </thead>
                   <tbody data-appointments-body></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Genesis chats -->
+            <section class="panel" data-panel="genesis">
+              <div class="panel-toolbar">
+                <p>Conversaciones del chat Genesis en la web: activas, completadas o abandonadas.</p>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Visitante</th>
+                      <th>Estado</th>
+                      <th>Paso</th>
+                      <th>Mascota / motivo</th>
+                      <th>Actualizado</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-genesis-body></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Cuestionarios -->
+            <section class="panel" data-panel="intakes">
+              <div class="panel-toolbar">
+                <p>Fichas pre-consulta enviadas desde Genesis. La doctora las ve antes de la visita.</p>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Paciente</th>
+                      <th>Tutor / correo</th>
+                      <th>Motivo</th>
+                      <th>Completo</th>
+                      <th>Fecha</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-intakes-body></tbody>
                 </table>
               </div>
             </section>

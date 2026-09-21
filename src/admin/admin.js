@@ -1,17 +1,33 @@
 import { isSupabaseConfigured, requireSupabase, supabase } from "../lib/supabase.js";
+import { getSession, loginHref } from "./session.js";
 
 const titles = {
-  dashboard: ["Dashboard", "Métricas del negocio en tiempo real"],
+  dashboard: ["Dashboard", "Resumen operativo del consultorio"],
+  agenda: ["Agenda", "Hoy, esta semana y citas por confirmar"],
   leads: ["Leads", "Leads capturados desde Genesis y otros canales"],
   clients: ["Clientes", "Gestión de clientes y cuestionarios"],
   followups: ["Seguimiento", "Controles pendientes y recordatorios"],
   appointments: ["Citas", "Agenda, abonos y asistencia"],
+  genesis: ["Chats Genesis", "Conversaciones del widget en la web"],
+  intakes: ["Cuestionarios", "Fichas pre-consulta para la Dra. Bárbara"],
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
   pricing: ["Precios", "Zonas de domicilio y extras"],
   media: ["Imágenes", "Slots visuales del sitio"],
   settings: ["Ajustes", "Enlaces y datos del negocio"],
 };
+
+const CLIENT_STATUSES = [
+  "lead",
+  "contactado",
+  "agendado",
+  "abonado",
+  "atendido",
+  "en_seguimiento",
+  "control_pendiente",
+  "completado",
+  "perdido",
+];
 
 const state = {
   section: "dashboard",
@@ -38,69 +54,47 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function showView(name) {
-  $$("[data-view]").forEach((el) => {
-    el.hidden = el.dataset.view !== name;
-  });
+function goToLogin() {
+  window.location.replace(loginHref(window.location.href));
 }
 
-function setSection(section) {
+function setSection(section, { syncHash = true } = {}) {
+  if (!titles[section]) section = "dashboard";
   state.section = section;
+  document.querySelector(".admin-shell")?.setAttribute("data-section", section);
   $$("[data-nav]").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.nav === section));
   $$("[data-panel]").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === section));
   const [title, sub] = titles[section] || ["Admin", ""];
   $("[data-page-title]").textContent = title;
   $("[data-page-sub]").textContent = sub;
   document.querySelector(".admin-shell")?.classList.remove("is-nav-open");
+  if (syncHash && location.hash !== `#${section}`) {
+    history.replaceState(null, "", `#${section}`);
+  }
   loadSection(section);
 }
 
-async function ensureSession() {
-  if (!isSupabaseConfigured) {
-    $("[data-config-hint]").hidden = false;
-    showView("login");
-    return null;
-  }
-  const client = requireSupabase();
-  const { data } = await client.auth.getSession();
-  return data.session;
-}
-
 async function boot() {
-  const session = await ensureSession();
+  const status = $("[data-boot-status]");
+  if (!isSupabaseConfigured) {
+    goToLogin();
+    return;
+  }
+  const session = await getSession();
   if (!session) {
-    showView("login");
+    goToLogin();
     return;
   }
   $("[data-user-email]").textContent = session.user.email || "Admin";
-  showView("app");
-  setSection("dashboard");
+  $("[data-view='app']").hidden = false;
+  if (status) status.hidden = true;
+  const fromHash = location.hash.replace("#", "");
+  setSection(titles[fromHash] ? fromHash : "dashboard", { syncHash: true });
 }
-
-$("[data-login-form]")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = $("[data-login-error]");
-  errEl.hidden = true;
-  if (!isSupabaseConfigured) {
-    errEl.textContent = "Supabase no está configurado.";
-    errEl.hidden = false;
-    return;
-  }
-  const fd = new FormData(e.currentTarget);
-  const email = String(fd.get("email") || "").trim();
-  const password = String(fd.get("password") || "");
-  const { error } = await requireSupabase().auth.signInWithPassword({ email, password });
-  if (error) {
-    errEl.textContent = error.message;
-    errEl.hidden = false;
-    return;
-  }
-  await boot();
-});
 
 $("[data-logout]")?.addEventListener("click", async () => {
   if (supabase) await supabase.auth.signOut();
-  showView("login");
+  goToLogin();
 });
 
 $$("[data-nav]").forEach((btn) => {
@@ -118,10 +112,13 @@ $("[data-range]")?.addEventListener("change", (e) => {
 
 async function loadSection(section) {
   if (section === "dashboard") return loadDashboard();
+  if (section === "agenda") return loadAgenda();
   if (section === "leads") return loadLeads();
   if (section === "clients") return loadClients();
   if (section === "followups") return loadFollowups();
   if (section === "appointments") return loadAppointments();
+  if (section === "genesis") return loadGenesis();
+  if (section === "intakes") return loadIntakes();
   if (section === "channels") return loadChannels();
   if (section === "services") return loadServices();
   if (section === "pricing") return loadPricing();
@@ -129,7 +126,73 @@ async function loadSection(section) {
   if (section === "settings") return loadSettings();
 }
 
+window.addEventListener("hashchange", () => {
+  const section = location.hash.replace("#", "");
+  if (section && section !== state.section) setSection(section, { syncHash: false });
+});
+
+document.addEventListener("click", (e) => {
+  const goto = e.target.closest("[data-goto]");
+  if (!goto) return;
+  const section = goto.dataset.goto;
+  if (section && titles[section]) setSection(section);
+});
+
 /* -------------------- Dashboard -------------------- */
+function startOfDay(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDay(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+function pct(n, d) {
+  if (!d) return "—";
+  return `${Math.round((Number(n || 0) / Number(d)) * 100)}%`;
+}
+
+function isPaidAppt(a) {
+  return Boolean(a.deposit_paid) || ["abonada", "llegó", "completada"].includes(a.status);
+}
+
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const t = startOfDay();
+  return d >= t && d <= endOfDay();
+}
+
+function formatTime(iso) {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+}
+
+function formatDay(iso) {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("es-CL", { weekday: "short", day: "numeric", month: "short" }).format(new Date(iso));
+}
+
+function emptyMini(text) {
+  return `<p class="empty">${text}</p>`;
+}
+
+async function safeSelect(table, columns, build) {
+  try {
+    let query = requireSupabase().from(table).select(columns);
+    if (build) query = build(query);
+    const { data, error } = await query;
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
 async function loadDashboard() {
   const client = requireSupabase();
 
@@ -151,75 +214,319 @@ async function loadDashboard() {
     stats = await fallbackStats(client, state.days);
   }
 
+  const extras = await loadDashboardExtras();
+  const merged = { ...stats, ...extras.counts, recent_leads: v2Result?.recent_leads || extras.recentLeads };
+  merged.clients_need_followup = v2Result?.clients_need_followup || extras.needFollowup;
+
+  const dateEl = $("[data-dash-date]");
+  if (dateEl) {
+    dateEl.textContent = new Intl.DateTimeFormat("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(new Date());
+  }
+
+  const summaryEl = $("[data-dash-summary]");
+  if (summaryEl) {
+    summaryEl.textContent = `${extras.today.length} cita${extras.today.length === 1 ? "" : "s"} hoy · ${merged.leads_new || 0} leads nuevos · ${merged.followups_pending || 0} seguimientos pendientes`;
+  }
+
   const map = {
-    leads_new: stats.leads_new ?? 0,
-    leads_total: stats.leads_total ?? 0,
-    visits_unique: stats.visits_unique,
-    click_agendar: stats.click_agendar,
-    appointments_total: stats.appointments_total ?? stats.appointments ?? 0,
-    paid: stats.paid,
-    arrived: stats.arrived,
-    revenue: formatCLP(stats.revenue ?? stats.revenue_estimated ?? 0),
-    followups_pending: stats.followups_pending ?? 0,
+    visits_unique: merged.visits_unique ?? 0,
+    leads_total: merged.leads_total ?? extras.leads.length,
+    appointments_total: merged.appointments_total ?? merged.appointments ?? extras.appointments.length,
+    paid: merged.paid ?? extras.paidCount,
+    arrived: merged.arrived ?? extras.arrivedCount,
+    revenue: formatCLP(merged.revenue ?? merged.revenue_estimated ?? extras.revenue),
+    followups_pending: merged.followups_pending ?? extras.followupsPending,
+    chats_active: extras.chatsActive,
   };
   Object.entries(map).forEach(([k, v]) => {
     const el = $(`[data-kpi="${k}"]`);
     if (el) el.textContent = v ?? 0;
   });
 
-  renderVisitChart(stats.visits_by_day || []);
-  renderChannels(stats.by_channel || []);
-  renderFunnel(stats);
-  renderStatus(stats.appointments_by_status || []);
+  setText("[data-kpi-sub='visits_total']", `${merged.visits_total ?? 0} hits`);
+  setText("[data-kpi-sub='leads_new']", `${merged.leads_new ?? 0} nuevos`);
+  setText("[data-kpi-sub='appointments_today']", `${extras.today.length} hoy`);
+  setText("[data-kpi-sub='unpaid']", `${extras.unpaid.length} sin abono`);
+  setText("[data-kpi-sub='no_show']", `${extras.noShowCount} no asistió`);
+  setText("[data-kpi-sub='ticket']", extras.paidCount ? `ticket ${formatCLP(extras.revenue / extras.paidCount)}` : "sin ticket");
+  setText("[data-kpi-sub='controls_overdue']", `${merged.controls_overdue ?? extras.overdueFollowups} vencidos`);
+  setText("[data-kpi-sub='intakes_done']", `${extras.intakes.length} fichas`);
+
+  renderConversionRates(merged, extras);
+  renderVisitChart(merged.visits_by_day || []);
+  renderChannels(merged.by_channel || []);
+  renderFunnel(merged);
+  renderStatus(merged.appointments_by_status || extras.statusRows);
+  renderAgendaPreview("[data-today-agenda]", extras.today, "Sin citas para hoy");
+  renderAgendaPreview("[data-week-agenda]", extras.week, "Sin citas en los próximos 7 días");
+  renderPipeline(extras.clients);
+  renderDashAlerts(merged, extras);
 
   const recentLeadsEl = $("[data-recent-leads]");
   if (recentLeadsEl) {
-    const recentLeads = v2Result?.recent_leads || [];
-    if (!recentLeads.length) {
-      recentLeadsEl.innerHTML = `<p class="empty">Sin leads recientes</p>`;
-    } else {
-      recentLeadsEl.innerHTML = recentLeads
-        .map(
-          (l) => `<div class="mini-card">
+    const recentLeads = (merged.recent_leads || extras.recentLeads).slice(0, 8);
+    recentLeadsEl.innerHTML = recentLeads.length
+      ? recentLeads
+          .map(
+            (l) => `<button type="button" class="mini-card" data-goto="leads">
           <strong>${escapeHtml(l.name || "Sin nombre")}</strong>
-          <small>${escapeHtml(l.phone || l.email || "—")} · ${escapeHtml(l.channel_slug || "directo")}</small>
+          <small>${escapeHtml(l.phone || l.email || "—")} · ${escapeHtml(l.channel_slug || l.source || "directo")}</small>
           <span class="badge ${l.status || "nuevo"}">${escapeHtml(l.status || "nuevo")}</span>
-        </div>`
-        )
-        .join("");
-    }
+        </button>`
+          )
+          .join("")
+      : emptyMini("Sin leads recientes");
   }
 
   const needFollowupEl = $("[data-need-followup]");
   if (needFollowupEl) {
-    const needFollowup = v2Result?.clients_need_followup || [];
-    if (!needFollowup.length) {
-      needFollowupEl.innerHTML = `<p class="empty">Sin seguimientos pendientes</p>`;
-    } else {
-      needFollowupEl.innerHTML = needFollowup
-        .map(
-          (c) => `<div class="mini-card">
+    const needFollowup = (merged.clients_need_followup || extras.needFollowup).slice(0, 8);
+    needFollowupEl.innerHTML = needFollowup.length
+      ? needFollowup
+          .map(
+            (c) => `<button type="button" class="mini-card" data-goto="followups">
           <strong>${escapeHtml(c.name || c.pet_name || "Sin nombre")}</strong>
           <small>${escapeHtml(c.phone || "—")} · próximo: ${formatDate(c.next_followup_at)}</small>
-        </div>`
-        )
-        .join("");
-    }
+        </button>`
+          )
+          .join("")
+      : emptyMini("Sin seguimientos pendientes");
+  }
+
+  const unpaidEl = $("[data-unpaid-list]");
+  if (unpaidEl) {
+    unpaidEl.innerHTML = extras.unpaid.length
+      ? extras.unpaid
+          .slice(0, 8)
+          .map(
+            (a) => `<button type="button" class="mini-card" data-goto="appointments">
+          <strong>${escapeHtml(a.client_name || "Sin nombre")}</strong>
+          <small>${formatDay(a.scheduled_at)} · ${escapeHtml(a.service_title || "Consulta")} · ${formatCLP(a.amount)}</small>
+          <span class="badge ${a.status}">${escapeHtml(a.status)}</span>
+        </button>`
+          )
+          .join("")
+      : emptyMini("Todas las citas tienen abono");
+  }
+
+  const genesisEl = $("[data-genesis-preview]");
+  if (genesisEl) {
+    const chats = extras.chats.slice(0, 6);
+    genesisEl.innerHTML = chats.length
+      ? chats
+          .map((c) => {
+            const answers = c.answers || {};
+            return `<button type="button" class="mini-card" data-goto="genesis">
+          <strong>${escapeHtml(c.visitor_name || answers.tutor_name || "Visitante")}</strong>
+          <small>${escapeHtml(answers.pet_name || "—")} · ${escapeHtml(c.status || "activa")}</small>
+          <span class="badge ${c.status || "activa"}">${escapeHtml(c.status || "activa")}</span>
+        </button>`;
+          })
+          .join("")
+      : emptyMini("Sin chats recientes");
   }
 
   const alertsEl = $("[data-topbar-alerts]");
   if (alertsEl) {
     const alerts = [];
-    const overdueCount = stats.followups_overdue ?? 0;
-    const newLeadsCount = stats.leads_new ?? 0;
+    const overdueCount = merged.controls_overdue ?? extras.overdueFollowups;
+    const newLeadsCount = merged.leads_new ?? 0;
     if (overdueCount > 0) {
-      alerts.push(`<span class="topbar-alert topbar-alert--danger">${overdueCount} control${overdueCount > 1 ? "es" : ""} vencido${overdueCount > 1 ? "s" : ""}</span>`);
+      alerts.push(
+        `<button type="button" class="topbar-alert topbar-alert--danger" data-goto="followups">${overdueCount} control${overdueCount > 1 ? "es" : ""} vencido${overdueCount > 1 ? "s" : ""}</button>`
+      );
     }
     if (newLeadsCount > 0) {
-      alerts.push(`<span class="topbar-alert topbar-alert--info">${newLeadsCount} lead${newLeadsCount > 1 ? "s" : ""} nuevo${newLeadsCount > 1 ? "s" : ""}</span>`);
+      alerts.push(
+        `<button type="button" class="topbar-alert topbar-alert--info" data-goto="leads">${newLeadsCount} lead${newLeadsCount > 1 ? "s" : ""} nuevo${newLeadsCount > 1 ? "s" : ""}</button>`
+      );
+    }
+    if (extras.today.length) {
+      alerts.push(
+        `<button type="button" class="topbar-alert" data-goto="agenda">${extras.today.length} hoy</button>`
+      );
     }
     alertsEl.innerHTML = alerts.join("");
   }
+}
+
+function setText(sel, value) {
+  const el = $(sel);
+  if (el) el.textContent = value;
+}
+
+async function loadDashboardExtras() {
+  const since = new Date(Date.now() - state.days * 86400000).toISOString();
+  const weekEnd = new Date(startOfDay());
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const fortnight = new Date(startOfDay());
+  fortnight.setDate(fortnight.getDate() + 14);
+
+  const [appointments, leads, clients, followups, chats, intakes] = await Promise.all([
+    safeSelect("appointments", "*", (q) => q.order("scheduled_at", { ascending: true }).limit(250)),
+    safeSelect("leads", "*", (q) => q.order("created_at", { ascending: false }).limit(80)),
+    safeSelect("clients", "id,name,phone,pet_name,status,next_followup_at,last_contact_at", (q) =>
+      q.order("updated_at", { ascending: false }).limit(200)
+    ),
+    safeSelect("followups", "id,client_id,type,content,scheduled_at,completed,clients(name,pet_name,phone)", (q) =>
+      q.eq("completed", false).order("scheduled_at", { ascending: true }).limit(80)
+    ),
+    safeSelect("chat_conversations", "*", (q) => q.order("updated_at", { ascending: false }).limit(40)),
+    safeSelect("intake_forms", "*", (q) => q.order("created_at", { ascending: false }).limit(40)),
+  ]);
+
+  const periodAppts = appointments.filter((a) => !a.created_at || a.created_at >= since || (a.scheduled_at && a.scheduled_at >= since));
+  const today = appointments
+    .filter((a) => isToday(a.scheduled_at) && a.status !== "cancelada")
+    .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
+  const week = appointments
+    .filter((a) => {
+      if (!a.scheduled_at || a.status === "cancelada") return false;
+      const d = new Date(a.scheduled_at);
+      return d > endOfDay() && d <= weekEnd;
+    })
+    .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
+  const unpaid = appointments.filter(
+    (a) => a.status !== "cancelada" && a.status !== "completada" && !isPaidAppt(a) && a.scheduled_at && new Date(a.scheduled_at) >= startOfDay()
+  );
+  const paidCount = periodAppts.filter(isPaidAppt).length;
+  const arrivedCount = periodAppts.filter((a) => ["llegó", "completada"].includes(a.status)).length;
+  const noShowCount = periodAppts.filter((a) => a.status === "no_asistió").length;
+  const revenue = periodAppts.filter(isPaidAppt).reduce((sum, a) => sum + Number(a.amount || 0), 0);
+  const statusMap = {};
+  periodAppts.forEach((row) => {
+    statusMap[row.status] = (statusMap[row.status] || 0) + 1;
+  });
+  const now = new Date();
+  const overdueFollowups = followups.filter((f) => f.scheduled_at && new Date(f.scheduled_at) < now).length;
+  const needFollowup = clients.filter(
+    (c) =>
+      ["en_seguimiento", "control_pendiente", "atendido"].includes(c.status) &&
+      (!c.next_followup_at || new Date(c.next_followup_at) <= new Date(Date.now() + 3 * 86400000))
+  );
+
+  return {
+    appointments,
+    leads,
+    clients,
+    followups,
+    chats,
+    intakes,
+    today,
+    week,
+    unpaid,
+    paidCount,
+    arrivedCount,
+    noShowCount,
+    revenue,
+    followupsPending: followups.length,
+    overdueFollowups,
+    chatsActive: chats.filter((c) => c.status === "activa").length,
+    recentLeads: leads.slice(0, 10),
+    needFollowup,
+    statusRows: Object.entries(statusMap).map(([status, total]) => ({ status, total })),
+    fortnight,
+    counts: {
+      leads_total: leads.filter((l) => !l.created_at || l.created_at >= since).length,
+      leads_new: leads.filter((l) => l.status === "nuevo").length,
+    },
+  };
+}
+
+function renderConversionRates(stats, extras) {
+  const root = $("[data-conversion-rates]");
+  if (!root) return;
+  const visits = stats.visits_unique || 0;
+  const leads = stats.leads_total || extras.counts?.leads_total || 0;
+  const clicks = stats.click_agendar || 0;
+  const appts = stats.appointments_total || stats.appointments || 0;
+  const paid = stats.paid || extras.paidCount || 0;
+  const arrived = stats.arrived || extras.arrivedCount || 0;
+  const rates = [
+    ["Visita → lead", pct(leads, visits), `${leads}/${visits || "—"}`],
+    ["Lead → cita", pct(appts, leads), `${appts}/${leads || "—"}`],
+    ["Clic agendar", pct(clicks, visits), `${clicks} clics`],
+    ["Cita → abono", pct(paid, appts), `${paid} abonaron`],
+    ["Cita → llegó", pct(arrived, appts), `${arrived} asistieron`],
+    ["No show", pct(extras.noShowCount, appts), `${extras.noShowCount} ausencias`],
+  ];
+  root.innerHTML = rates
+    .map(
+      ([label, value, sub]) => `<article class="rate-card">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        <em>${escapeHtml(sub)}</em>
+      </article>`
+    )
+    .join("");
+}
+
+function renderAgendaPreview(sel, rows, emptyText) {
+  const root = $(sel);
+  if (!root) return;
+  if (!rows.length) {
+    root.innerHTML = emptyMini(emptyText);
+    return;
+  }
+  root.innerHTML = rows
+    .slice(0, 6)
+    .map(
+      (a) => `<button type="button" class="agenda-item" data-goto="agenda">
+        <time>${escapeHtml(isToday(a.scheduled_at) ? formatTime(a.scheduled_at) : formatDay(a.scheduled_at))}</time>
+        <div>
+          <strong>${escapeHtml(a.client_name || "Sin nombre")}</strong>
+          <small>${escapeHtml(a.pet_name || "—")} · ${escapeHtml(a.service_title || "Consulta")}</small>
+        </div>
+        <span class="badge ${a.status}">${escapeHtml(a.status)}</span>
+      </button>`
+    )
+    .join("");
+}
+
+function renderPipeline(clients) {
+  const root = $("[data-client-pipeline]");
+  if (!root) return;
+  const counts = Object.fromEntries(CLIENT_STATUSES.map((s) => [s, 0]));
+  clients.forEach((c) => {
+    if (counts[c.status] != null) counts[c.status] += 1;
+  });
+  root.innerHTML = CLIENT_STATUSES.map(
+    (status) => `<button type="button" class="pipeline-col" data-goto="clients">
+      <strong>${counts[status] || 0}</strong>
+      <span>${escapeHtml(status.replaceAll("_", " "))}</span>
+    </button>`
+  ).join("");
+}
+
+function renderDashAlerts(stats, extras) {
+  const root = $("[data-dash-alerts]");
+  if (!root) return;
+  const cards = [];
+  if (extras.overdueFollowups > 0) {
+    cards.push(
+      `<button type="button" class="alert-card" data-goto="followups"><h4>${extras.overdueFollowups} controles vencidos</h4><p>Hay clientes con seguimiento atrasado.</p></button>`
+    );
+  }
+  if (extras.unpaid.length) {
+    cards.push(
+      `<button type="button" class="alert-card warning" data-goto="appointments"><h4>${extras.unpaid.length} citas sin abono</h4><p>Confirma el depósito antes de la visita.</p></button>`
+    );
+  }
+  if ((stats.leads_new || extras.counts.leads_new) > 0) {
+    cards.push(
+      `<button type="button" class="alert-card info" data-goto="leads"><h4>${stats.leads_new || extras.counts.leads_new} leads nuevos</h4><p>Contactar desde Genesis o WhatsApp.</p></button>`
+    );
+  }
+  if (extras.chatsActive > 0) {
+    cards.push(
+      `<button type="button" class="alert-card info" data-goto="genesis"><h4>${extras.chatsActive} chats activos</h4><p>Hay conversaciones Genesis sin terminar.</p></button>`
+    );
+  }
+  root.innerHTML = cards.join("");
 }
 
 async function fallbackStats(client, days) {
@@ -374,7 +681,211 @@ async function loadAppointments() {
   });
 }
 
-$("[data-open-appointment]")?.addEventListener("click", () => openAppointmentModal(null));
+$$("[data-open-appointment]").forEach((btn) => {
+  btn.addEventListener("click", () => openAppointmentModal(null));
+});
+
+function appointmentRowActions(a) {
+  return `<td class="entity-actions">
+        <button class="btn btn-ghost" data-edit-appointment="${a.id}">Editar</button>
+        <button class="btn btn-danger" data-del-appointment="${a.id}">Borrar</button>
+      </td>`;
+}
+
+function bindAppointmentRowActions(root, data) {
+  root.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
+    btn.addEventListener("click", () => openAppointmentModal(data.find((x) => x.id === btn.dataset.editAppointment)));
+  });
+  root.querySelectorAll("[data-del-appointment]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar esta cita?")) return;
+      await requireSupabase().from("appointments").delete().eq("id", btn.dataset.delAppointment);
+      if (state.section === "agenda") loadAgenda();
+      else loadAppointments();
+    });
+  });
+}
+
+async function loadAgenda() {
+  const rows = await safeSelect("appointments", "*", (q) => q.order("scheduled_at", { ascending: true }).limit(250));
+  const today = rows.filter((a) => isToday(a.scheduled_at) && a.status !== "cancelada");
+  const until = new Date(startOfDay());
+  until.setDate(until.getDate() + 14);
+  const upcoming = rows.filter((a) => {
+    if (!a.scheduled_at || a.status === "cancelada") return false;
+    const d = new Date(a.scheduled_at);
+    return d > endOfDay() && d <= until;
+  });
+  const unpaid = rows.filter((a) => a.status !== "cancelada" && !isPaidAppt(a) && a.scheduled_at && new Date(a.scheduled_at) >= startOfDay());
+
+  const alerts = $("[data-agenda-alerts]");
+  if (alerts) {
+    const cards = [];
+    if (today.length) cards.push(`<div class="alert-card info"><h4>${today.length} citas hoy</h4><p>Revisa abonos y horarios.</p></div>`);
+    if (unpaid.length) cards.push(`<div class="alert-card warning"><h4>${unpaid.length} sin abono</h4><p>Pendientes de depósito.</p></div>`);
+    alerts.innerHTML = cards.join("");
+  }
+
+  const todayBody = $("[data-agenda-today-body]");
+  if (todayBody) {
+    todayBody.innerHTML = today.length
+      ? today
+          .map(
+            (a) => `<tr>
+        <td>${formatTime(a.scheduled_at)}</td>
+        <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small></td>
+        <td>${escapeHtml(a.pet_name || "—")}</td>
+        <td>${escapeHtml(a.service_title || "Consulta")}</td>
+        <td><span class="badge ${a.status}">${escapeHtml(a.status)}</span></td>
+        <td>${formatCLP(a.amount)}</td>
+        ${appointmentRowActions(a)}
+      </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="7" class="empty">No hay citas para hoy.</td></tr>`;
+    bindAppointmentRowActions(todayBody, rows);
+  }
+
+  const weekBody = $("[data-agenda-week-body]");
+  if (weekBody) {
+    weekBody.innerHTML = upcoming.length
+      ? upcoming
+          .map(
+            (a) => `<tr>
+        <td>${formatDay(a.scheduled_at)} ${formatTime(a.scheduled_at)}</td>
+        <td><strong>${escapeHtml(a.client_name)}</strong></td>
+        <td>${escapeHtml(a.pet_name || "—")}</td>
+        <td>${escapeHtml(a.service_title || "Consulta")}</td>
+        <td><span class="badge ${a.status}">${escapeHtml(a.status)}</span></td>
+        <td>${isPaidAppt(a) ? "Pagado" : "Pendiente"}</td>
+        ${appointmentRowActions(a)}
+      </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="7" class="empty">Sin citas en los próximos 14 días.</td></tr>`;
+    bindAppointmentRowActions(weekBody, rows);
+  }
+}
+
+async function loadGenesis() {
+  const rows = await safeSelect("chat_conversations", "*", (q) => q.order("updated_at", { ascending: false }).limit(100));
+  const body = $("[data-genesis-body]");
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="6" class="empty">Aún no hay conversaciones Genesis.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows
+    .map((c) => {
+      const answers = c.answers || {};
+      return `<tr>
+        <td><strong>${escapeHtml(c.visitor_name || answers.tutor_name || "Visitante")}</strong><br><small>${escapeHtml(answers.phone || answers.email || c.session_id || "")}</small></td>
+        <td><span class="badge ${c.status || "activa"}">${escapeHtml(c.status || "activa")}</span></td>
+        <td>${Number(c.current_step || 0) + 1}</td>
+        <td>${escapeHtml(answers.pet_name || answers.pet_type || "—")}<br><small>${escapeHtml((answers.consultation_reason || "").slice(0, 80))}</small></td>
+        <td>${formatDate(c.updated_at || c.created_at)}</td>
+        <td class="entity-actions"><button class="btn btn-ghost" data-view-chat="${c.id}">Ver ficha</button></td>
+      </tr>`;
+    })
+    .join("");
+  body.querySelectorAll("[data-view-chat]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = rows.find((x) => x.id === btn.dataset.viewChat);
+      if (row) openGenesisModal(row);
+    });
+  });
+}
+
+function openGenesisModal(row) {
+  const answers = row.answers || {};
+  const fields = Object.entries({
+    Estado: row.status,
+    Visitante: row.visitor_name || answers.tutor_name,
+    Email: answers.email,
+    Teléfono: answers.phone,
+    Dirección: answers.address,
+    Mascota: answers.pet_name,
+    Tipo: answers.pet_type,
+    Edad: answers.pet_age,
+    Motivo: answers.consultation_reason,
+    Paso: row.current_step,
+    Actualizado: formatDate(row.updated_at),
+  });
+  openModal({
+    title: "Chat Genesis",
+    fields: `<div class="detail-view">${fields
+      .map(
+        ([label, value]) =>
+          `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value ?? "—")}</span></div>`
+      )
+      .join("")}</div>`,
+    onSave: async () => {},
+  });
+}
+
+async function loadIntakes() {
+  const rows = await safeSelect("intake_forms", "*", (q) => q.order("created_at", { ascending: false }).limit(100));
+  const body = $("[data-intakes-body]");
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="6" class="empty">No hay cuestionarios pre-consulta todavía.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows
+    .map(
+      (f) => `<tr>
+        <td><strong>${escapeHtml(f.patient_name || f.raw_answers?.pet_name || "—")}</strong></td>
+        <td>${escapeHtml(f.email || f.raw_answers?.tutor_name || "—")}</td>
+        <td>${escapeHtml((f.consultation_reason || "").slice(0, 90) || "—")}</td>
+        <td><span class="badge ${f.completed ? "completada" : "pendiente"}">${f.completed ? "completo" : "incompleto"}</span></td>
+        <td>${formatDate(f.created_at)}</td>
+        <td class="entity-actions"><button class="btn btn-ghost" data-view-intake="${f.id}">Ver ficha</button></td>
+      </tr>`
+    )
+    .join("");
+  body.querySelectorAll("[data-view-intake]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = rows.find((x) => x.id === btn.dataset.viewIntake);
+      if (row) openIntakeModal(row);
+    });
+  });
+}
+
+function openIntakeModal(row) {
+  const raw = row.raw_answers || {};
+  const fields = [
+    ["Paciente", row.patient_name],
+    ["Correo", row.email],
+    ["Dirección", row.address],
+    ["Tutor", row.tutor_info || raw.tutor_name],
+    ["Datos del paciente", row.patient_data],
+    ["Para qué la tiene", row.pet_purpose],
+    ["Esterilizado", row.is_neutered],
+    ["Última visita vet", row.last_vet_visit],
+    ["Vacunas", row.vaccines_status],
+    ["Diagnósticos", row.diagnosed_conditions],
+    ["Hogar", row.household_members],
+    ["Historia", row.pet_history],
+    ["Motivo", row.consultation_reason],
+    ["Cuándo ocurre", row.behavior_timing],
+    ["Etólogo previo", row.previous_ethologist],
+    ["Órdenes conocidas", row.known_commands],
+    ["Qué ya intentaron", row.attempted_solutions],
+    ["Cambios de vida", row.life_changes],
+    ["Vivienda", row.housing_info],
+    ["Adopción pandemia", row.pandemic_adoption],
+  ];
+  openModal({
+    title: `Cuestionario · ${row.patient_name || "Paciente"}`,
+    fields: `<div class="detail-view">${fields
+      .map(
+        ([label, value]) =>
+          `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value || "—")}</span></div>`
+      )
+      .join("")}</div>`,
+    onSave: async () => {},
+  });
+}
 
 function openAppointmentModal(row) {
   openModal({
@@ -513,7 +1024,8 @@ async function loadLeads() {
 
 $("[data-leads-filter]")?.addEventListener("change", () => loadLeads());
 
-$("[data-open-lead]")?.addEventListener("click", () => {
+$$("[data-open-lead]").forEach((btn) => {
+  btn.addEventListener("click", () => {
   openModal({
     title: "Nuevo lead",
     fields: `
@@ -532,8 +1044,8 @@ $("[data-open-lead]")?.addEventListener("click", () => {
         <select name="status">
           <option value="nuevo" selected>nuevo</option>
           <option value="contactado">contactado</option>
-          <option value="en_proceso">en_proceso</option>
-          <option value="convertido">convertido</option>
+          <option value="calificado">calificado</option>
+          <option value="agendado">agendado</option>
           <option value="descartado">descartado</option>
         </select>
       </label>
@@ -549,11 +1061,13 @@ $("[data-open-lead]")?.addEventListener("click", () => {
         consultation_reason: String(fd.get("consultation_reason") || "").trim() || null,
         channel_slug: String(fd.get("channel_slug") || "").trim() || null,
         status: String(fd.get("status") || "nuevo"),
-        notes: String(fd.get("notes") || "").trim() || null,
+        source: "admin",
+        metadata: { notes: String(fd.get("notes") || "").trim() || null },
       };
       await requireSupabase().from("leads").insert(payload);
       await loadLeads();
     },
+  });
   });
 });
 
@@ -682,8 +1196,8 @@ async function loadClients() {
         fields: `
           <label>Estado
             <select name="status">
-              ${["activo", "inactivo", "pendiente", "completado"]
-                .map((s) => `<option value="${s}" ${client.status === s ? "selected" : ""}>${s}</option>`)
+              ${CLIENT_STATUSES
+                .map((s) => `<option value="${s}" ${client.status === s ? "selected" : ""}>${s.replaceAll("_", " ")}</option>`)
                 .join("")}
             </select>
           </label>
@@ -741,10 +1255,7 @@ $("[data-open-client]")?.addEventListener("click", () => {
       <label>Cuestionario / notas <textarea name="questionnaire_notes" rows="3"></textarea></label>
       <label>Estado
         <select name="status">
-          <option value="activo" selected>activo</option>
-          <option value="inactivo">inactivo</option>
-          <option value="pendiente">pendiente</option>
-          <option value="completado">completado</option>
+          ${CLIENT_STATUSES.map((s) => `<option value="${s}" ${s === "lead" ? "selected" : ""}>${s.replaceAll("_", " ")}</option>`).join("")}
         </select>
       </label>
     `,
@@ -755,14 +1266,15 @@ $("[data-open-client]")?.addEventListener("click", () => {
         email: String(fd.get("email") || "").trim() || null,
         phone: String(fd.get("phone") || "").trim() || null,
         pet_name: String(fd.get("pet_name") || "").trim() || null,
-        pet_type: String(fd.get("pet_type") || "").trim() || null,
+        pet_type: ["perro", "gato", "otro"].includes(String(fd.get("pet_type") || "").trim().toLowerCase())
+          ? String(fd.get("pet_type") || "").trim().toLowerCase()
+          : null,
         pet_breed: String(fd.get("pet_breed") || "").trim() || null,
         pet_age: String(fd.get("pet_age") || "").trim() || null,
-        pet_weight: fd.get("pet_weight") ? Number(fd.get("pet_weight")) : null,
+        pet_weight: String(fd.get("pet_weight") || "").trim() || null,
         address: String(fd.get("address") || "").trim() || null,
-        comuna: String(fd.get("comuna") || "").trim() || null,
-        questionnaire_notes: String(fd.get("questionnaire_notes") || "").trim() || null,
-        status: String(fd.get("status") || "activo"),
+        notes: String(fd.get("questionnaire_notes") || "").trim() || null,
+        status: String(fd.get("status") || "lead"),
       };
       await requireSupabase().from("clients").insert(payload);
       await loadClients();
@@ -872,12 +1384,12 @@ async function loadFollowups() {
       const petName = f.clients?.pet_name || "";
       const isOverdue = !f.completed && f.scheduled_at && new Date(f.scheduled_at) < new Date();
       return `<tr class="${isOverdue ? "row-overdue" : ""}">
-      <td><strong>${escapeHtml(clientName)}</strong>${petName ? "<br><small>" + escapeHtml(petName) + "</small>" : ""}</td>
+      <td><strong>${escapeHtml(clientName)}</strong><br><small>${escapeHtml(f.clients?.phone || "")}</small></td>
+      <td>${escapeHtml(petName || "—")}</td>
       <td><span class="badge ${f.type || "general"}">${escapeHtml(f.type || "general")}</span></td>
       <td>${escapeHtml((f.content || "").slice(0, 80))}${(f.content || "").length > 80 ? "…" : ""}</td>
       <td>${formatDate(f.scheduled_at)}</td>
       <td><span class="badge ${f.completed ? "completada" : isOverdue ? "vencido" : "pendiente"}">${f.completed ? "completado" : isOverdue ? "vencido" : "pendiente"}</span></td>
-      <td>${escapeHtml(f.clients?.phone || "—")}</td>
       <td class="entity-actions">
         ${!f.completed ? `<button class="btn btn-ghost" data-complete-followup="${f.id}">Completar</button>` : ""}
         <button class="btn btn-ghost" data-edit-followup="${f.id}">Editar</button>
@@ -951,7 +1463,9 @@ async function loadFollowups() {
 
 $("[data-followups-filter]")?.addEventListener("change", () => loadFollowups());
 
-$("[data-open-followup]")?.addEventListener("click", () => openFollowupModal(null, null));
+$$("[data-open-followup]").forEach((btn) => {
+  btn.addEventListener("click", () => openFollowupModal(null, null));
+});
 
 async function openFollowupModal(row, clientId) {
   let clientOptions = "";
@@ -980,7 +1494,7 @@ async function openFollowupModal(row, clientId) {
       </label>
       <label>Tipo
         <select name="type">
-          ${["control", "vacuna", "recordatorio", "seguimiento", "general"]
+          ${["nota", "llamada", "whatsapp", "email", "control", "recordatorio"]
             .map((t) => `<option value="${t}" ${row?.type === t ? "selected" : ""}>${t}</option>`)
             .join("")}
         </select>
@@ -992,7 +1506,7 @@ async function openFollowupModal(row, clientId) {
     onSave: async (fd) => {
       const payload = {
         client_id: String(fd.get("client_id") || "").trim(),
-        type: String(fd.get("type") || "general"),
+        type: String(fd.get("type") || "nota"),
         content: String(fd.get("content") || "").trim(),
         scheduled_at: fd.get("scheduled_at") ? new Date(String(fd.get("scheduled_at"))).toISOString() : null,
         completed: fd.get("completed") === "on",
@@ -1464,7 +1978,7 @@ function toLocalInput(iso) {
 if (supabase) {
   supabase.auth.onAuthStateChange((_event, session) => {
     if (!session && $("[data-view='app']") && !$("[data-view='app']").hidden) {
-      showView("login");
+      goToLogin();
     }
   });
 }
