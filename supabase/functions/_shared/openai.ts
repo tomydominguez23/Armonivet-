@@ -201,7 +201,18 @@ export async function runOpenAI(params: {
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || `OpenAI ${res.status}`);
+  if (!res.ok) {
+    const msg = String(data.error?.message || data.error?.code || `OpenAI ${res.status}`);
+    if (res.status === 429 || /insufficient_quota|no credits remaining|exceeded your current quota/i.test(msg)) {
+      throw new Error(
+        "OpenAI no tiene créditos. Cargá saldo en https://platform.openai.com/settings/organization/billing y volvé a simular.",
+      );
+    }
+    if (/invalid api key|incorrect api key/i.test(msg)) {
+      throw new Error("OPENAI_API_KEY inválida. Revisala en Supabase → Edge Functions → Secrets.");
+    }
+    throw new Error(msg);
+  }
   return data;
 }
 

@@ -58,6 +58,20 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function edgeErrorMessage(error, data, fallback) {
+  const raw = String(data?.error || data?.message || error?.message || fallback || "Error");
+  if (/no credits remaining|insufficient_quota|exceeded your current quota/i.test(raw)) {
+    return "OpenAI no tiene créditos. Cargá saldo en platform.openai.com → Billing y volvé a simular. No hace falta redesplegar las funciones.";
+  }
+  if (/invalid api key|incorrect api key/i.test(raw)) {
+    return "La OPENAI_API_KEY de Supabase no es válida. Revisala en Project Settings → Edge Functions → Secrets.";
+  }
+  if (/Failed to send|not found|404/i.test(raw)) {
+    return "La función no está desplegada. En GitHub: Actions → Deploy Edge Functions → Run workflow.";
+  }
+  return raw;
+}
+
 function goToLogin() {
   window.location.replace(loginHref(window.location.href));
 }
@@ -850,11 +864,11 @@ async function openWaThread(id) {
     e.preventDefault();
     const content = String(new FormData(e.currentTarget).get("content") || "").trim();
     if (!content) return;
-    const { error } = await requireSupabase().functions.invoke("whatsapp-send", {
+    const { data, error } = await requireSupabase().functions.invoke("whatsapp-send", {
       body: { conversation_id: id, content },
     });
     if (error) {
-      alert(error.message || "No se pudo enviar. Revisá que la función whatsapp-send esté desplegada.");
+      alert(edgeErrorMessage(error, data, "No se pudo enviar. Revisá que whatsapp-send esté desplegada."));
       return;
     }
     await openWaThread(id);
@@ -894,10 +908,9 @@ $("[data-wa-simulate]")?.addEventListener("click", () => {
         },
       });
       if (error) {
-        const hint = /Failed to send|not found|404/i.test(error.message || "")
-          ? "La función genesis-simulate no está desplegada. En GitHub: Actions → Deploy Edge Functions → Run workflow (secret SUPABASE_ACCESS_TOKEN)."
-          : error.message || "No se pudo simular. Revisá OPENAI_API_KEY en Supabase → Edge Functions → Secrets.";
-        throw new Error(hint);
+        throw new Error(
+          edgeErrorMessage(error, data, "No se pudo simular. Revisá OPENAI_API_KEY en Supabase → Edge Functions → Secrets."),
+        );
       }
       state.waConversationId = data?.conversation_id || state.waConversationId;
       await loadWhatsApp();
