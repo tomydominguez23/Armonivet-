@@ -1,0 +1,11 @@
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.genesis-cron]
+verify_jwt = false
+
+[functions.whatsapp-send]
+verify_jwt = true
+
+[functions.genesis-simulate]
+verify_jwt = true

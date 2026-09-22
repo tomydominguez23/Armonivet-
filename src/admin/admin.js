@@ -8,7 +8,9 @@ const titles = {
   clients: ["Clientes", "Gestión de clientes y cuestionarios"],
   followups: ["Seguimiento", "Controles pendientes y recordatorios"],
   appointments: ["Citas", "Agenda, abonos y asistencia"],
-  genesis: ["Chats Genesis", "Conversaciones del widget en la web"],
+  genesis: ["Chats web", "Conversaciones del widget Genesis en la web"],
+  whatsapp: ["WhatsApp", "Bandeja de Génesis y toma humana"],
+  genesis_config: ["Génesis IA", "Prompt, modelo, pagos y horarios del agente"],
   intakes: ["Cuestionarios", "Fichas pre-consulta para la Dra. Bárbara"],
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
@@ -119,8 +121,10 @@ async function loadSection(section) {
   if (section === "clients") return loadClients();
   if (section === "followups") return loadFollowups();
   if (section === "appointments") return loadAppointments();
+  if (section === "whatsapp") return loadWhatsApp();
   if (section === "genesis") return loadGenesis();
   if (section === "intakes") return loadIntakes();
+  if (section === "genesis_config") return loadGenesisConfig();
   if (section === "channels") return loadChannels();
   if (section === "services") return loadServices();
   if (section === "pricing") return loadPricing();
@@ -768,6 +772,178 @@ async function loadAgenda() {
     bindAppointmentRowActions(weekBody, rows);
   }
 }
+
+async function loadWhatsApp() {
+  const listEl = $("[data-wa-list]");
+  if (!listEl) return;
+  const rows = await safeSelect("wa_conversations", "*", (q) => q.order("last_message_at", { ascending: false }).limit(80));
+  state.waConversations = rows;
+  if (!rows.length) {
+    listEl.innerHTML = `<p class="empty">Aún no hay chats de WhatsApp. Usá “Simular mensaje” o conectá el webhook.</p>`;
+  } else {
+    listEl.innerHTML = rows
+      .map((c) => {
+        const active = state.waConversationId === c.id ? "is-active" : "";
+        const who = c.assigned_to === "humano" ? "Humano" : "Génesis";
+        return `<button type="button" class="wa-item ${active}" data-open-wa="${c.id}">
+          <strong>${escapeHtml(c.wa_name || c.wa_phone)}</strong>
+          <small>${escapeHtml(c.pipeline || "nuevo")} · ${who}${c.unread_count ? ` · ${c.unread_count} nuevo` : ""}</small>
+        </button>`;
+      })
+      .join("");
+    listEl.querySelectorAll("[data-open-wa]").forEach((btn) => {
+      btn.addEventListener("click", () => openWaThread(btn.dataset.openWa));
+    });
+  }
+  if (state.waConversationId) await openWaThread(state.waConversationId);
+  subscribeWaRealtime();
+}
+
+async function openWaThread(id) {
+  state.waConversationId = id;
+  const conv = (state.waConversations || []).find((c) => c.id === id);
+  const thread = $("[data-wa-thread]");
+  if (!thread) return;
+  await requireSupabase().from("wa_conversations").update({ unread_count: 0 }).eq("id", id);
+  const messages = await safeSelect("wa_messages", "*", (q) => q.eq("conversation_id", id).order("created_at", { ascending: true }).limit(200));
+  const paused = conv?.assigned_to === "humano";
+  thread.innerHTML = `
+    <header class="wa-thread-head">
+      <div>
+        <strong>${escapeHtml(conv?.wa_name || conv?.wa_phone || "Chat")}</strong>
+        <small>${escapeHtml(conv?.wa_phone || "")} · ${escapeHtml(conv?.pipeline || "")}</small>
+      </div>
+      <div class="btn-row">
+        ${paused
+          ? `<button type="button" class="btn btn-primary" data-wa-resume>Devolver a Génesis</button>`
+          : `<button type="button" class="btn btn-ghost" data-wa-pause>Tomar conversación</button>`}
+      </div>
+    </header>
+    <div class="wa-bubbles" data-wa-bubbles>
+      ${messages
+        .map(
+          (m) => `<div class="wa-bubble wa-bubble--${m.direction}"><small>${escapeHtml(m.author)}</small><p>${escapeHtml(m.content || "")}</p></div>`
+        )
+        .join("") || `<p class="empty">Sin mensajes</p>`}
+    </div>
+    <form class="wa-composer" data-wa-composer>
+      <input name="content" required placeholder="${paused ? "Escribí como Armonivet…" : "Génesis está activa. Tomá el chat para escribir."}" ${paused ? "" : "disabled"} />
+      <button class="btn btn-primary" type="submit" ${paused ? "" : "disabled"}>Enviar</button>
+    </form>`;
+  const bubbles = $("[data-wa-bubbles]");
+  if (bubbles) bubbles.scrollTop = bubbles.scrollHeight;
+  $("[data-wa-pause]")?.addEventListener("click", async () => {
+    await requireSupabase()
+      .from("wa_conversations")
+      .update({ assigned_to: "humano", status: "pausada_humano", pipeline: "derivado_humano" })
+      .eq("id", id);
+    await loadWhatsApp();
+  });
+  $("[data-wa-resume]")?.addEventListener("click", async () => {
+    await requireSupabase()
+      .from("wa_conversations")
+      .update({ assigned_to: "genesis", status: "abierta" })
+      .eq("id", id);
+    await loadWhatsApp();
+  });
+  $("[data-wa-composer]")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const content = String(new FormData(e.currentTarget).get("content") || "").trim();
+    if (!content) return;
+    const { error } = await requireSupabase().functions.invoke("whatsapp-send", {
+      body: { conversation_id: id, content },
+    });
+    if (error) {
+      alert(error.message || "No se pudo enviar. Revisá que la función whatsapp-send esté desplegada.");
+      return;
+    }
+    await openWaThread(id);
+  });
+  $$("[data-open-wa]").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.openWa === id));
+}
+
+function subscribeWaRealtime() {
+  if (!supabase || state.waChannel) return;
+  state.waChannel = supabase
+    .channel("wa-inbox")
+    .on("postgres_changes", { event: "*", schema: "public", table: "wa_messages" }, () => {
+      if (state.section === "whatsapp") loadWhatsApp();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "wa_conversations" }, () => {
+      if (state.section === "whatsapp") loadWhatsApp();
+    })
+    .subscribe();
+}
+
+$("[data-wa-refresh]")?.addEventListener("click", () => loadWhatsApp());
+$("[data-wa-simulate]")?.addEventListener("click", () => {
+  openModal({
+    title: "Simular mensaje de WhatsApp",
+    fields: `
+      <p>Sirve para probar Génesis y el dashboard sin Meta. No envía un WhatsApp real.</p>
+      <label>Teléfono <input name="phone" required placeholder="56912345678" /></label>
+      <label>Nombre <input name="name" value="Camila" /></label>
+      <label>Mensaje <textarea name="text" rows="3" required>Hola, necesito hora para mi perro porque cuando queda solo destruye todo.</textarea></label>
+    `,
+    onSave: async (fd) => {
+      const { data, error } = await requireSupabase().functions.invoke("genesis-simulate", {
+        body: {
+          phone: String(fd.get("phone") || ""),
+          name: String(fd.get("name") || ""),
+          text: String(fd.get("text") || ""),
+        },
+      });
+      if (error) throw new Error(error.message || "No se pudo simular. Desplegá genesis-simulate y poné OPENAI_API_KEY.");
+      state.waConversationId = data?.conversation_id || state.waConversationId;
+      await loadWhatsApp();
+    },
+  });
+});
+
+async function loadGenesisConfig() {
+  const { data } = await requireSupabase().from("site_settings").select("value").eq("key", "genesis").maybeSingle();
+  const v = data?.value || {};
+  const form = $("[data-genesis-form]");
+  if (!form) return;
+  form.enabled.checked = v.enabled !== false;
+  form.model.value = v.model || "gpt-5.6";
+  form.model_complex.value = v.model_complex || v.model || "gpt-5.6";
+  form.deposit_amount.value = v.deposit_amount ?? 20000;
+  form.min_price.value = v.min_price ?? 40000;
+  form.payment_url.value = v.payment_url || "";
+  form.calendly_url.value = v.calendly_url || "";
+  form.slot_hours.value = Array.isArray(v.slot_hours) ? v.slot_hours.join("\n") : "10:00\n12:00\n15:00\n17:30";
+  form.system_prompt.value = v.system_prompt || "";
+}
+
+$("[data-genesis-form]")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.currentTarget);
+  const value = {
+    enabled: fd.get("enabled") === "on",
+    model: String(fd.get("model") || "gpt-5.6").trim(),
+    model_complex: String(fd.get("model_complex") || "gpt-5.6").trim(),
+    deposit_amount: Number(fd.get("deposit_amount") || 20000),
+    min_price: Number(fd.get("min_price") || 40000),
+    payment_url: String(fd.get("payment_url") || "").trim(),
+    calendly_url: String(fd.get("calendly_url") || "").trim(),
+    timezone: "America/Santiago",
+    slot_hours: String(fd.get("slot_hours") || "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    workdays: [1, 2, 3, 4, 5, 6],
+    system_prompt: String(fd.get("system_prompt") || "").trim(),
+  };
+  await requireSupabase().from("site_settings").upsert({ key: "genesis", value });
+  const ok = $("[data-genesis-ok]");
+  if (ok) {
+    ok.hidden = false;
+    setTimeout(() => {
+      ok.hidden = true;
+    }, 2000);
+  }
+});
 
 async function loadGenesis() {
   const rows = await safeSelect("chat_conversations", "*", (q) => q.order("updated_at", { ascending: false }).limit(100));

@@ -35,8 +35,10 @@
             <button type="button" class="nav-item" data-nav="followups">Seguimiento</button>
             <button type="button" class="nav-item" data-nav="appointments">Citas</button>
             <p class="nav-group">Genesis</p>
-            <button type="button" class="nav-item" data-nav="genesis">Chats</button>
+            <button type="button" class="nav-item" data-nav="whatsapp">WhatsApp</button>
+            <button type="button" class="nav-item" data-nav="genesis">Chats web</button>
             <button type="button" class="nav-item" data-nav="intakes">Cuestionarios</button>
+            <button type="button" class="nav-item" data-nav="genesis_config">Génesis IA</button>
             <p class="nav-group">Web</p>
             <button type="button" class="nav-item" data-nav="channels">Canales</button>
             <button type="button" class="nav-item" data-nav="services">Servicios</button>
@@ -375,6 +377,23 @@
               </div>
             </section>
 
+            <!-- WhatsApp inbox -->
+            <section class="panel" data-panel="whatsapp">
+              <div class="panel-toolbar">
+                <p>Génesis atiende WhatsApp. Podés tomar la conversación y devolvérsela cuando termines.</p>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-ghost" data-wa-refresh>Actualizar</button>
+                  <button type="button" class="btn btn-primary" data-wa-simulate>Simular mensaje</button>
+                </div>
+              </div>
+              <div class="wa-inbox">
+                <aside class="wa-list" data-wa-list></aside>
+                <article class="wa-thread" data-wa-thread>
+                  <p class="empty">Elegí una conversación.</p>
+                </article>
+              </div>
+            </section>
+
             <!-- Genesis chats -->
             <section class="panel" data-panel="genesis">
               <div class="panel-toolbar">
@@ -417,6 +436,32 @@
                   <tbody data-intakes-body></tbody>
                 </table>
               </div>
+            </section>
+
+            <!-- Génesis IA config -->
+            <section class="panel" data-panel="genesis_config">
+              <div class="panel-toolbar">
+                <p>El cerebro de Génesis vive en el servidor. Acá se edita personalidad, modelo y reglas de cobro. Las claves de WhatsApp y OpenAI van en Supabase Edge Functions, nunca en esta web.</p>
+              </div>
+              <form class="settings-form card" data-genesis-form>
+                <label><input type="checkbox" name="enabled" /> Génesis responde automáticamente en WhatsApp</label>
+                <label>Modelo habitual <input name="model" placeholder="gpt-5.6" /></label>
+                <label>Modelo para casos complejos <input name="model_complex" placeholder="gpt-5.6" /></label>
+                <div class="form-row">
+                  <label>Abono (CLP) <input type="number" name="deposit_amount" /></label>
+                  <label>Precio mínimo (CLP) <input type="number" name="min_price" /></label>
+                </div>
+                <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
+                <label>Calendly (respaldo) <input name="calendly_url" /></label>
+                <label>Horarios (uno por línea, 24h)
+                  <textarea name="slot_hours" rows="4" placeholder="10:00&#10;12:00&#10;15:00&#10;17:30"></textarea>
+                </label>
+                <label>Prompt de Génesis
+                  <textarea name="system_prompt" rows="10"></textarea>
+                </label>
+                <button class="btn btn-primary" type="submit">Guardar Génesis</button>
+                <p class="form-ok" data-genesis-ok hidden>Guardado</p>
+              </form>
             </section>
 
             <!-- Canales -->
