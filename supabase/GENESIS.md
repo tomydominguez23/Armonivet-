@@ -79,7 +79,9 @@ Recordatorios fuera de las 24 h del cliente requieren **plantillas** aprobadas p
 
 1. Entrá al admin → **WhatsApp**
 2. **Simular mensaje**
-3. Génesis (si hay `OPENAI_API_KEY`) responde y el chat aparece en la bandeja.
+3. Génesis (si hay `OPENAI_API_KEY` **y créditos** en OpenAI) responde y el chat aparece en la bandeja.
+
+Si dice que no hay créditos: [Billing de OpenAI](https://platform.openai.com/settings/organization/billing). No hace falta redesplegar funciones.
 
 ## 6. Cron de recordatorios (abono 12 h, 24 h antes, etc.)
 
