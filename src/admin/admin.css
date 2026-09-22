@@ -26,12 +26,17 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  min-height: 100dvh;
   font-family: var(--font);
   color: var(--ink);
   background:
     radial-gradient(ellipse 80% 50% at 0% 0%, rgba(126, 176, 196, 0.28), transparent 55%),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(197, 212, 160, 0.22), transparent 50%),
     var(--paper);
+}
+
+#app {
+  min-width: 0;
 }
 
 button,
@@ -189,8 +194,9 @@ a {
 /* Shell */
 .admin-shell {
   display: grid;
-  grid-template-columns: var(--sidebar) 1fr;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .sidebar {
@@ -203,6 +209,9 @@ a {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -225,6 +234,10 @@ a {
 .sidebar-nav {
   display: grid;
   gap: 0.3rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.15rem;
 }
 
 .nav-item {
@@ -244,7 +257,8 @@ a {
 }
 
 .sidebar-foot {
-  margin-top: auto;
+  margin-top: 0;
+  flex-shrink: 0;
   display: grid;
   gap: 0.55rem;
   font-size: 0.88rem;
@@ -261,11 +275,13 @@ a {
 
 .admin-main {
   min-width: 0;
+  overflow-x: auto;
 }
 
 .topbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1.1rem 1.4rem;
   border-bottom: 1px solid var(--line);
@@ -274,6 +290,11 @@ a {
   position: sticky;
   top: 0;
   z-index: 5;
+}
+
+.topbar > div:first-of-type {
+  min-width: 0;
+  flex: 1 1 180px;
 }
 
 .topbar h2 {
@@ -300,7 +321,7 @@ a {
 }
 
 .range-select {
-  margin-left: auto;
+  margin-left: 0;
   display: grid;
   gap: 0.25rem;
   font-size: 0.82rem;
@@ -323,6 +344,7 @@ a {
 .panel-toolbar {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 1rem;
@@ -336,7 +358,7 @@ a {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -373,7 +395,7 @@ a {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 0.9rem;
 }
 
@@ -403,6 +425,8 @@ a {
   align-items: end;
   gap: 0.35rem;
   min-height: 160px;
+  padding-bottom: 1.4rem;
+  overflow-x: auto;
 }
 
 .chart-bars .bar {
@@ -754,7 +778,8 @@ th {
 }
 
 .modal.is-wide {
-  max-width: min(920px, calc(100vw - 2rem));
+  width: min(920px, calc(100vw - 1.5rem));
+  max-width: min(920px, calc(100vw - 1.5rem));
 }
 
 .modal.is-wide .modal-body {
@@ -862,7 +887,10 @@ th {
   border: 0;
   padding: 0;
   background: transparent;
-  max-width: min(560px, calc(100vw - 2rem));
+  width: min(560px, calc(100vw - 1.5rem));
+  max-width: min(560px, calc(100vw - 1.5rem));
+  max-height: min(92dvh, calc(100vh - 1.5rem));
+  margin: auto;
 }
 
 .modal::backdrop {
@@ -875,6 +903,9 @@ th {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: min(92dvh, calc(100vh - 1.5rem));
 }
 
 .modal-card header,
@@ -884,6 +915,7 @@ th {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.9rem 1rem;
+  flex-shrink: 0;
 }
 
 .modal-card header {
@@ -903,6 +935,8 @@ th {
   padding: 1rem;
   display: grid;
   gap: 0.75rem;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .icon-close {
@@ -920,10 +954,6 @@ th {
 }
 
 @media (max-width: 1100px) {
-  .kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .charts-grid {
     grid-template-columns: 1fr;
   }
@@ -950,10 +980,6 @@ th {
   .menu-btn {
     display: inline-grid;
     place-items: center;
-  }
-
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .panel-toolbar {
@@ -1066,6 +1092,7 @@ th {
 
 .topbar-alerts {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-left: auto;
   margin-right: 0.5rem;
@@ -1086,18 +1113,12 @@ th {
 }
 
 @media (max-width: 1100px) {
-  .kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
   .dashboard-lists {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 860px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .panel-toolbar .btn-row {
     flex-direction: column;
     width: 100%;
@@ -1127,6 +1148,7 @@ th {
 .dash-hero {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-end;
   margin-bottom: 1rem;
@@ -1173,12 +1195,12 @@ th {
 }
 
 .kpi-grid--wide {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .rate-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.65rem;
   margin: 0 0 1rem;
 }
@@ -1271,7 +1293,7 @@ th {
 
 .pipeline {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 0.4rem;
 }
 
@@ -1295,6 +1317,7 @@ th {
   font-size: 0.68rem;
   color: var(--muted);
   text-transform: capitalize;
+  overflow-wrap: anywhere;
 }
 
 .topbar-alert {
@@ -1391,12 +1414,9 @@ th {
 }
 
 @media (max-width: 1100px) {
-  .rate-grid,
-  .pipeline {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  .kpi-grid,
   .kpi-grid--wide {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
 
@@ -1411,9 +1431,7 @@ th {
     flex-direction: column;
     align-items: flex-start;
   }
-  .dashboard-lists--4,
-  .rate-grid,
-  .pipeline {
+  .dashboard-lists--4 {
     grid-template-columns: 1fr 1fr;
   }
   .detail-row {
@@ -1422,10 +1440,7 @@ th {
 }
 
 @media (max-width: 640px) {
-  .dashboard-lists--4,
-  .rate-grid,
-  .pipeline,
-  .kpi-grid--wide {
+  .dashboard-lists--4 {
     grid-template-columns: 1fr;
   }
 }

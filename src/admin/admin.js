@@ -895,16 +895,21 @@ $("[data-wa-simulate]")?.addEventListener("click", () => {
     title: "Simular mensaje de WhatsApp",
     fields: `
       <p>Sirve para probar Génesis y el dashboard sin Meta. No envía un WhatsApp real.</p>
-      <label>Teléfono <input name="phone" required placeholder="56912345678" /></label>
-      <label>Nombre <input name="name" value="Camila" /></label>
-      <label>Mensaje <textarea name="text" rows="3" required>Hola, necesito hora para mi perro porque cuando queda solo destruye todo.</textarea></label>
+      <label>Teléfono <input name="sim_phone" type="tel" inputmode="numeric" autocomplete="off" value="56912345678" placeholder="56912345678" /></label>
+      <label>Nombre <input name="name" autocomplete="off" value="Camila" /></label>
+      <label>Mensaje <textarea name="text" rows="3" autocomplete="off">Hola, necesito hora para mi perro porque cuando queda solo destruye todo.</textarea></label>
     `,
+    saveLabel: "Simular",
     onSave: async (fd) => {
+      const phone = String(fd.get("sim_phone") || "").trim();
+      const text = String(fd.get("text") || "").trim();
+      if (!phone) throw new Error("Escribí un teléfono para simular, o Cancelar para volver al dashboard.");
+      if (!text) throw new Error("Escribí un mensaje para simular, o Cancelar para volver al dashboard.");
       const { data, error } = await requireSupabase().functions.invoke("genesis-simulate", {
         body: {
-          phone: String(fd.get("phone") || ""),
+          phone,
           name: String(fd.get("name") || ""),
-          text: String(fd.get("text") || ""),
+          text,
         },
       });
       if (error) {
@@ -2543,29 +2548,52 @@ $("[data-settings-form]")?.addEventListener("submit", async (e) => {
 /* -------------------- Modal + helpers -------------------- */
 let modalSaveHandler = null;
 
-function openModal({ title, fields, onSave, wide = false, afterOpen }) {
+function closeModal() {
+  const modal = $("[data-modal]");
+  if (modal?.open) modal.close();
+  modalSaveHandler = null;
+  const saveBtn = $("[data-modal-save]");
+  if (saveBtn) saveBtn.textContent = "Guardar";
+}
+
+function openModal({ title, fields, onSave, wide = false, afterOpen, saveLabel }) {
   const modal = $("[data-modal]");
   modal.classList.toggle("is-wide", Boolean(wide));
   $("[data-modal-title]").textContent = title;
   $("[data-modal-body]").innerHTML = fields;
+  const saveBtn = $("[data-modal-save]");
+  if (saveBtn) saveBtn.textContent = saveLabel || "Guardar";
   modalSaveHandler = onSave;
   modal.showModal();
   afterOpen?.();
 }
 
+$("[data-modal]")?.addEventListener("click", (e) => {
+  if (e.target.closest("[data-modal-cancel]")) {
+    e.preventDefault();
+    closeModal();
+  }
+});
+
+$("[data-modal]")?.addEventListener("cancel", () => {
+  modalSaveHandler = null;
+  const saveBtn = $("[data-modal-save]");
+  if (saveBtn) saveBtn.textContent = "Guardar";
+});
+
 $("[data-modal-form]")?.addEventListener("submit", async (e) => {
   const submitter = e.submitter;
   const value = submitter?.value || "cancel";
   if (value !== "save") {
-    modalSaveHandler = null;
+    e.preventDefault();
+    closeModal();
     return;
   }
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
   try {
     if (modalSaveHandler) await modalSaveHandler(fd);
-    $("[data-modal]").close();
-    modalSaveHandler = null;
+    closeModal();
   } catch (err) {
     alert(err.message || "No se pudo guardar");
   }
