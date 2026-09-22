@@ -1,3 +1,10 @@
+/** `gpt-5.6` en Responses API enruta a Sol; Génesis usa Luna. */
+export function resolveModel(raw?: string | null) {
+  const model = String(raw || "").trim();
+  if (!model || model === "gpt-5.6") return "gpt-5.6-luna";
+  return model;
+}
+
 export type GenesisTool = {
   type: "function";
   name: string;

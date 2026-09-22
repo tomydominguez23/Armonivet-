@@ -893,7 +893,12 @@ $("[data-wa-simulate]")?.addEventListener("click", () => {
           text: String(fd.get("text") || ""),
         },
       });
-      if (error) throw new Error(error.message || "No se pudo simular. Desplegá genesis-simulate y poné OPENAI_API_KEY.");
+      if (error) {
+        const hint = /Failed to send|not found|404/i.test(error.message || "")
+          ? "La función genesis-simulate no está desplegada. En GitHub: Actions → Deploy Edge Functions → Run workflow (secret SUPABASE_ACCESS_TOKEN)."
+          : error.message || "No se pudo simular. Revisá OPENAI_API_KEY en Supabase → Edge Functions → Secrets.";
+        throw new Error(hint);
+      }
       state.waConversationId = data?.conversation_id || state.waConversationId;
       await loadWhatsApp();
     },
@@ -906,8 +911,8 @@ async function loadGenesisConfig() {
   const form = $("[data-genesis-form]");
   if (!form) return;
   form.enabled.checked = v.enabled !== false;
-  form.model.value = v.model || "gpt-5.6";
-  form.model_complex.value = v.model_complex || v.model || "gpt-5.6";
+  form.model.value = v.model || "gpt-5.6-luna";
+  form.model_complex.value = v.model_complex || v.model || "gpt-5.6-luna";
   form.deposit_amount.value = v.deposit_amount ?? 20000;
   form.min_price.value = v.min_price ?? 40000;
   form.payment_url.value = v.payment_url || "";
@@ -921,8 +926,8 @@ $("[data-genesis-form]")?.addEventListener("submit", async (e) => {
   const fd = new FormData(e.currentTarget);
   const value = {
     enabled: fd.get("enabled") === "on",
-    model: String(fd.get("model") || "gpt-5.6").trim(),
-    model_complex: String(fd.get("model_complex") || "gpt-5.6").trim(),
+    model: String(fd.get("model") || "gpt-5.6-luna").trim(),
+    model_complex: String(fd.get("model_complex") || "gpt-5.6-luna").trim(),
     deposit_amount: Number(fd.get("deposit_amount") || 20000),
     min_price: Number(fd.get("min_price") || 40000),
     payment_url: String(fd.get("payment_url") || "").trim(),

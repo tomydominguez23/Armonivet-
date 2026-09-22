@@ -39,17 +39,22 @@ Dashboard de Supabase → **Project Settings → Edge Functions → Secrets**:
 
 **No** pongas estas claves en `.env` de Vite ni en GitHub Actions. Esa capa es pública.
 
-## 3. Desplegar funciones
+## 3. Desplegar funciones (sin instalar nada)
 
-Con [Supabase CLI](https://supabase.com/docs/guides/cli):
+1. Token: [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) → **Generate new token** → copiálo.
+2. En GitHub → este repo → **Settings → Secrets and variables → Actions → New repository secret**:
+   - Name: `SUPABASE_ACCESS_TOKEN`
+   - Secret: el token
+3. **Actions → Deploy Edge Functions → Run workflow**.
+
+Eso publica `whatsapp-webhook`, `genesis-cron`, `whatsapp-send` y `genesis-simulate`. El secret `OPENAI_API_KEY` ya tiene que estar en Supabase (Project Settings → Edge Functions → Secrets). No lo pongas en GitHub.
+
+Alternativa con CLI local:
 
 ```bash
 supabase login
 supabase link --project-ref xcnxqhjthrdvjtqezzct
-supabase functions deploy whatsapp-webhook --no-verify-jwt
-supabase functions deploy genesis-cron --no-verify-jwt
-supabase functions deploy whatsapp-send
-supabase functions deploy genesis-simulate
+supabase functions deploy
 ```
 
 Callback URL para Meta:

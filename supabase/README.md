@@ -24,3 +24,5 @@ Copia `.env.example` a `.env` con:
 - `VITE_SUPABASE_ANON_KEY`
 
 En GitHub Actions, agrega los mismos valores como **Secrets** del repo.
+
+Para desplegar Génesis (Edge Functions), agregá también el secret `SUPABASE_ACCESS_TOKEN` y corré el workflow **Deploy Edge Functions**. Detalle en `GENESIS.md`.
