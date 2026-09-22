@@ -264,8 +264,8 @@ insert into public.site_settings (key, value) values (
   'genesis',
   '{
     "enabled": true,
-    "model": "gpt-5.6",
-    "model_complex": "gpt-5.6",
+    "model": "gpt-5.6-luna",
+    "model_complex": "gpt-5.6-luna",
     "deposit_amount": 20000,
     "min_price": 40000,
     "payment_url": "",

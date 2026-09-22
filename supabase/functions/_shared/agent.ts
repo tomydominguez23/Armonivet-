@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
-import { GENESIS_TOOLS, outputText, runOpenAI } from "./openai.ts";
+import { GENESIS_TOOLS, outputText, resolveModel, runOpenAI } from "./openai.ts";
 import { sendWhatsAppText } from "./whatsapp.ts";
 import { normalizePhone } from "./supabase.ts";
 
@@ -502,7 +502,7 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
     content: m.content || "",
   }));
 
-  const model = settings.model || "gpt-5.6";
+  const model = resolveModel(settings.model);
   let response = await runOpenAI({ model, instructions, input, tools: GENESIS_TOOLS });
   let loops = 0;
   while (loops < 6) {
