@@ -8,6 +8,7 @@ Ejecuta estos SQL en el **SQL Editor** de tu proyecto Supabase, en este orden:
 4. `schema_v2.sql` — clientes, leads, cuestionario, chat web
 5. `genesis.sql` — WhatsApp, pagos, recordatorios y auditoría de Génesis
 6. `copy_updates.sql` — textos de la web (opcional, si ya corriste el seed)
+7. `booking.sql` — agenda propia (reemplaza Calendly): horas libres + reserva web + bloqueos
 
 La vinculación de WhatsApp + GPT está documentada en `GENESIS.md`. El webhook vive en Edge Functions; el dashboard solo lee Supabase.
 

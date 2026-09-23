@@ -54,13 +54,13 @@ El panel muestra visitas, clics a agendar, citas, abonos y llegadas por canal.
 | Dashboard | Visitas, embudo, canales, ingresos estimados |
 | Citas | Agendadas / abonadas / llegaron / completadas |
 | Canales | Fuentes de publicidad (UTM) |
-| Servicios | Títulos, precios, imágenes, Calendly |
+| Servicios | Títulos, precios, imágenes |
 | Precios | Zonas A/B/C y extras |
 | Imágenes | Hero, galería, doctora, banners (Storage) |
 | Ajustes | Enlaces y textos del negocio |
 
 ## Enlaces integrados
 
-- Agenda: [Calendly](https://calendly.com/armonivet/consulta-etologia-clinica)
+- Agenda: calendario propio en `#agendar` (Supabase: `booking.sql`)
 - Formulario previo: [Google Forms](https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform)
 - Instagram: [@armonivet](https://www.instagram.com/armonivet/)

@@ -72,7 +72,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "consultar_disponibilidad",
-    description: "Devuelve horarios libres para los próximos días.",
+    description: "Devuelve horarios libres reales de la agenda Armonivet (misma que la web). Timezone Chile. Ofrece 2 opciones concretas; no inventes horas.",
     parameters: {
       type: "object",
       properties: { days: { type: "number" } },
@@ -84,7 +84,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "crear_cita",
-    description: "Crea una cita provisional. El abono confirma.",
+    description: "Crea una cita provisional solo si scheduled_at salió de consultar_disponibilidad. El abono confirma.",
     parameters: {
       type: "object",
       properties: {

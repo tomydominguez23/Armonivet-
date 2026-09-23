@@ -1,7 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
-const CALENDLY_URL = "https://calendly.com/armonivet";
-
 const STEPS = [
   { key: "pet_type", msg: "¡Hola! Soy Genesis, asistente de Armonivet 🐾 Te ayudaré a preparar tu consulta. ¿Tienes perro o gato?", buttons: ["Perro", "Gato", "Otro"] },
   { key: "pet_name", msg: "¿Cuál es el nombre de tu mascota?" },
@@ -164,7 +162,7 @@ async function submitToSupabase() {
 
 function renderFinal(container) {
   addBubble(container,
-    `¡Perfecto! Ya tengo toda la información. La Dra. Bárbara revisará tus datos antes de la consulta. 🎉<br>Para agendar tu hora:<br><a class="gc-link-btn" href="${CALENDLY_URL}" target="_blank" rel="noopener noreferrer">📅 Agendar en Calendly</a>`,
+    `¡Perfecto! Ya tengo toda la información. La Dra. Bárbara revisará tus datos antes de la consulta. 🎉<br>Para elegir día y hora usá el calendario de la web:<br><a class="gc-link-btn" href="#agendar">📅 Ver horarios disponibles</a>`,
     "gc-bot");
 }
 
@@ -272,6 +270,11 @@ export default function initGenesisChat() {
   closeBtn.addEventListener("click", () => togglePanel(false));
   sendBtn.addEventListener("click", onSend);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onSend(); } });
+  panel.addEventListener("click", (e) => {
+    const link = e.target.closest('a[href="#agendar"]');
+    if (!link) return;
+    togglePanel(false);
+  });
 }
 
 function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }

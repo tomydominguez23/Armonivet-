@@ -211,6 +211,22 @@
                 </div>
               </div>
               <div class="alert-cards" data-agenda-alerts></div>
+              <article class="card admin-cal" data-admin-cal>
+                <div class="admin-cal-head">
+                  <button type="button" class="btn btn-ghost" data-cal-prev aria-label="Mes anterior">‹</button>
+                  <h3 data-cal-month>Calendario</h3>
+                  <button type="button" class="btn btn-ghost" data-cal-next aria-label="Mes siguiente">›</button>
+                </div>
+                <p class="empty">Las horas libres salen de Génesis (días y horarios). Bloqueá un día para que no se reserve en la web ni por WhatsApp.</p>
+                <div class="admin-cal-grid" data-cal-grid></div>
+                <div class="admin-cal-day" data-cal-day-panel hidden>
+                  <header>
+                    <h4 data-cal-day-label></h4>
+                    <button type="button" class="btn btn-ghost" data-cal-toggle-block>Bloquear día</button>
+                  </header>
+                  <ul data-cal-day-appts></ul>
+                </div>
+              </article>
               <h3 class="subhead">Hoy</h3>
               <div class="table-wrap">
                 <table>
@@ -452,10 +468,19 @@
                   <label>Precio mínimo (CLP) <input type="number" name="min_price" /></label>
                 </div>
                 <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
-                <label>Calendly (respaldo) <input name="calendly_url" /></label>
-                <label>Horarios (uno por línea, 24h)
+                <label>Horarios (uno por línea, 24h). La web y Génesis usan estos mismos.
                   <textarea name="slot_hours" rows="4" placeholder="10:00&#10;12:00&#10;15:00&#10;17:30"></textarea>
                 </label>
+                <fieldset class="workdays">
+                  <legend>Días de atención</legend>
+                  <label><input type="checkbox" name="wd" value="1" /> Lun</label>
+                  <label><input type="checkbox" name="wd" value="2" /> Mar</label>
+                  <label><input type="checkbox" name="wd" value="3" /> Mié</label>
+                  <label><input type="checkbox" name="wd" value="4" /> Jue</label>
+                  <label><input type="checkbox" name="wd" value="5" /> Vie</label>
+                  <label><input type="checkbox" name="wd" value="6" /> Sáb</label>
+                  <label><input type="checkbox" name="wd" value="0" /> Dom</label>
+                </fieldset>
                 <label>Prompt de Génesis
                   <textarea name="system_prompt" rows="10"></textarea>
                 </label>
@@ -526,7 +551,7 @@
                 <h3>Datos del negocio</h3>
                 <label>Nombre <input name="name" /></label>
                 <label>Tagline <input name="tagline" /></label>
-                <label>URL Calendly <input name="calendly_url" /></label>
+                <label>Agenda pública (la web usa el calendario propio) <input name="calendly_url" placeholder="#agendar" /></label>
                 <label>URL Formulario <input name="form_url" /></label>
                 <label>Instagram <input name="instagram_url" /></label>
                 <label>Texto promo <input name="promo_text" /></label>
