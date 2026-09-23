@@ -7,6 +7,7 @@ Ejecuta estos SQL en el **SQL Editor** de tu proyecto Supabase, en este orden:
 3. `rpc_stats.sql` — métricas del dashboard (`admin_dashboard_stats`)
 4. `schema_v2.sql` — clientes, leads, cuestionario, chat web
 5. `genesis.sql` — WhatsApp, pagos, recordatorios y auditoría de Génesis
+6. `copy_updates.sql` — textos de la web (opcional, si ya corriste el seed)
 
 La vinculación de WhatsApp + GPT está documentada en `GENESIS.md`. El webhook vive en Edge Functions; el dashboard solo lee Supabase.
 
