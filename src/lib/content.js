@@ -20,6 +20,21 @@ function setImgSrc(img, url) {
   img.src = url;
 }
 
+function etologiaCopy(text, { fallback = false } = {}) {
+  const raw = String(text || "").trim();
+  if (/evaluaci[oó]n \+ plan \+ seguimiento/i.test(raw) || (fallback && !raw)) {
+    return "Evaluación diagnóstica + plan de trabajo por 30 días (sujeto a modificar)";
+  }
+  return raw;
+}
+
+function zoneShort(text) {
+  const raw = String(text || "").replace(/<[^>]+>/g, "").trim();
+  if (!raw) return "";
+  const first = raw.split(",")[0].trim();
+  return first.length > 42 ? `${first.slice(0, 40)}…` : first;
+}
+
 export async function hydrateSiteContent() {
   if (!isSupabaseConfigured || !supabase) return;
 
@@ -84,7 +99,7 @@ export async function hydrateSiteContent() {
         </figure>
         <div class="offer-body">
           <h3>${s.title}</h3>
-          <p>${s.description || ""}</p>
+          <p>${etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" })}</p>
           <div class="offer-price-row">
             <span>${s.price_label || (s.price_from != null ? `Desde <strong>${formatCLP(s.price_from)}</strong>` : "")}</span>
             <a class="btn btn-buy btn-buy--sm" href="${s.calendly_url || settings.calendly_url || "#"}" target="_blank" rel="noopener noreferrer">Agendar</a>
@@ -95,34 +110,39 @@ export async function hydrateSiteContent() {
       .join("");
   }
 
-  const serviceCards = document.querySelector("[data-services-grid]") || document.querySelector(".service-cards");
-  const listServices = (services || []).filter((s) => s.section === "servicios" || s.section === "ambos");
-  if (serviceCards && listServices.length && listServices.every((s) => isSafeImageUrl(s.image_url))) {
-    serviceCards.innerHTML = listServices
+  const etologia = (services || []).find((s) => s.slug === "etologia-clinica") || (services || [])[0];
+  const packageHero = document.querySelector("[data-package-hero]");
+  if (packageHero && etologia) {
+    const img = packageHero.querySelector("img");
+    setImgSrc(img, etologia.image_url);
+    const title = packageHero.querySelector("h3");
+    const desc = packageHero.querySelector("p");
+    if (title && etologia.title) title.textContent = etologia.title;
+    if (desc) desc.textContent = etologiaCopy(etologia.description, { fallback: true });
+  }
+
+  const packageZones = document.querySelector("[data-package-zones]");
+  if (packageZones && zones?.length) {
+    packageZones.innerHTML = zones
       .map(
-        (s, idx) => `
-      <article class="service-card reveal is-visible">
-        <img src="${s.image_url}" alt="${s.title}" />
-        <div>
-          <span class="service-index">${String(idx + 1).padStart(2, "0")}</span>
-          <h3>${s.title}</h3>
-          <p>${s.description || ""}</p>
-          <a class="btn btn-buy btn-buy--sm" href="${s.calendly_url || settings.calendly_url || "#"}" target="_blank" rel="noopener noreferrer">Agendar</a>
-        </div>
-      </article>`
+        (z) =>
+          `<li><strong>${z.name}</strong> · Desde ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
       )
       .join("");
   }
 
-  // Pricing zones
+  // Pricing zones: mapa arriba, sin foto de relleno
   const zonePanels = document.querySelector("[data-zones-grid]") || document.querySelector(".zone-panels");
-  if (zonePanels && zones?.length && zones.every((z) => isSafeImageUrl(z.image_url))) {
+  if (zonePanels && zones?.length) {
     zonePanels.innerHTML = zones
-      .map(
-        (z) => `
+      .map((z) => {
+        const map = z.map_embed_url
+          ? `<iframe title="Mapa ${z.name}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen src="${z.map_embed_url}"></iframe>`
+          : "";
+        return `
       <article class="zone-card reveal is-visible${z.featured ? " featured" : ""}" role="listitem">
         <div class="zone-media">
-          <img src="${z.image_url}" alt="${z.name}" />
+          ${map}
           <span class="zone-badge">${z.badge || z.name}</span>
         </div>
         <div class="zone-body">
@@ -131,13 +151,8 @@ export async function hydrateSiteContent() {
           <p class="price-zones">${z.zones_text || ""}</p>
           <a class="btn btn-buy btn-buy--sm" href="${settings.calendly_url || "https://calendly.com/armonivet/consulta-etologia-clinica"}" target="_blank" rel="noopener noreferrer">Agendar ${z.name}</a>
         </div>
-        ${
-          z.map_embed_url
-            ? `<div class="zone-map"><iframe title="Mapa ${z.name}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen src="${z.map_embed_url}"></iframe></div>`
-            : ""
-        }
-      </article>`
-      )
+      </article>`;
+      })
       .join("");
   }
 

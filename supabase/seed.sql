@@ -20,7 +20,7 @@ insert into public.services (slug, title, description, price_from, price_label, 
   (
     'etologia-clinica',
     'Consulta Etología Clínica',
-    'Evaluación + plan + seguimiento 30 días',
+    'Evaluación diagnóstica + plan de trabajo por 30 días (sujeto a modificar)',
     40000,
     'Desde $40.000',
     'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80',

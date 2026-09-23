@@ -204,7 +204,7 @@
 
       <section class="benefits" aria-label="Beneficios Armonivet">
         <div class="shell benefits-grid">
-          <article>
+          <a class="benefit-link" href="#valores">
             <span class="benefit-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg>
             </span>
@@ -212,8 +212,8 @@
               <h3>A domicilio en Santiago</h3>
               <p>Sectores A, B y C</p>
             </div>
-          </article>
-          <article>
+          </a>
+          <a class="benefit-link" href="#consulta-online">
             <span class="benefit-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 5h16v11H8l-4 3V5zm2 2v7.2l1.2-.9H18V7H6z"/></svg>
             </span>
@@ -221,8 +221,8 @@
               <h3>Consulta online</h3>
               <p>Rápida y preferente</p>
             </div>
-          </article>
-          <article>
+          </a>
+          <a class="benefit-link" href="#seguimiento">
             <span class="benefit-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2 9.5 8.5 3 9l5 4.2L6.5 20 12 16.5 17.5 20 16 13.2 21 9l-6.5-.5L12 2z"/></svg>
             </span>
@@ -230,8 +230,8 @@
               <h3>Seguimiento 30 días</h3>
               <p>Incluido en tu compra</p>
             </div>
-          </article>
-          <article>
+          </a>
+          <a class="benefit-link" href="#flores">
             <span class="benefit-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M7 3h10v4a5 5 0 0 1-10 0V3zm-2 8h14v10H5V11zm4 2v2h6v-2H9z"/></svg>
             </span>
@@ -239,7 +239,7 @@
               <h3>Flores de Bach</h3>
               <p>Primer frasco incluido*</p>
             </div>
-          </article>
+          </a>
         </div>
       </section>
 
@@ -300,7 +300,7 @@
               </figure>
               <div class="offer-body">
                 <h3>Consulta Etología Clínica</h3>
-                <p>Evaluación + plan + seguimiento 30 días</p>
+                <p>Evaluación diagnóstica + plan de trabajo por 30 días (sujeto a modificar)</p>
                 <div class="offer-price-row">
                   <span>Desde <strong>$40.000</strong></span>
                   <a
@@ -450,72 +450,116 @@
       <section class="services" id="servicios">
         <div class="shell">
           <div class="section-intro reveal">
-            <p class="eyebrow">Servicios</p>
-            <h2>Servicios disponibles para agendar</h2>
-            <p>Soluciones claras para perros y gatos, presencial u online.</p>
+            <p class="eyebrow">Oferta y paquetes</p>
+            <h2>Planes para tu consulta</h2>
+            <p>Elige el formato. El valor presencial depende de tu sector en Santiago.</p>
           </div>
-          <div class="service-cards" data-services-grid>
-            <article class="service-card reveal">
-              <img src="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=800&q=80" alt="Consulta etología" />
-              <div>
-                <span class="service-index">01</span>
-                <h3>Consulta de Etología Clínica</h3>
-                <p>Evaluación conductual, diagnóstico y plan terapéutico personalizado.</p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Agendar</a
-                >
-              </div>
+
+          <article class="package-hero reveal" data-package-hero>
+            <img
+              src="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=800&q=80"
+              alt="Consulta de etología clínica en casa"
+            />
+            <div>
+              <span class="service-index">01</span>
+              <h3>Consulta Etología Clínica</h3>
+              <p>Evaluación diagnóstica + plan de trabajo por 30 días (sujeto a modificar).</p>
+              <ul class="package-zones" data-package-zones>
+                <li><strong>Sector A</strong> · Desde $40.000 <span>Ñuñoa y Macul</span></li>
+                <li><strong>Sector B</strong> · Desde $45.000 <span>Providencia y comunas limítrofes</span></li>
+                <li><strong>Sector C</strong> · Desde $50.000 <span>Oriente, sur y más lejanas</span></li>
+              </ul>
+              <a
+                class="btn btn-buy btn-buy--sm"
+                href="https://calendly.com/armonivet/consulta-etologia-clinica"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Agendar</a
+              >
+            </div>
+          </article>
+
+          <div class="package-strip" data-package-strip>
+            <a class="package-chip" href="#valores">
+              <span aria-hidden="true">📍</span>
+              <strong>A domicilio</strong>
+              <em>Desde $40.000</em>
+            </a>
+            <a class="package-chip" href="#consulta-online">
+              <span aria-hidden="true">💬</span>
+              <strong>Online</strong>
+              <em>Abono $20.000</em>
+            </a>
+            <a class="package-chip" href="#ofertas">
+              <span aria-hidden="true">🐱</span>
+              <strong>Asesoría</strong>
+              <em>Desde $40.000</em>
+            </a>
+            <a class="package-chip" href="#ofertas">
+              <span aria-hidden="true">🐕</span>
+              <strong>Entrenamiento</strong>
+              <em>Incluible</em>
+            </a>
+            <a class="package-chip" href="#flores">
+              <span aria-hidden="true">🌸</span>
+              <strong>Flores de Bach</strong>
+              <em>1.er frasco*</em>
+            </a>
+            <a class="package-chip" href="#seguimiento">
+              <span aria-hidden="true">⭐</span>
+              <strong>Seguimiento</strong>
+              <em>30 días</em>
+            </a>
+          </div>
+
+          <p class="plans-kicker">Precios claros, según formato de atención</p>
+          <div class="plan-cards">
+            <article class="plan-card featured">
+              <p class="plan-badge">Más elegido</p>
+              <h3>1 paciente</h3>
+              <p class="plan-price">Desde <strong>$40.000</strong></p>
+              <p class="plan-note">Según sector A, B o C</p>
+              <ul>
+                <li>Evaluación diagnóstica</li>
+                <li>Plan de trabajo 30 días (sujeto a modificar)</li>
+                <li>Flores de Bach si corresponde</li>
+              </ul>
+              <a class="btn btn-buy btn-buy--sm" href="https://calendly.com/armonivet/consulta-etologia-clinica" target="_blank" rel="noopener noreferrer">Agendar</a>
             </article>
-            <article class="service-card reveal">
-              <img src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=800&q=80" alt="Entrenamiento canino" />
-              <div>
-                <span class="service-index">02</span>
-                <h3>Entrenamiento canino básico</h3>
-                <p>Educación guiada para fortalecer vínculo y convivencia diaria.</p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Agendar</a
-                >
-              </div>
+            <article class="plan-card">
+              <h3>2 pacientes</h3>
+              <p class="plan-price">Mismo hogar</p>
+              <p class="plan-note">Se cotiza al agendar</p>
+              <ul>
+                <li>Mismo núcleo familiar</li>
+                <li>Evaluación conjunta</li>
+                <li>Plan integral para ambos</li>
+              </ul>
+              <a class="btn btn-buy btn-buy--sm" href="https://calendly.com/armonivet/consulta-etologia-clinica" target="_blank" rel="noopener noreferrer">Consultar</a>
             </article>
-            <article class="service-card reveal">
-              <img src="https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?auto=format&fit=crop&w=800&q=80" alt="Asesoría gatos y perros" />
-              <div>
-                <span class="service-index">03</span>
-                <h3>Asesorías para gatos y perros</h3>
-                <p>Mudanzas, viajes, bebé, ruidos, miedo y etapas de vida.</p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Agendar</a
-                >
-              </div>
-            </article>
-            <article class="service-card reveal">
-              <img src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80" alt="Flores de Bach" />
-              <div>
-                <span class="service-index">04</span>
-                <h3>Terapia con Flores de Bach</h3>
-                <p>Complemento natural; primer frasco incluido si corresponde.</p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="https://calendly.com/armonivet/consulta-etologia-clinica"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Agendar</a
-                >
-              </div>
+            <article class="plan-card" id="consulta-online">
+              <h3>Consulta online</h3>
+              <p class="plan-price">Abono <strong>$20.000</strong></p>
+              <p class="plan-note">Preferente, desde cualquier comuna</p>
+              <ul>
+                <li>Videollamada con la Dra. Bárbara</li>
+                <li>Ideal para agresividad, miedo y ansiedad</li>
+                <li>Mismo seguimiento de 30 días</li>
+              </ul>
+              <a class="btn btn-buy btn-buy--sm" href="https://calendly.com/armonivet/consulta-etologia-clinica" target="_blank" rel="noopener noreferrer">Agendar online</a>
             </article>
           </div>
+
+          <aside class="followup-banner reveal" id="seguimiento">
+            <div>
+              <h3>¿Quieres seguir el plan después de los 30 días?</h3>
+              <p>
+                El seguimiento del primer mes va incluido. Si necesitan un control o ajustar el plan, agenda una nueva
+                hora. No es un plan anual: se reserva cuando lo necesites.
+              </p>
+              <a class="btn btn-primary" href="https://calendly.com/armonivet/consulta-etologia-clinica" target="_blank" rel="noopener noreferrer">Agendar control</a>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -530,10 +574,13 @@
           <div class="zone-panels" data-zones-grid role="list">
             <article class="zone-card reveal" role="listitem">
               <div class="zone-media">
-                <img
-                  src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80"
-                  alt="Perros felices en plaza · Sector A"
-                />
+                <iframe
+                  title="Google Maps Sector A · Ñuñoa y Macul"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Ñuñoa,+Santiago,+Chile&hl=es&z=13&output=embed"
+                ></iframe>
                 <span class="zone-badge">Sector A</span>
               </div>
               <div class="zone-body">
@@ -548,23 +595,17 @@
                   >Agendar Sector A</a
                 >
               </div>
-              <div class="zone-map">
-                <iframe
-                  title="Google Maps Sector A · Ñuñoa y Macul"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  allowfullscreen
-                  src="https://maps.google.com/maps?q=Ñuñoa,+Santiago,+Chile&hl=es&z=13&output=embed"
-                ></iframe>
-              </div>
             </article>
 
             <article class="zone-card reveal featured" role="listitem">
               <div class="zone-media">
-                <img
-                  src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80"
-                  alt="Perro en casa con su tutor · Sector B"
-                />
+                <iframe
+                  title="Google Maps Sector B · Providencia"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=13&output=embed"
+                ></iframe>
                 <span class="zone-badge">Sector B · Popular</span>
               </div>
               <div class="zone-body">
@@ -583,23 +624,17 @@
                   >Agendar Sector B</a
                 >
               </div>
-              <div class="zone-map">
-                <iframe
-                  title="Google Maps Sector B · Providencia"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  allowfullscreen
-                  src="https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=13&output=embed"
-                ></iframe>
-              </div>
             </article>
 
             <article class="zone-card reveal" role="listitem">
               <div class="zone-media">
-                <img
-                  src="https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=900&q=80"
-                  alt="Perro corriendo en parque · Sector C"
-                />
+                <iframe
+                  title="Google Maps Sector C · Las Condes y oriente"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src="https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed"
+                ></iframe>
                 <span class="zone-badge">Sector C</span>
               </div>
               <div class="zone-body">
@@ -617,15 +652,6 @@
                   >Agendar Sector C</a
                 >
               </div>
-              <div class="zone-map">
-                <iframe
-                  title="Google Maps Sector C · Las Condes y oriente"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  allowfullscreen
-                  src="https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed"
-                ></iframe>
-              </div>
             </article>
           </div>
 
@@ -635,11 +661,11 @@
             <p><strong>Abono para confirmar:</strong> $20.000 (12 horas)</p>
           </div>
 
-          <div class="includes reveal">
+          <div class="includes reveal" id="incluye">
             <h3>Tu consulta incluye</h3>
             <ul>
-              <li>Evaluación conductual</li>
-              <li>Primer frasco de Flores de Bach (si corresponde)</li>
+              <li>Evaluación diagnóstica y plan de trabajo (sujeto a modificar)</li>
+              <li id="flores">Primer frasco de Flores de Bach (si corresponde)</li>
               <li>Seguimiento durante 30 días</li>
               <li>Resolución de dudas y recetas cuando sea necesario</li>
             </ul>

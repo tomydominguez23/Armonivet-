@@ -33,6 +33,14 @@ html {
   scroll-behavior: smooth;
 }
 
+section[id],
+#incluye,
+#seguimiento,
+#consulta-online,
+#flores {
+  scroll-margin-top: 5.75rem;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -578,10 +586,23 @@ p {
   padding: 1.4rem 0;
 }
 
-.benefits-grid article {
+.benefits-grid article,
+.benefit-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  padding: 0.35rem 0.45rem;
+  margin: -0.35rem -0.45rem;
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.benefit-link:hover,
+.benefit-link:focus-visible {
+  background: rgba(47, 111, 132, 0.08);
+  transform: translateY(-1px);
 }
 
 .benefit-icon {
@@ -860,21 +881,16 @@ p {
   font-weight: 500;
 }
 
-/* Services */
+/* Services / packages */
 .services {
   padding: 1rem 0 4.5rem;
   background: #fff;
 }
 
-.service-cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
+.package-hero,
 .service-card {
   display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
+  grid-template-columns: 0.95fr 1.05fr;
   gap: 0;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -883,15 +899,17 @@ p {
   box-shadow: var(--shadow-sm);
 }
 
+.package-hero img,
 .service-card img {
   width: 100%;
   height: 100%;
-  min-height: 180px;
+  min-height: 240px;
   object-fit: cover;
 }
 
+.package-hero > div,
 .service-card > div {
-  padding: 1.15rem 1.2rem 1.25rem;
+  padding: 1.25rem 1.35rem 1.35rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -904,9 +922,181 @@ p {
   margin-bottom: 0.25rem;
 }
 
+.package-hero h3,
+.service-card h3 {
+  margin: 0 0 0.4rem;
+}
+
+.package-hero p,
 .service-card p {
-  margin: 0 0 0.9rem;
+  margin: 0 0 0.85rem;
   color: var(--muted);
+}
+
+.package-zones {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.package-zones li {
+  display: grid;
+  gap: 0.05rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: #f5f8fa;
+  font-size: 0.92rem;
+  color: var(--charcoal);
+}
+
+.package-zones span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.package-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.package-chip {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: start;
+  text-decoration: none;
+  color: inherit;
+  background: #f6f3ff;
+  border-radius: 16px;
+  padding: 0.9rem 0.85rem;
+  min-height: 108px;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.package-chip:hover,
+.package-chip:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.package-chip span {
+  font-size: 1.15rem;
+}
+
+.package-chip strong {
+  font-size: 0.92rem;
+  color: var(--charcoal);
+}
+
+.package-chip em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.plans-kicker {
+  text-align: center;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.plan-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.plan-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.35rem 1.2rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.plan-card.featured {
+  border-color: #d8c48a;
+  box-shadow: var(--shadow);
+}
+
+.plan-badge {
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  background: #f4e7b5;
+  color: #6b5310;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+.plan-card h3 {
+  margin: 0.4rem 0 0;
+  text-align: center;
+}
+
+.plan-price {
+  margin: 0;
+  text-align: center;
+  font-size: 1.35rem;
+  color: var(--charcoal);
+}
+
+.plan-note {
+  margin: 0 0 0.4rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.plan-card ul {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.plan-card .btn-buy {
+  margin-top: auto;
+  align-self: center;
+}
+
+.followup-banner {
+  margin-top: 1.5rem;
+  border-radius: 20px;
+  padding: 1.5rem 1.6rem;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(197, 212, 160, 0.45), transparent 42%),
+    #f3eefc;
+}
+
+.followup-banner h3 {
+  margin: 0 0 0.4rem;
+  max-width: 28ch;
+}
+
+.followup-banner p {
+  margin: 0 0 1rem;
+  max-width: 62ch;
+  color: var(--ink);
+}
+
+.service-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
 }
 
 .service-card .btn-buy {
@@ -949,12 +1139,16 @@ p {
 .zone-media {
   position: relative;
   aspect-ratio: 16 / 10;
+  background: #e8eef1;
 }
 
-.zone-media img {
+.zone-media img,
+.zone-media iframe {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border: 0;
+  display: block;
 }
 
 .zone-badge {
@@ -970,19 +1164,7 @@ p {
 }
 
 .zone-map {
-  height: 190px;
-  margin: 0 0.9rem 0.9rem;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: #eef2f4;
-}
-
-.zone-map iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
+  display: none;
 }
 
 .zone-body {
@@ -1605,6 +1787,8 @@ html.js .reveal.is-visible {
   .benefits-grid,
   .offer-grid,
   .service-cards,
+  .package-strip,
+  .plan-cards,
   .mid-banner-panel {
     grid-template-columns: 1fr 1fr;
   }
@@ -1613,7 +1797,8 @@ html.js .reveal.is-visible {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .service-card {
+  .service-card,
+  .package-hero {
     grid-template-columns: 1fr;
   }
 
@@ -1654,6 +1839,9 @@ html.js .reveal.is-visible {
   .media-layout,
   .footer-grid,
   .service-cards,
+  .package-strip,
+  .plan-cards,
+  .package-hero,
   .mid-banner-panel,
   .gallery-grid {
     grid-template-columns: 1fr;
