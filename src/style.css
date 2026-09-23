@@ -887,17 +887,63 @@ p {
   background: #fff;
 }
 
+.package-carousel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.package-viewport {
+  overflow: hidden;
+}
+
+.package-track {
+  display: flex;
+  gap: 0.75rem;
+  transition: transform 0.4s var(--ease);
+  will-change: transform;
+}
+
+.package-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--charcoal);
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.package-arrow:hover,
+.package-arrow:focus-visible {
+  background: var(--paper);
+  color: var(--brand);
+}
+
+.package-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+  box-shadow: none;
+}
+
 .package-hero,
 .service-card {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 132px 1fr;
   gap: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
   overflow: hidden;
   background: #fff;
   box-shadow: var(--shadow-sm);
-  max-width: 820px;
+  flex: 0 0 calc(50% - 0.375rem);
+  min-width: 0;
+  max-width: none;
 }
 
 .package-hero img,
@@ -1815,7 +1861,7 @@ html.js .reveal.is-visible {
   }
 
   .package-hero {
-    grid-template-columns: 140px 1fr;
+    grid-template-columns: 120px 1fr;
     max-width: none;
   }
 
@@ -1866,8 +1912,14 @@ html.js .reveal.is-visible {
     grid-template-columns: 1fr 1fr;
   }
 
+  .package-carousel {
+    grid-template-columns: 36px 1fr 36px;
+    gap: 0.25rem;
+  }
+
   .package-hero {
     grid-template-columns: 1fr;
+    flex-basis: 100%;
   }
 
   .package-hero img {

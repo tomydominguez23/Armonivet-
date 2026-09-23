@@ -98,6 +98,45 @@ if (heroSlides.length) {
   restartHeroTimer();
 }
 
+/* Planes carousel: 2 cards on desktop, 1 on mobile */
+const packageCarousel = document.querySelector("[data-package-carousel]");
+const packageTrack = document.querySelector("[data-package-track]");
+const packagePrev = document.querySelector("[data-package-prev]");
+const packageNext = document.querySelector("[data-package-next]");
+const packageCards = () => Array.from(packageTrack?.children || []);
+let packageIndex = 0;
+
+const packagePerView = () => (window.matchMedia("(max-width: 720px)").matches ? 1 : 2);
+
+const renderPackageCarousel = () => {
+  if (!packageTrack) return;
+  const cards = packageCards();
+  const perView = packagePerView();
+  const maxIndex = Math.max(0, cards.length - perView);
+  packageIndex = Math.min(packageIndex, maxIndex);
+  const card = cards[0];
+  const gap = parseFloat(getComputedStyle(packageTrack).gap) || 12;
+  const step = card ? card.getBoundingClientRect().width + gap : 0;
+  packageTrack.style.transform = `translateX(${-packageIndex * step}px)`;
+  if (packagePrev) packagePrev.disabled = packageIndex <= 0;
+  if (packageNext) packageNext.disabled = packageIndex >= maxIndex;
+};
+
+packagePrev?.addEventListener("click", () => {
+  packageIndex -= 1;
+  renderPackageCarousel();
+});
+
+packageNext?.addEventListener("click", () => {
+  packageIndex += 1;
+  renderPackageCarousel();
+});
+
+if (packageCarousel && packageTrack) {
+  renderPackageCarousel();
+  window.addEventListener("resize", renderPackageCarousel);
+}
+
 /* Reel inside phone: reveal Instagram embed when ready */
 const phoneFrame = document.querySelector(".phone-frame");
 const reelLaunch = document.querySelector("[data-reel-launch]");
@@ -128,7 +167,10 @@ import("./lib/analytics.js")
     trackPageVisit();
     bindConversionTracking();
     return import("./lib/content.js").then(({ hydrateSiteContent }) =>
-      hydrateSiteContent().then(() => bindConversionTracking())
+      hydrateSiteContent().then(() => {
+        bindConversionTracking();
+        renderPackageCarousel();
+      })
     );
   })
   .catch((err) => console.warn("[supabase-init]", err));

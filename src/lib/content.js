@@ -110,16 +110,16 @@ export async function hydrateSiteContent() {
       .join("");
   }
 
-  const etologia = (services || []).find((s) => s.slug === "etologia-clinica") || (services || [])[0];
-  const packageHero = document.querySelector("[data-package-hero]");
-  if (packageHero && etologia) {
-    const img = packageHero.querySelector("img");
-    setImgSrc(img, etologia.image_url);
-    const title = packageHero.querySelector("h3");
-    const desc = packageHero.querySelector("p");
-    if (title && etologia.title) title.textContent = etologia.title;
-    if (desc) desc.textContent = etologiaCopy(etologia.description, { fallback: true });
-  }
+  document.querySelectorAll("[data-plan-slug]").forEach((card) => {
+    const slug = card.getAttribute("data-plan-slug");
+    const service = (services || []).find((s) => s.slug === slug);
+    if (!service) return;
+    setImgSrc(card.querySelector("img"), service.image_url);
+    const title = card.querySelector("h3");
+    const desc = card.querySelector(":scope > div > p");
+    if (title && service.title) title.textContent = service.title;
+    if (desc) desc.textContent = etologiaCopy(service.description, { fallback: slug === "etologia-clinica" });
+  });
 
   const packageZones = document.querySelector("[data-package-zones]");
   if (packageZones && zones?.length) {
