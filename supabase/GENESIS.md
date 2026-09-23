@@ -23,6 +23,7 @@ En el SQL Editor de Supabase, en este orden:
 1. `schema.sql` (si el proyecto es nuevo)
 2. `schema_v2.sql`
 3. `genesis.sql`  ← este archivo crea chats, pagos, recordatorios y auditoría
+4. `booking.sql`  ← agenda propia: Génesis y la web leen las mismas horas (`list_available_slots`)
 
 ## 2. Secretos (solo en Edge Functions)
 
@@ -96,6 +97,7 @@ Podés usar un cron de GitHub Actions, pg_cron + pg_net, o el scheduler de Supab
 ## Qué hace Génesis hoy
 
 - Crea lead + cliente al primer mensaje
+- Consulta horas libres reales (`list_available_slots`, misma agenda que la web)
 - Califica, agenda, reagenda, cancela
 - Crea abono de $20.000 con vencimiento a 12 h
 - Escala a humano (el dashboard puede **Tomar conversación**)

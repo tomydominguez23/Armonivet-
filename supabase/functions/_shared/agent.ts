@@ -169,6 +169,46 @@ async function logAction(
   });
 }
 
+type SlotRow = { at?: string; date?: string; time?: string; label?: string };
+
+async function loadAvailableSlots(db: SupabaseClient, days = 21) {
+  const { data, error } = await db.rpc("list_available_slots", { p_days: days });
+  if (error) {
+    throw new Error("No pude leer la agenda. Hay que correr booking.sql en Supabase.");
+  }
+  return (data || {}) as {
+    timezone?: string;
+    deposit?: number;
+    hours?: string[];
+    slots?: SlotRow[];
+  };
+}
+
+function slotMatches(slots: SlotRow[] | undefined, iso: string) {
+  const target = new Date(iso).getTime();
+  if (!Number.isFinite(target)) return false;
+  return (slots || []).some((s) => {
+    if (!s?.at) return false;
+    return Math.abs(new Date(s.at).getTime() - target) < 60_000;
+  });
+}
+
+async function ensureSlotFree(db: SupabaseClient, iso: string, ignoreId?: string) {
+  const avail = await loadAvailableSlots(db, 45);
+  if (slotMatches(avail.slots, iso)) return null;
+  if (ignoreId) {
+    const { data: current } = await db.from("appointments").select("scheduled_at").eq("id", ignoreId).maybeSingle();
+    if (current?.scheduled_at && Math.abs(new Date(current.scheduled_at).getTime() - new Date(iso).getTime()) < 60_000) {
+      return null;
+    }
+  }
+  return {
+    error: "Esa hora ya no está disponible. Elegí otra de la lista.",
+    timezone: avail.timezone || "America/Santiago",
+    alternatives: (avail.slots || []).slice(0, 8),
+  };
+}
+
 async function executeTool(
   db: SupabaseClient,
   ctx: { conversation: Record<string, unknown>; client: Record<string, unknown> | null; settings: Settings },
@@ -257,38 +297,27 @@ async function executeTool(
 
   if (name === "consultar_disponibilidad") {
     return run(async () => {
-      const days = Math.min(14, Math.max(1, Number(args.days || 7)));
-      const hours = ctx.settings.slot_hours?.length ? ctx.settings.slot_hours : ["10:00", "12:00", "15:00", "17:30"];
-      const workdays = ctx.settings.workdays?.length ? ctx.settings.workdays : [1, 2, 3, 4, 5, 6];
-      const since = new Date();
-      const until = new Date(Date.now() + days * 86400000);
-      const { data: busy } = await db
-        .from("appointments")
-        .select("scheduled_at")
-        .gte("scheduled_at", since.toISOString())
-        .lte("scheduled_at", until.toISOString())
-        .neq("status", "cancelada");
-      const taken = new Set((busy || []).map((a) => a.scheduled_at?.slice(0, 16)));
-      const slots: string[] = [];
-      for (let d = 0; d < days; d++) {
-        const day = new Date(since.getTime() + d * 86400000);
-        if (!workdays.includes(day.getDay())) continue;
-        for (const hour of hours) {
-          const [hh, mm] = hour.split(":").map(Number);
-          const slot = new Date(day);
-          slot.setHours(hh, mm || 0, 0, 0);
-          if (slot <= new Date()) continue;
-          const key = slot.toISOString().slice(0, 16);
-          if (!taken.has(key)) slots.push(slot.toISOString());
-        }
-      }
-      return { slots: slots.slice(0, 12), timezone: ctx.settings.timezone || "America/Santiago" };
+      const days = Math.min(45, Math.max(1, Number(args.days || 14)));
+      const avail = await loadAvailableSlots(db, days);
+      const slots = (avail.slots || []).slice(0, 16);
+      return {
+        timezone: avail.timezone || ctx.settings.timezone || "America/Santiago",
+        deposit: avail.deposit ?? ctx.settings.deposit_amount ?? 20000,
+        hours: avail.hours || ctx.settings.slot_hours || ["10:00", "12:00", "15:00", "17:30"],
+        count: slots.length,
+        slots,
+        hint: slots.length
+          ? "Ofrece 2 opciones concretas con fecha y hora de Chile. No inventes horarios."
+          : "No hay horas libres en este período. Ofrece otra semana o escala a humano.",
+      };
     });
   }
 
   if (name === "crear_cita") {
     return run(async () => {
       const scheduledAt = String(args.scheduled_at || "");
+      const taken = await ensureSlotFree(db, scheduledAt);
+      if (taken) return taken;
       const amount = Number(args.amount || ctx.settings.min_price || 40000);
       const deposit = ctx.settings.deposit_amount ?? 20000;
       const { data, error } = await db
@@ -366,10 +395,13 @@ async function executeTool(
   if (name === "reagendar_cita") {
     return run(async () => {
       const id = String(args.appointment_id || "");
+      const nextAt = String(args.scheduled_at || "");
+      const taken = await ensureSlotFree(db, nextAt, id);
+      if (taken) return taken;
       const { data: prev } = await db.from("appointments").select("*").eq("id", id).maybeSingle();
-      const { error } = await db.from("appointments").update({ scheduled_at: String(args.scheduled_at) }).eq("id", id);
+      const { error } = await db.from("appointments").update({ scheduled_at: nextAt }).eq("id", id);
       if (error) throw error;
-      return { from: prev?.scheduled_at, to: args.scheduled_at, motivo: args.motivo };
+      return { from: prev?.scheduled_at, to: nextAt, motivo: args.motivo };
     });
   }
 

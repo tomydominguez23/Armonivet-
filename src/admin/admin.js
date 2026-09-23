@@ -785,6 +785,142 @@ async function loadAgenda() {
       : `<tr><td colspan="7" class="empty">Sin citas en los próximos 14 días.</td></tr>`;
     bindAppointmentRowActions(weekBody, rows);
   }
+
+  await renderAgendaCalendar(rows);
+}
+
+const WEEKDAYS_ES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+let agendaCalCursor = new Date();
+agendaCalCursor.setDate(1);
+let agendaCalSelected = null;
+let agendaCalBound = false;
+let agendaCalAppointments = [];
+
+function chileDateKey(value) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
+function monthTitle(d) {
+  return new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(d);
+}
+
+async function renderAgendaCalendar(appointments) {
+  const root = $("[data-admin-cal]");
+  if (!root) return;
+  agendaCalAppointments = appointments || [];
+  bindAgendaCalendarOnce();
+
+  const blocks = await safeSelect("booking_blocks", "id,day,reason");
+  const blocked = new Set(blocks.map((b) => chileDateKey(b.day)));
+  const byDay = {};
+  for (const a of agendaCalAppointments) {
+    if (!a.scheduled_at || a.status === "cancelada") continue;
+    const key = chileDateKey(a.scheduled_at);
+    byDay[key] = (byDay[key] || 0) + 1;
+  }
+
+  const monthEl = $("[data-cal-month]");
+  const grid = $("[data-cal-grid]");
+  if (monthEl) monthEl.textContent = monthTitle(agendaCalCursor);
+  if (!grid) return;
+
+  const year = agendaCalCursor.getFullYear();
+  const month = agendaCalCursor.getMonth();
+  const startPad = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = WEEKDAYS_ES.map((name) => `<span class="booking-dow">${name}</span>`);
+  for (let i = 0; i < startPad; i += 1) cells.push(`<span class="booking-day is-empty"></span>`);
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const count = byDay[key] || 0;
+    const isBlocked = blocked.has(key);
+    const selected = agendaCalSelected === key ? " is-selected" : "";
+    const blockedCls = isBlocked ? " is-blocked" : "";
+    cells.push(
+      `<button type="button" class="booking-day${blockedCls}${selected}" data-cal-day="${key}">
+        <strong>${day}</strong>
+        <em>${isBlocked ? "Bloqueado" : count ? `${count} cita${count === 1 ? "" : "s"}` : "Libre"}</em>
+      </button>`,
+    );
+  }
+  grid.innerHTML = cells.join("");
+  grid.querySelectorAll("[data-cal-day]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      agendaCalSelected = btn.getAttribute("data-cal-day");
+      renderAgendaCalendar(agendaCalAppointments);
+    });
+  });
+
+  const panel = $("[data-cal-day-panel]");
+  const label = $("[data-cal-day-label]");
+  const list = $("[data-cal-day-appts]");
+  const toggle = $("[data-cal-toggle-block]");
+  if (!panel || !agendaCalSelected) return;
+  panel.hidden = false;
+  const selectedDate = new Date(`${agendaCalSelected}T12:00:00`);
+  if (label) {
+    label.textContent = new Intl.DateTimeFormat("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(selectedDate);
+  }
+  const dayAppts = agendaCalAppointments.filter(
+    (a) => chileDateKey(a.scheduled_at) === agendaCalSelected && a.status !== "cancelada",
+  );
+  if (list) {
+    list.innerHTML = dayAppts.length
+      ? dayAppts
+          .map(
+            (a) =>
+              `<li><strong>${escapeHtml(formatTime(a.scheduled_at))}</strong> · ${escapeHtml(a.client_name || "—")} · ${escapeHtml(a.service_title || "Consulta")} · ${escapeHtml(a.status)}</li>`,
+          )
+          .join("")
+      : `<li class="empty">Sin citas este día.</li>`;
+  }
+  if (toggle) {
+    const isBlocked = blocked.has(agendaCalSelected);
+    toggle.textContent = isBlocked ? "Desbloquear día" : "Bloquear día";
+    toggle.dataset.blocked = isBlocked ? "1" : "0";
+  }
+}
+
+function bindAgendaCalendarOnce() {
+  if (agendaCalBound) return;
+  agendaCalBound = true;
+  $("[data-cal-prev]")?.addEventListener("click", () => {
+    agendaCalCursor.setMonth(agendaCalCursor.getMonth() - 1);
+    renderAgendaCalendar(agendaCalAppointments);
+  });
+  $("[data-cal-next]")?.addEventListener("click", () => {
+    agendaCalCursor.setMonth(agendaCalCursor.getMonth() + 1);
+    renderAgendaCalendar(agendaCalAppointments);
+  });
+  $("[data-cal-toggle-block]")?.addEventListener("click", async () => {
+    if (!agendaCalSelected) return;
+    const toggle = $("[data-cal-toggle-block]");
+    const blocked = toggle?.dataset.blocked === "1";
+    if (blocked) {
+      await requireSupabase().from("booking_blocks").delete().eq("day", agendaCalSelected);
+    } else {
+      const { error } = await requireSupabase().from("booking_blocks").insert({
+        day: agendaCalSelected,
+        reason: "Bloqueo admin",
+      });
+      if (error) {
+        alert(error.message || "No se pudo bloquear. ¿Corriste booking.sql?");
+        return;
+      }
+    }
+    await renderAgendaCalendar(agendaCalAppointments);
+  });
 }
 
 async function loadWhatsApp() {
@@ -934,30 +1070,38 @@ async function loadGenesisConfig() {
   form.deposit_amount.value = v.deposit_amount ?? 20000;
   form.min_price.value = v.min_price ?? 40000;
   form.payment_url.value = v.payment_url || "";
-  form.calendly_url.value = v.calendly_url || "";
   form.slot_hours.value = Array.isArray(v.slot_hours) ? v.slot_hours.join("\n") : "10:00\n12:00\n15:00\n17:30";
+  const workdays = Array.isArray(v.workdays) && v.workdays.length ? v.workdays.map(Number) : [1, 2, 3, 4, 5, 6];
+  form.querySelectorAll('input[name="wd"]').forEach((box) => {
+    box.checked = workdays.includes(Number(box.value));
+  });
   form.system_prompt.value = v.system_prompt || "";
 }
 
 $("[data-genesis-form]")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
+  const { data: prevRow } = await requireSupabase().from("site_settings").select("value").eq("key", "genesis").maybeSingle();
   const value = {
+    ...(prevRow?.value || {}),
     enabled: fd.get("enabled") === "on",
     model: String(fd.get("model") || "gpt-5.6-luna").trim(),
     model_complex: String(fd.get("model_complex") || "gpt-5.6-luna").trim(),
     deposit_amount: Number(fd.get("deposit_amount") || 20000),
     min_price: Number(fd.get("min_price") || 40000),
     payment_url: String(fd.get("payment_url") || "").trim(),
-    calendly_url: String(fd.get("calendly_url") || "").trim(),
     timezone: "America/Santiago",
     slot_hours: String(fd.get("slot_hours") || "")
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean),
-    workdays: [1, 2, 3, 4, 5, 6],
+    workdays: fd
+      .getAll("wd")
+      .map((n) => Number(n))
+      .filter((n) => n >= 0 && n <= 6),
     system_prompt: String(fd.get("system_prompt") || "").trim(),
   };
+  if (!value.workdays.length) value.workdays = [1, 2, 3, 4, 5, 6];
   await requireSupabase().from("site_settings").upsert({ key: "genesis", value });
   const ok = $("[data-genesis-ok]");
   if (ok) {
@@ -1872,7 +2016,7 @@ function openServiceModal(row) {
       <label>Tag <input name="tag" value="${escapeAttr(row?.tag || "")}" /></label>
       <label>URL imagen <input name="image_url" value="${escapeAttr(row?.image_url || "")}" /></label>
       <label>Subir imagen <input type="file" name="image_file" accept="image/*" /></label>
-      <label>Calendly URL <input name="calendly_url" value="${escapeAttr(row?.calendly_url || "")}" /></label>
+      <label>Notas de agenda <input name="calendly_url" value="${escapeAttr(row?.calendly_url || "")}" placeholder="Opcional" /></label>
       <div class="form-row">
         <label>Sección
           <select name="section">
