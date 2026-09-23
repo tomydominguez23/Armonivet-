@@ -126,7 +126,7 @@ export async function hydrateSiteContent() {
     packageZones.innerHTML = zones
       .map(
         (z) =>
-          `<li><strong>${z.name}</strong> · Desde ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
+          `<li><strong>${z.name}</strong> Desde ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
       )
       .join("");
   }
