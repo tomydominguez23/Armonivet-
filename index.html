@@ -16,6 +16,50 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./src/style.css" />
+    <script>
+      (function () {
+        var KEY = "armonivet.media.v1";
+        function read() {
+          try {
+            var data = JSON.parse(localStorage.getItem(KEY) || "null");
+            return data && data.urls && typeof data.urls === "object" ? data.urls : {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function pick(el, urls) {
+          var slot = el.getAttribute("data-cms-slot");
+          var service = el.getAttribute("data-cms-service");
+          return (slot && urls[slot]) || (service && urls["service:" + service]) || el.getAttribute("data-fallback") || "";
+        }
+        function apply(el, urls) {
+          if (!el || el.nodeType !== 1) return;
+          if (!el.hasAttribute("data-cms-slot") && !el.hasAttribute("data-cms-service")) return;
+          var url = pick(el, urls);
+          if (url && el.getAttribute("src") !== url) el.setAttribute("src", url);
+        }
+        function applyTree(root, urls) {
+          if (!root) return;
+          apply(root, urls);
+          if (root.querySelectorAll) {
+            root.querySelectorAll("[data-cms-slot], [data-cms-service]").forEach(function (el) {
+              apply(el, urls);
+            });
+          }
+        }
+        var urls = read();
+        window.__ARM_MEDIA__ = { urls: urls };
+        var obs = new MutationObserver(function (muts) {
+          var current = (window.__ARM_MEDIA__ && window.__ARM_MEDIA__.urls) || {};
+          muts.forEach(function (m) {
+            m.addedNodes.forEach(function (n) {
+              applyTree(n, current);
+            });
+          });
+        });
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -101,7 +145,8 @@
           <article class="hero-slide is-active" data-hero-slide>
             <img
               class="hero-bg-img"
-              src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=2000&q=80"
+              data-cms-slot="hero_1"
+              data-fallback="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=2000&q=80"
               alt=""
               aria-hidden="true"
             />
@@ -131,7 +176,8 @@
           <article class="hero-slide" data-hero-slide>
             <img
               class="hero-bg-img"
-              src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=2000&q=80"
+              data-cms-slot="hero_2"
+              data-fallback="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=2000&q=80"
               alt=""
               aria-hidden="true"
             />
@@ -161,7 +207,8 @@
           <article class="hero-slide" data-hero-slide>
             <img
               class="hero-bg-img"
-              src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=2000&q=80"
+              data-cms-slot="hero_3"
+              data-fallback="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=2000&q=80"
               alt=""
               aria-hidden="true"
             />
@@ -244,22 +291,22 @@
           </div>
           <div class="gallery-grid">
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=800&q=80" alt="Perro feliz en casa" />
+              <img data-cms-slot="gallery_1" data-fallback="https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=800&q=80" alt="Perro feliz en casa" />
             </figure>
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=800&q=80" alt="Gato en reposo" />
+              <img data-cms-slot="gallery_2" data-fallback="https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=800&q=80" alt="Gato en reposo" />
             </figure>
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=800&q=80" alt="Perro corriendo al aire libre" />
+              <img data-cms-slot="gallery_3" data-fallback="https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=800&q=80" alt="Perro corriendo al aire libre" />
             </figure>
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?auto=format&fit=crop&w=800&q=80" alt="Gato atento" />
+              <img data-cms-slot="gallery_4" data-fallback="https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?auto=format&fit=crop&w=800&q=80" alt="Gato atento" />
             </figure>
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=80" alt="Cachorro con tutor" />
+              <img data-cms-slot="gallery_5" data-fallback="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=80" alt="Cachorro con tutor" />
             </figure>
             <figure class="reveal">
-              <img src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80" alt="Paseo con perro" />
+              <img data-cms-slot="gallery_6" data-fallback="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80" alt="Paseo con perro" />
             </figure>
           </div>
         </div>
@@ -283,7 +330,8 @@
             <article class="offer-card reveal">
               <figure>
                 <img
-                  src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80"
+                  data-cms-service="etologia-clinica"
+                  data-fallback="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80"
                   alt="Consulta etología perros"
                 />
                 <span class="offer-tag">Más pedido</span>
@@ -306,7 +354,8 @@
             <article class="offer-card reveal">
               <figure>
                 <img
-                  src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=900&q=80"
+                  data-cms-service="asesoria-felina-canina"
+                  data-fallback="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=900&q=80"
                   alt="Asesoría gatos"
                 />
                 <span class="offer-tag offer-tag--alt">Gatos</span>
@@ -329,7 +378,8 @@
             <article class="offer-card reveal">
               <figure>
                 <img
-                  src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80"
+                  data-cms-service="consulta-online"
+                  data-fallback="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80"
                   alt="Consulta online"
                 />
                 <span class="offer-tag">Online</span>
@@ -353,7 +403,8 @@
             <article class="offer-card reveal">
               <figure>
                 <img
-                  src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=900&q=80"
+                  data-cms-service="entrenamiento-basico"
+                  data-fallback="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=900&q=80"
                   alt="Entrenamiento canino"
                 />
                 <span class="offer-tag offer-tag--alt">Entrenamiento</span>
@@ -380,7 +431,8 @@
         <div class="shell mid-banner-panel">
           <figure class="mid-banner-photo reveal">
             <img
-              src="https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=1200&q=80"
+              data-cms-slot="mid_banner"
+              data-fallback="https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=1200&q=80"
               alt="Perro y gato juntos en casa"
             />
           </figure>
@@ -421,7 +473,7 @@
             >
           </div>
           <figure class="about-doctor reveal">
-            <img src="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
+            <img data-cms-slot="about_doctor" data-fallback="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
             <figcaption>
               <strong>Dra. Bárbara Castillo</strong>
               <span>Médico Veterinario · Dipl. Etología Clínica</span>
@@ -444,7 +496,8 @@
               <div class="package-track" data-package-track>
                 <article class="package-hero" data-package-hero data-plan-slug="etologia-clinica">
                   <img
-                    src="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=640&q=80"
+                    data-cms-service="etologia-clinica"
+                    data-fallback="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=640&q=80"
                     alt="Consulta de etología clínica en casa"
                   />
                   <div>
@@ -466,7 +519,8 @@
 
                 <article class="package-hero" data-plan-slug="consulta-online">
                   <img
-                    src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=640&q=80"
+                    data-cms-service="consulta-online"
+                    data-fallback="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=640&q=80"
                     alt="Consulta online de etología"
                   />
                   <div>
@@ -489,7 +543,8 @@
 
                 <article class="package-hero" data-plan-slug="asesoria-felina-canina">
                   <img
-                    src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=640&q=80"
+                    data-cms-service="asesoria-felina-canina"
+                    data-fallback="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=640&q=80"
                     alt="Asesoría para gatos y perros"
                   />
                   <div>
@@ -511,7 +566,8 @@
 
                 <article class="package-hero" data-plan-slug="entrenamiento-basico">
                   <img
-                    src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=640&q=80"
+                    data-cms-service="entrenamiento-basico"
+                    data-fallback="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=640&q=80"
                     alt="Entrenamiento canino básico"
                   />
                   <div>

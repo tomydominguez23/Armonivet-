@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { applyMediaCache, collectMediaUrls, writeMediaCache } from "./media-cache.js";
 
 function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -36,6 +37,7 @@ function zoneShort(text) {
 }
 
 export async function hydrateSiteContent() {
+  applyMediaCache();
   if (!isSupabaseConfigured || !supabase) return;
 
   const [{ data: services, error: servicesError }, { data: zones }, { data: extras }, { data: media }, { data: settingsRow }] =
@@ -88,13 +90,28 @@ export async function hydrateSiteContent() {
   // Offers / services cards — only replace if we have image URLs
   const offerGrid = document.querySelector("[data-offers-grid]") || document.querySelector(".offer-grid");
   const offerServices = (services || []).filter((s) => s.section === "ofertas" || s.section === "ambos").slice(0, 4);
-  if (offerGrid && offerServices.length && offerServices.every((s) => isSafeImageUrl(s.image_url))) {
-    offerGrid.innerHTML = offerServices
-      .map(
-        (s) => `
+  if (offerGrid && offerServices.length) {
+    const cards = Array.from(offerGrid.querySelectorAll(".offer-card"));
+    if (cards.length === offerServices.length) {
+      offerServices.forEach((s, i) => {
+        const card = cards[i];
+        const img = card.querySelector("img");
+        if (img) {
+          if (s.slug) img.setAttribute("data-cms-service", s.slug);
+          setImgSrc(img, s.image_url);
+        }
+        const title = card.querySelector("h3");
+        const desc = card.querySelector(".offer-body p");
+        if (title && s.title) title.textContent = s.title;
+        if (desc) desc.textContent = etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" });
+      });
+    } else if (offerServices.some((s) => isSafeImageUrl(s.image_url))) {
+      offerGrid.innerHTML = offerServices
+        .map(
+          (s) => `
       <article class="offer-card reveal is-visible">
         <figure>
-          <img src="${s.image_url}" alt="${s.title}" />
+          <img src="${s.image_url || ""}" data-cms-service="${s.slug || ""}" alt="${s.title}" />
           ${s.tag ? `<span class="offer-tag">${s.tag}</span>` : ""}
         </figure>
         <div class="offer-body">
@@ -106,15 +123,24 @@ export async function hydrateSiteContent() {
           </div>
         </div>
       </article>`
-      )
-      .join("");
+        )
+        .join("");
+    }
   }
+
+  document.querySelectorAll("[data-cms-service]").forEach((img) => {
+    const slug = img.getAttribute("data-cms-service");
+    const service = (services || []).find((s) => s.slug === slug);
+    if (service?.image_url) setImgSrc(img, service.image_url);
+  });
 
   document.querySelectorAll("[data-plan-slug]").forEach((card) => {
     const slug = card.getAttribute("data-plan-slug");
     const service = (services || []).find((s) => s.slug === slug);
     if (!service) return;
-    setImgSrc(card.querySelector("img"), service.image_url);
+    const img = card.querySelector("img");
+    if (img && slug) img.setAttribute("data-cms-service", slug);
+    setImgSrc(img, service.image_url);
     const title = card.querySelector("h3");
     const desc = card.querySelector(":scope > div > p");
     if (title && service.title) title.textContent = service.title;
@@ -162,4 +188,7 @@ export async function hydrateSiteContent() {
       .map((e) => `<p><strong>${e.label}:</strong> ${formatCLP(e.amount)}</p>`)
       .join("");
   }
+
+  writeMediaCache(collectMediaUrls({ media, services }));
+  applyMediaCache();
 }
