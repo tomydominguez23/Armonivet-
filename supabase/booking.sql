@@ -124,7 +124,7 @@ declare
   settings jsonb := '{}'::jsonb;
   tz text := 'America/Santiago';
   deposit int := 20000;
-  min_price int := 40000;
+  min_price int := 45000;
   phone text;
   pet text;
   avail jsonb;
@@ -148,7 +148,7 @@ begin
   settings := coalesce(settings, '{}'::jsonb);
   tz := coalesce(settings->>'timezone', 'America/Santiago');
   deposit := coalesce((settings->>'deposit_amount')::int, 20000);
-  min_price := coalesce((settings->>'min_price')::int, 40000);
+  min_price := coalesce((settings->>'min_price')::int, 45000);
 
   if (
     select count(*) from public.appointments
@@ -234,7 +234,7 @@ begin
     'scheduled_at', appt.scheduled_at,
     'deposit', deposit,
     'timezone', tz,
-    'message', 'Hora reservada. Confirmá con el abono de $' || deposit || ' dentro de 12 horas.'
+    'message', 'Hora reservada. Para confirmar, pagá el valor total de la consulta.'
   );
 end;
 $$;

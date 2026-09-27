@@ -290,7 +290,7 @@ async function executeTool(
         services: services || [],
         zones: zones || [],
         deposit: ctx.settings.deposit_amount ?? 20000,
-        min_price: ctx.settings.min_price ?? 40000,
+        min_price: ctx.settings.min_price ?? 45000,
       };
     });
   }
@@ -318,8 +318,8 @@ async function executeTool(
       const scheduledAt = String(args.scheduled_at || "");
       const taken = await ensureSlotFree(db, scheduledAt);
       if (taken) return taken;
-      const amount = Number(args.amount || ctx.settings.min_price || 40000);
-      const deposit = ctx.settings.deposit_amount ?? 20000;
+      const amount = Number(args.amount || ctx.settings.min_price || 45000);
+      const deposit = Number(ctx.settings.deposit_amount || 0);
       const { data, error } = await db
         .from("appointments")
         .insert({
@@ -347,8 +347,8 @@ async function executeTool(
           client_id: clientId,
           appointment_id: data.id,
           conversation_id: convId,
-          amount: deposit,
-          kind: "abono",
+          amount,
+          kind: "saldo",
           status: "pendiente",
           checkout_url: ctx.settings.payment_url || null,
           due_at: due,
@@ -362,7 +362,7 @@ async function executeTool(
           appointment_id: data.id,
           payment_id: payment?.id,
           kind: "abono_2h",
-          body: "Hola 😊 te recuerdo el abono de $20.000 para confirmar la hora. Vence en 12 horas.",
+          body: "Hola 😊 para confirmar la hora se paga el valor total de la consulta. Te dejo el dato para el pago.",
           scheduled_at: new Date(Date.now() + 2 * 3600000).toISOString(),
         },
         {
@@ -371,7 +371,7 @@ async function executeTool(
           appointment_id: data.id,
           payment_id: payment?.id,
           kind: "abono_10h",
-          body: "Quedan pocas horas para confirmar con el abono. Si no se acredita, la hora se libera.",
+          body: "Quedan pocas horas para confirmar con el pago total. Si no se acredita, la hora se libera.",
           scheduled_at: new Date(Date.now() + 10 * 3600000).toISOString(),
         },
         {
@@ -380,14 +380,14 @@ async function executeTool(
           appointment_id: data.id,
           payment_id: payment?.id,
           kind: "abono_vence",
-          body: "La hora quedó liberada porque el abono no llegó a tiempo. Cuando quieras, te ayudo a agendar otra.",
+          body: "La hora quedó liberada porque el pago no llegó a tiempo. Cuando quieras, te ayudo a agendar otra.",
           scheduled_at: due,
         },
       ]);
       return {
         appointment: data,
         payment,
-        message: "Cita provisional creada. Abono $20.000 para confirmar, vence en 12 horas.",
+        message: "Cita provisional creada. Se confirma pagando el valor total de la consulta.",
       };
     });
   }

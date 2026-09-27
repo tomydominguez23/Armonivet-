@@ -2196,3 +2196,57 @@ html.js .reveal.is-visible {
     transform: none;
   }
 }
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.page-about .about-hero {
+  padding: 3.5rem 0 2rem;
+}
+
+.page-about .about-hero h1 {
+  max-width: 18ch;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline time {
+  font-weight: 800;
+  color: var(--brand-dark);
+}
+
+.timeline h3 {
+  margin: 0 0 0.35rem;
+}
+
+.timeline p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .timeline li {
+    grid-template-columns: 1fr;
+  }
+}

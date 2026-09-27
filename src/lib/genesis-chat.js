@@ -6,7 +6,7 @@ const STEPS = [
   { key: "pet_age", msg: () => `¿Qué edad tiene ${a().pet_name}?` },
   { key: "tutor_name", msg: "¿Cuál es tu nombre completo?" },
   { key: "email", msg: "¿Tu correo electrónico?", type: "email" },
-  { key: "phone", msg: "¿Tu número de teléfono (con código de área)?" },
+  { key: "phone", msg: "¿Tu WhatsApp? Incluí el código de área. Ej: +56 9 1234 5678" },
   { key: "address", msg: "¿Dirección exacta (Calle, n°, dpto)?" },
   { key: "tutor_info", msg: "Datos del tutor: edad, profesión u ocupación" },
   { key: "patient_data", msg: () => `Datos de ${a().pet_name}: Raza, Tamaño y Peso aproximado` },
@@ -238,6 +238,16 @@ export default function initGenesisChat() {
     addBubble(messagesEl, value, "gc-user");
     pushMsg("user", value);
     const step = STEPS[state.step];
+    if (step.key === "phone") {
+      const digits = String(value || "").replace(/\D/g, "");
+      if (digits.length < 8) {
+        const retry = "Ese teléfono no me alcanza. Escribilo de nuevo, con código de área. Ej: +56 9 1234 5678";
+        addBubble(messagesEl, retry, "gc-bot");
+        pushMsg("bot", retry);
+        processing = false;
+        return;
+      }
+    }
     state.answers[step.key] = value;
     state.step++;
     saveState();
