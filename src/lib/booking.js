@@ -63,6 +63,8 @@ export async function initBooking() {
   const whenLabel = root.querySelector("[data-booking-when]");
   const prevBtn = root.querySelector("[data-booking-prev]");
   const nextBtn = root.querySelector("[data-booking-next]");
+  const payEl = root.querySelector("[data-booking-pay]");
+  const payMsg = root.querySelector("[data-booking-pay-msg]");
 
   if (!isSupabaseConfigured || !supabase) {
     if (statusEl) {
@@ -214,7 +216,14 @@ export async function initBooking() {
     await loadSlots();
     renderMonth();
     renderSlots();
-    setStatus(data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.");
+    const okMsg = data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
+    setStatus(okMsg);
+    if (payMsg) payMsg.textContent = okMsg;
+    if (payEl) {
+      payEl.hidden = false;
+      form?.setAttribute("hidden", "");
+      payEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});
