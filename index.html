@@ -111,7 +111,6 @@
           <a href="#valores">Precios</a>
           <a href="#reseñas">Reseñas</a>
           <a href="#agendar">Agenda</a>
-          <a href="#proceso">Cómo reservar</a>
         </div>
       </nav>
 
@@ -120,7 +119,6 @@
         <a href="#servicios">Servicios</a>
         <a href="#valores">Precios</a>
         <a href="#agendar">Agenda</a>
-        <a href="#proceso">Cómo reservar</a>
         <a href="#reseñas">Reseñas</a>
         <a href="#medios">Medios</a>
         <a
@@ -691,6 +689,28 @@
         </div>
       </section>
 
+      <section class="promo-spotlight" aria-label="Promoción entrenamiento temprano">
+        <div class="shell">
+          <article class="promo-spotlight-card reveal">
+            <div class="promo-spotlight-copy">
+              <h2>¿Tu cachorro se orina y muerde todo en casa? Prueba el entrenamiento temprano</h2>
+              <p>
+                Educación de 3 a 6 meses con la Dra. Bárbara. Hábitos, mordidas y convivencia familiar.
+                Desde $45.000.
+              </p>
+              <a class="btn btn-promo" href="#agendar" data-book="Entrenamiento temprano">Ver detalles</a>
+            </div>
+            <figure class="promo-spotlight-photo">
+              <img
+                data-cms-service="entrenamiento-temprano"
+                data-fallback="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80"
+                alt="Cachorro en entrenamiento temprano"
+              />
+            </figure>
+          </article>
+        </div>
+      </section>
+
       <section class="pricing" id="valores">
         <div class="shell">
           <div class="section-intro reveal">
@@ -795,83 +815,6 @@
               <li>Seguimiento durante 30 días</li>
               <li>Resolución de dudas y recetas cuando sea necesario</li>
             </ul>
-          </div>
-        </div>
-      </section>
-
-      <section class="process" id="proceso">
-        <div class="shell">
-          <div class="section-intro reveal">
-            <p class="eyebrow">Cómo reservar</p>
-            <h2>3 pasos para asegurar tu hora</h2>
-            <p>Reserva simple: calendario propio, pago del valor total y formulario previo.</p>
-          </div>
-
-          <ol class="steps">
-            <li class="reveal">
-              <span>1</span>
-              <div>
-                <h3>Elige día y hora acá</h3>
-                <p>Las mismas horas que ve Génesis. Presencial u online según tu caso.</p>
-              </div>
-            </li>
-            <li class="reveal">
-              <span>2</span>
-              <div>
-                <h3>Paga el valor total de la consulta</h3>
-                <p>Como en una hora de psicólogo: la reserva se confirma con el pago completo. Enviá el comprobante por WhatsApp.</p>
-              </div>
-            </li>
-            <li class="reveal">
-              <span>3</span>
-              <div>
-                <h3>Completa el formulario</h3>
-                <p>
-                  <a
-                    href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Formulario previo a la consulta</a
-                  >
-                </p>
-              </div>
-            </li>
-          </ol>
-
-          <div class="policy-grid">
-            <div class="policy reveal">
-              <h3>Cancelaciones</h3>
-              <ul>
-                <li>Hasta 48 h antes: reagendar 1 vez sin perder el valor pagado.</li>
-                <li>Menos de 48 h: se pierde el valor pagado.</li>
-              </ul>
-            </div>
-            <div class="policy reveal">
-              <h3>El día de la consulta</h3>
-              <ul>
-                <li>Paciente con arnés y correa.</li>
-                <li>Snacks disponibles.</li>
-              </ul>
-            </div>
-            <div class="policy reveal">
-              <h3>Controles</h3>
-              <p>Generalmente entre la 2.ª y 3.ª semana. Luego del día 30, agenda un nuevo control.</p>
-            </div>
-          </div>
-
-          <div class="process-cta reveal">
-            <a
-              class="btn btn-buy"
-              href="#agendar"
-              >Ir a agendar ahora</a
-            >
-            <a
-              class="btn btn-ghost"
-              href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Abrir formulario</a
-            >
           </div>
         </div>
       </section>
@@ -1128,6 +1071,54 @@
                 <button class="btn btn-buy" type="submit">Reservar hora</button>
               </form>
               <p class="booking-status" data-booking-status hidden></p>
+
+              <div class="booking-pay" data-booking-pay hidden>
+                <h3>Para confirmar tu hora</h3>
+                <p class="booking-pay-lead" data-booking-pay-msg>Tu hora quedó reservada. Completá estos pasos para confirmarla.</p>
+                <ol class="booking-pay-steps">
+                  <li>
+                    <span>1</span>
+                    <div>
+                      <h4>Pagá el valor total de la consulta</h4>
+                      <p>Como en una hora de psicólogo: la reserva se confirma con el pago completo.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span>2</span>
+                    <div>
+                      <h4>Enviá el comprobante por WhatsApp</h4>
+                      <p>Escribinos con el comprobante para dejar la hora asegurada.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span>3</span>
+                    <div>
+                      <h4>Completá el formulario previo</h4>
+                      <p>Así la Dra. Bárbara llega a la consulta con tu caso ya leído.</p>
+                    </div>
+                  </li>
+                </ol>
+                <div class="booking-pay-actions">
+                  <a
+                    class="btn btn-buy"
+                    href="https://www.instagram.com/armonivet/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Enviar comprobante</a
+                  >
+                  <a
+                    class="btn btn-ghost"
+                    href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Abrir formulario</a
+                  >
+                </div>
+                <div class="booking-pay-policy">
+                  <p><strong>Cancelaciones:</strong> hasta 48 h antes podés reagendar 1 vez sin perder el valor pagado. Menos de 48 h se pierde el valor.</p>
+                  <p><strong>El día de la consulta:</strong> paciente con arnés y correa. Snacks disponibles.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

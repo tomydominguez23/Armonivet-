@@ -49,6 +49,25 @@ function groupSlots(slots) {
   return byDay;
 }
 
+function applyBookTarget(form, el) {
+  if (!form || !el) return;
+  const service = el.getAttribute("data-book");
+  const zone = el.getAttribute("data-zone");
+  const serviceSelect = form.elements?.service;
+  const zoneSelect = form.elements?.zone;
+  if (service && serviceSelect) {
+    const match = Array.from(serviceSelect.options).find((o) => o.value === service);
+    if (!match) {
+      const opt = document.createElement("option");
+      opt.value = service;
+      opt.textContent = service;
+      serviceSelect.appendChild(opt);
+    }
+    serviceSelect.value = service;
+  }
+  if (zone && zoneSelect) zoneSelect.value = zone;
+}
+
 export async function initBooking() {
   const root = document.querySelector("[data-booking]");
   if (!root) return;
@@ -63,6 +82,14 @@ export async function initBooking() {
   const whenLabel = root.querySelector("[data-booking-when]");
   const prevBtn = root.querySelector("[data-booking-prev]");
   const nextBtn = root.querySelector("[data-booking-next]");
+  const payEl = root.querySelector("[data-booking-pay]");
+  const payMsg = root.querySelector("[data-booking-pay-msg]");
+
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-book], [data-zone]");
+    if (!el) return;
+    applyBookTarget(form, el);
+  });
 
   if (!isSupabaseConfigured || !supabase) {
     if (statusEl) {
@@ -214,30 +241,17 @@ export async function initBooking() {
     await loadSlots();
     renderMonth();
     renderSlots();
-    setStatus(data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.");
+    const okMsg = data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
+    setStatus(okMsg);
+    if (payMsg) payMsg.textContent = okMsg;
+    if (payEl) {
+      payEl.hidden = false;
+      form?.setAttribute("hidden", "");
+      payEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});
-  });
-
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-book], [data-zone]");
-    if (!el) return;
-    const service = el.getAttribute("data-book");
-    const zone = el.getAttribute("data-zone");
-    const serviceSelect = form?.elements?.service;
-    const zoneSelect = form?.elements?.zone;
-    if (service && serviceSelect) {
-      const match = Array.from(serviceSelect.options).find((o) => o.value === service);
-      if (!match) {
-        const opt = document.createElement("option");
-        opt.value = service;
-        opt.textContent = service;
-        serviceSelect.appendChild(opt);
-      }
-      serviceSelect.value = service;
-    }
-    if (zone && zoneSelect) zoneSelect.value = zone;
   });
 
   await loadSlots();
