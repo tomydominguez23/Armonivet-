@@ -49,6 +49,25 @@ function groupSlots(slots) {
   return byDay;
 }
 
+function applyBookTarget(form, el) {
+  if (!form || !el) return;
+  const service = el.getAttribute("data-book");
+  const zone = el.getAttribute("data-zone");
+  const serviceSelect = form.elements?.service;
+  const zoneSelect = form.elements?.zone;
+  if (service && serviceSelect) {
+    const match = Array.from(serviceSelect.options).find((o) => o.value === service);
+    if (!match) {
+      const opt = document.createElement("option");
+      opt.value = service;
+      opt.textContent = service;
+      serviceSelect.appendChild(opt);
+    }
+    serviceSelect.value = service;
+  }
+  if (zone && zoneSelect) zoneSelect.value = zone;
+}
+
 export async function initBooking() {
   const root = document.querySelector("[data-booking]");
   if (!root) return;
@@ -65,6 +84,12 @@ export async function initBooking() {
   const nextBtn = root.querySelector("[data-booking-next]");
   const payEl = root.querySelector("[data-booking-pay]");
   const payMsg = root.querySelector("[data-booking-pay-msg]");
+
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-book], [data-zone]");
+    if (!el) return;
+    applyBookTarget(form, el);
+  });
 
   if (!isSupabaseConfigured || !supabase) {
     if (statusEl) {
@@ -227,26 +252,6 @@ export async function initBooking() {
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});
-  });
-
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-book], [data-zone]");
-    if (!el) return;
-    const service = el.getAttribute("data-book");
-    const zone = el.getAttribute("data-zone");
-    const serviceSelect = form?.elements?.service;
-    const zoneSelect = form?.elements?.zone;
-    if (service && serviceSelect) {
-      const match = Array.from(serviceSelect.options).find((o) => o.value === service);
-      if (!match) {
-        const opt = document.createElement("option");
-        opt.value = service;
-        opt.textContent = service;
-        serviceSelect.appendChild(opt);
-      }
-      serviceSelect.value = service;
-    }
-    if (zone && zoneSelect) zoneSelect.value = zone;
   });
 
   await loadSlots();
