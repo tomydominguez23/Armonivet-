@@ -62,5 +62,6 @@ El panel muestra visitas, clics a agendar, citas, abonos y llegadas por canal.
 ## Enlaces integrados
 
 - Agenda: calendario propio en `#agendar` (Supabase: `booking.sql`)
+- Quiénes somos: `about.html`
 - Formulario previo: [Google Forms](https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform)
 - Instagram: [@armonivet](https://www.instagram.com/armonivet/)

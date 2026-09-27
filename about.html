@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Conocé Armonivet y la cronología profesional de la Dra. Bárbara Castillo, etóloga clínica en Santiago."
+    />
+    <title>Quiénes somos | Armonivet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body class="page-about">
+    <header class="site-header" data-header>
+      <div class="topbar">
+        <div class="shell topbar-inner">
+          <a class="brand" href="./index.html#inicio" aria-label="Armonivet inicio">
+            <img src="./logo-mark.svg" alt="" width="40" height="36" />
+            <span>Armonivet</span>
+          </a>
+          <div class="topbar-actions">
+            <a class="btn btn-header" href="./index.html#agendar">Agendar hora</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="about-hero">
+        <div class="shell">
+          <p class="eyebrow">Quiénes somos</p>
+          <h1>Armonivet y la Dra. Bárbara Castillo</h1>
+          <p>
+            Etología clínica, entrenamiento y Flores de Bach en Santiago. Atención ética, cercana y con un plan claro
+            para recuperar la calma en casa.
+          </p>
+        </div>
+      </section>
+
+      <section class="about">
+        <div class="shell about-grid">
+          <div class="about-copy">
+            <h2>La consulta</h2>
+            <p>
+              Armonivet nace del trabajo de la Dra. Bárbara Castillo: médica veterinaria, diplomada en Etología Clínica
+              y entrenadora canina profesional. Acompaña a perros y gatos con miedo, ansiedad, agresividad y problemas
+              de convivencia, en domicilio o por videollamada.
+            </p>
+            <ul class="cred-list">
+              <li>Médico Veterinario</li>
+              <li>Dipl. Etología Clínica</li>
+              <li>Entrenadora Canina profesional</li>
+              <li>Terapia con Flores de Bach</li>
+            </ul>
+            <a class="btn btn-buy" href="./index.html#agendar">Agendar consulta</a>
+          </div>
+          <figure class="about-doctor">
+            <img src="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
+            <figcaption>
+              <strong>Dra. Bárbara Castillo</strong>
+              <span>Médico Veterinario · Dipl. Etología Clínica</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="pricing">
+        <div class="shell">
+          <div class="section-intro">
+            <p class="eyebrow">Cronología</p>
+            <h2>El camino de Armonivet</h2>
+            <p>Formación, consulta y el espacio que hoy acompaña a las familias en Santiago.</p>
+          </div>
+          <ol class="timeline">
+            <li>
+              <time>Formación</time>
+              <div>
+                <h3>Médico Veterinario</h3>
+                <p>Base clínica para entender salud, dolor y conducta juntos, no por separado.</p>
+              </div>
+            </li>
+            <li>
+              <time>Especialidad</time>
+              <div>
+                <h3>Diplomado en Etología Clínica</h3>
+                <p>Diagnóstico del comportamiento y planes de modificación conductual para perros y gatos.</p>
+              </div>
+            </li>
+            <li>
+              <time>Oficio</time>
+              <div>
+                <h3>Entrenadora canina profesional</h3>
+                <p>Educación guiada para el día a día: paseo, casa, vínculo y hábitos que se sostienen.</p>
+              </div>
+            </li>
+            <li>
+              <time>Complemento</time>
+              <div>
+                <h3>Flores de Bach</h3>
+                <p>Apoyo emocional cuando corresponde. El primer frasco puede ir incluido en la consulta.</p>
+              </div>
+            </li>
+            <li>
+              <time>Armonivet</time>
+              <div>
+                <h3>Consulta en Santiago</h3>
+                <p>Atención a domicilio por sectores y modalidad online. Plan de trabajo por 30 días.</p>
+              </div>
+            </li>
+            <li>
+              <time>Medios</time>
+              <div>
+                <h3>En Tu Día · Canal 13</h3>
+                <p>Armonivet también llega a las familias por televisión, con el mismo criterio clínico y cercano.</p>
+              </div>
+            </li>
+          </ol>
+          <div class="process-cta" style="margin-top: 2rem">
+            <a class="btn btn-buy" href="./index.html#agendar">Agendar hora</a>
+            <a class="btn btn-ghost" href="./index.html#nosotros">Volver al inicio</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-bottom">
+        <p>© <span data-year></span> Armonivet. Santiago, Chile.</p>
+      </div>
+    </footer>
+    <script>
+      document.querySelector("[data-year]").textContent = String(new Date().getFullYear());
+    </script>
+  </body>
+</html>

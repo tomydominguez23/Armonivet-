@@ -31,6 +31,14 @@ function formatWhen(iso) {
   }).format(new Date(iso));
 }
 
+function normalizePhone(raw) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (digits.startsWith("0")) digits = digits.replace(/^0+/, "");
+  if (digits.startsWith("56") && digits.length >= 10) return digits;
+  if (digits.startsWith("9") && digits.length === 9) return `56${digits}`;
+  return digits;
+}
+
 function groupSlots(slots) {
   const byDay = {};
   for (const slot of slots || []) {
@@ -176,12 +184,17 @@ export async function initBooking() {
       setStatus("Elegí un día y un horario.", true);
       return;
     }
+    const phone = normalizePhone(fd.get("phone"));
+    if (phone.length < 8) {
+      setStatus("Escribí un WhatsApp válido. Ej: +56 9 1234 5678", true);
+      return;
+    }
     const submit = form.querySelector("[type='submit']");
     if (submit) submit.disabled = true;
     setStatus("Reservando…");
     const { data, error } = await supabase.rpc("book_public_appointment", {
       p_name: String(fd.get("name") || "").trim(),
-      p_phone: String(fd.get("phone") || "").trim(),
+      p_phone: phone,
       p_scheduled_at: scheduled,
       p_email: String(fd.get("email") || "").trim() || null,
       p_pet_name: String(fd.get("pet_name") || "").trim() || null,
@@ -201,7 +214,7 @@ export async function initBooking() {
     await loadSlots();
     renderMonth();
     renderSlots();
-    setStatus(data?.message || "Hora reservada. Confirmá con el abono de $20.000 en 12 horas.");
+    setStatus(data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.");
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});

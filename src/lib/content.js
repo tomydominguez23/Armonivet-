@@ -24,7 +24,7 @@ function setImgSrc(img, url) {
 function etologiaCopy(text, { fallback = false } = {}) {
   const raw = String(text || "").trim();
   if (/evaluaci[oó]n \+ plan \+ seguimiento/i.test(raw) || (fallback && !raw)) {
-    return "Evaluación diagnóstica + plan de trabajo por 30 días (sujeto a modificar)";
+    return "Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.";
   }
   return raw;
 }
@@ -119,7 +119,7 @@ export async function hydrateSiteContent() {
           <p>${etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" })}</p>
           <div class="offer-price-row">
             <span>${s.price_label || (s.price_from != null ? `Desde <strong>${formatCLP(s.price_from)}</strong>` : "")}</span>
-            <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="${s.title || "Consulta Etología Clínica"}">Agendar</a>
+            <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="${s.title || "Consulta presencial"}">Agendar</a>
           </div>
         </div>
       </article>`

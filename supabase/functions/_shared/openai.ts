@@ -84,7 +84,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "crear_cita",
-    description: "Crea una cita provisional solo si scheduled_at salió de consultar_disponibilidad. El abono confirma.",
+    description: "Crea una cita provisional solo si scheduled_at salió de consultar_disponibilidad. Se confirma pagando el valor total de la consulta.",
     parameters: {
       type: "object",
       properties: {
