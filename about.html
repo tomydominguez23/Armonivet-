@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Conocé Armonivet y la cronología profesional de la Dra. Bárbara Castillo, etóloga clínica en Santiago."
+      content="Conocé Armonivet y a la Dra. Bárbara Castillo, etóloga clínica en Santiago. Formación, consulta y plan de 30 días para perros y gatos."
     />
     <title>Quiénes somos | Armonivet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,8 +16,41 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./src/style.css" />
+    <script>
+      (function () {
+        var KEY = "armonivet.media.v1";
+        function read() {
+          try {
+            var data = JSON.parse(localStorage.getItem(KEY) || "null");
+            return data && data.urls && typeof data.urls === "object" ? data.urls : {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function pick(el, urls) {
+          var slot = el.getAttribute("data-cms-slot");
+          var service = el.getAttribute("data-cms-service");
+          return (slot && urls[slot]) || (service && urls["service:" + service]) || el.getAttribute("data-fallback") || "";
+        }
+        function apply(el, urls) {
+          if (!el || el.nodeType !== 1) return;
+          if (!el.hasAttribute("data-cms-slot") && !el.hasAttribute("data-cms-service")) return;
+          var url = pick(el, urls);
+          if (url && el.getAttribute("src") !== url) el.setAttribute("src", url);
+        }
+        var urls = read();
+        window.__ARM_MEDIA__ = { urls: urls };
+        document.addEventListener("DOMContentLoaded", function () {
+          document.querySelectorAll("[data-cms-slot], [data-cms-service]").forEach(function (el) {
+            apply(el, urls);
+          });
+        });
+      })();
+    </script>
   </head>
   <body class="page-about">
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
     <header class="site-header" data-header>
       <div class="topbar">
         <div class="shell topbar-inner">
@@ -25,118 +58,339 @@
             <img src="./logo-mark.svg" alt="" width="40" height="36" />
             <span>Armonivet</span>
           </a>
+
+          <form class="search-bar" action="./index.html#agendar" method="get">
+            <label class="sr-only" for="buscar">Buscar servicio</label>
+            <input id="buscar" type="search" placeholder="¿Qué necesita tu mascota? Etología, online, gatos..." />
+            <button type="submit" aria-label="Buscar y agendar">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"
+                />
+              </svg>
+            </button>
+          </form>
+
           <div class="topbar-actions">
+            <button type="button" class="cart-btn" data-cart-open aria-label="Abrir carrito">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm10 0a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM7.2 6h13.3l-1.4 7H8.1L6.4 4H3V2h4.4z"
+                />
+              </svg>
+              <span class="cart-btn-count" data-cart-count hidden>0</span>
+            </button>
             <a class="btn btn-header" href="./index.html#agendar">Agendar hora</a>
           </div>
+
+          <button type="button" class="cart-btn cart-btn--mobile" data-cart-open aria-label="Abrir carrito">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path fill="currentColor" d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm10 0a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM7.2 6h13.3l-1.4 7H8.1L6.4 4H3V2h4.4z" />
+            </svg>
+            <span class="cart-btn-count" data-cart-count hidden>0</span>
+          </button>
+          <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="menu-movil">
+            <span class="sr-only">Abrir menú</span>
+            <span></span><span></span>
+          </button>
         </div>
+      </div>
+
+      <nav class="cat-nav" aria-label="Categorías">
+        <div class="shell cat-nav-inner">
+          <a href="./index.html#ofertas">Destacados</a>
+          <a href="./index.html#servicios">Perros</a>
+          <a href="./index.html#servicios">Gatos</a>
+          <a href="./index.html#servicios">Online</a>
+          <a href="./index.html#servicios">Entrenamiento</a>
+          <a href="./index.html#valores">Precios</a>
+          <a href="./about.html" aria-current="page">Quiénes somos</a>
+          <a href="./index.html#agendar">Agenda</a>
+        </div>
+      </nav>
+
+      <div class="mobile-nav" id="menu-movil" data-mobile-nav hidden>
+        <a href="./index.html#ofertas">Destacados</a>
+        <a href="./index.html#servicios">Servicios</a>
+        <a href="./index.html#valores">Precios</a>
+        <a href="./about.html" aria-current="page">Quiénes somos</a>
+        <a href="./index.html#agendar">Agenda</a>
+        <button type="button" data-cart-open>Carrito</button>
+        <a href="./index.html#reseñas">Reseñas</a>
+        <a class="btn btn-primary" href="./index.html#agendar">Agendar hora</a>
       </div>
     </header>
 
-    <main id="contenido">
-      <section class="about-hero">
-        <div class="shell">
-          <p class="eyebrow">Quiénes somos</p>
-          <h1>Armonivet y la Dra. Bárbara Castillo</h1>
-          <p>
-            Etología clínica, entrenamiento y Flores de Bach en Santiago. Atención ética, cercana y con un plan claro
-            para recuperar la calma en casa.
-          </p>
-        </div>
-      </section>
+    <div class="promo-strip">
+      <div class="shell promo-inner">
+        <p>
+          <strong>Desde $45.000</strong> · Consulta + plan de 30 días · Flores de Bach si corresponde
+        </p>
+      </div>
+    </div>
 
-      <section class="about">
-        <div class="shell about-grid">
-          <div class="about-copy">
-            <h2>La consulta</h2>
-            <p>
-              Armonivet nace del trabajo de la Dra. Bárbara Castillo: médica veterinaria, diplomada en Etología Clínica
-              y entrenadora canina profesional. Acompaña a perros y gatos con miedo, ansiedad, agresividad y problemas
-              de convivencia, en domicilio o por videollamada.
+    <main id="contenido">
+      <section class="story-hero">
+        <div class="shell story-hero-grid">
+          <div class="story-hero-copy reveal">
+            <p class="eyebrow">Quiénes somos</p>
+            <h1>Armonivet es el trabajo de la Dra. Bárbara Castillo</h1>
+            <p class="story-lead">
+              Médico veterinario, diplomada en Etología Clínica y entrenadora canina profesional. Atención ética,
+              cercana y con un plan claro para recuperar la calma en casa.
             </p>
-            <ul class="cred-list">
-              <li>Médico Veterinario</li>
-              <li>Dipl. Etología Clínica</li>
-              <li>Entrenadora Canina profesional</li>
-              <li>Terapia con Flores de Bach</li>
-            </ul>
-            <a class="btn btn-buy" href="./index.html#agendar">Agendar consulta</a>
+            <div class="about-actions">
+              <a class="btn btn-buy" href="./index.html#agendar">Agendar consulta</a>
+              <a class="btn btn-ghost" href="./index.html#servicios">Ver servicios</a>
+            </div>
           </div>
-          <figure class="about-doctor">
-            <img src="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
+          <figure class="story-hero-photo reveal">
+            <img
+              data-cms-slot="about_doctor"
+              data-fallback="./dra-barbara.jpg"
+              alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica"
+            />
             <figcaption>
               <strong>Dra. Bárbara Castillo</strong>
-              <span>Médico Veterinario · Dipl. Etología Clínica</span>
+              <span>Médico Veterinario · Dipl. Etología Clínica · Santiago</span>
             </figcaption>
           </figure>
         </div>
       </section>
 
-      <section class="pricing">
+      <section class="story-creds">
         <div class="shell">
-          <div class="section-intro">
-            <p class="eyebrow">Cronología</p>
-            <h2>El camino de Armonivet</h2>
-            <p>Formación, consulta y el espacio que hoy acompaña a las familias en Santiago.</p>
+          <div class="story-cred-grid">
+            <article class="story-cred reveal">
+              <span>01</span>
+              <h2>Médico Veterinario</h2>
+              <p>Salud, dolor y conducta se miran juntos. No hay receta suelta sin contexto clínico.</p>
+            </article>
+            <article class="story-cred reveal">
+              <span>02</span>
+              <h2>Etología clínica</h2>
+              <p>Diagnóstico del comportamiento y plan de modificación conductual para perros y gatos.</p>
+            </article>
+            <article class="story-cred reveal">
+              <span>03</span>
+              <h2>Entrenamiento</h2>
+              <p>Educación guiada para el paseo, la casa y el vínculo que se sostiene día a día.</p>
+            </article>
+            <article class="story-cred reveal">
+              <span>04</span>
+              <h2>Flores de Bach</h2>
+              <p>Apoyo emocional cuando corresponde. El primer frasco puede ir en la consulta.</p>
+            </article>
           </div>
-          <ol class="timeline">
-            <li>
-              <time>Formación</time>
-              <div>
+        </div>
+      </section>
+
+      <section class="story-path">
+        <div class="shell">
+          <div class="section-intro reveal">
+            <p class="eyebrow">Cronología</p>
+            <h2>El camino hasta Armonivet</h2>
+            <p>Formación, oficio y el espacio que hoy acompaña a las familias en Santiago.</p>
+          </div>
+
+          <ol class="story-timeline">
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Formación</p>
+              <div class="story-card">
                 <h3>Médico Veterinario</h3>
                 <p>Base clínica para entender salud, dolor y conducta juntos, no por separado.</p>
               </div>
             </li>
-            <li>
-              <time>Especialidad</time>
-              <div>
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Especialidad</p>
+              <div class="story-card">
                 <h3>Diplomado en Etología Clínica</h3>
-                <p>Diagnóstico del comportamiento y planes de modificación conductual para perros y gatos.</p>
+                <p>Diagnóstico del comportamiento y planes de modificación para perros y gatos.</p>
               </div>
             </li>
-            <li>
-              <time>Oficio</time>
-              <div>
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Oficio</p>
+              <div class="story-card">
                 <h3>Entrenadora canina profesional</h3>
                 <p>Educación guiada para el día a día: paseo, casa, vínculo y hábitos que se sostienen.</p>
               </div>
             </li>
-            <li>
-              <time>Complemento</time>
-              <div>
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Complemento</p>
+              <div class="story-card">
                 <h3>Flores de Bach</h3>
                 <p>Apoyo emocional cuando corresponde. El primer frasco puede ir incluido en la consulta.</p>
               </div>
             </li>
-            <li>
-              <time>Armonivet</time>
-              <div>
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Armonivet</p>
+              <div class="story-card">
                 <h3>Consulta en Santiago</h3>
                 <p>Atención a domicilio por sectores y modalidad online. Plan de trabajo por 30 días.</p>
               </div>
             </li>
-            <li>
-              <time>Medios</time>
-              <div>
+            <li class="reveal">
+              <span class="story-dot" aria-hidden="true"></span>
+              <p class="story-when">Medios</p>
+              <div class="story-card">
                 <h3>En Tu Día · Canal 13</h3>
-                <p>Armonivet también llega a las familias por televisión, con el mismo criterio clínico y cercano.</p>
+                <p>El mismo criterio clínico y cercano, también en televisión para las familias.</p>
               </div>
             </li>
           </ol>
-          <div class="process-cta" style="margin-top: 2rem">
-            <a class="btn btn-buy" href="./index.html#agendar">Agendar hora</a>
-            <a class="btn btn-ghost" href="./index.html#nosotros">Volver al inicio</a>
+        </div>
+      </section>
+
+      <section class="story-method">
+        <div class="shell">
+          <div class="section-intro reveal">
+            <p class="eyebrow">Cómo trabajamos</p>
+            <h2>Una consulta, un plan que se puede aplicar</h2>
+            <p>No es un tip suelto. Es evaluación, guía de trabajo y seguimiento por 30 días.</p>
+          </div>
+          <div class="plan-cards">
+            <article class="plan-card reveal">
+              <p class="plan-badge">Paso 1</p>
+              <h3>Evaluación diagnóstica</h3>
+              <p class="plan-note">Presencial en Santiago u online</p>
+              <ul>
+                <li>Historia del paciente y de la familia</li>
+                <li>Lectura clínica de la conducta</li>
+                <li>Prioridades claras para el hogar</li>
+              </ul>
+            </article>
+            <article class="plan-card featured reveal">
+              <p class="plan-badge">Paso 2</p>
+              <h3>Plan de 30 días</h3>
+              <p class="plan-note">Guía de trabajo para aplicar en casa</p>
+              <ul>
+                <li>Modificación conductual paso a paso</li>
+                <li>Flores de Bach si corresponde</li>
+                <li>Resolución de dudas durante el mes</li>
+              </ul>
+            </article>
+            <article class="plan-card reveal">
+              <p class="plan-badge">Paso 3</p>
+              <h3>Control si lo necesitan</h3>
+              <p class="plan-note">Después del día 30 se agenda un control</p>
+              <ul>
+                <li>Ajuste del plan según avances</li>
+                <li>Presencial o remoto</li>
+                <li>Sin vender un plan anual automático</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-media" aria-label="Armonivet en los medios">
+        <div class="shell mid-banner-panel">
+          <figure class="mid-banner-photo reveal">
+            <img src="./reel-tudia.jpg" alt="Dra. Bárbara Castillo en Tu Día, Canal 13" />
+          </figure>
+          <div class="mid-banner-inner">
+            <div>
+              <p class="mid-kicker">En los medios</p>
+              <h2>Tips de la Dra. Bárbara en Tu Día, Canal 13</h2>
+              <p>El mismo criterio clínico y cercano que ves en consulta, también en televisión.</p>
+            </div>
+            <a
+              class="btn btn-buy"
+              href="https://www.instagram.com/reel/DS5b_pXDovL/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ver en Instagram</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <div class="shell">
+          <div class="final-inner reveal">
+            <p class="eyebrow">Agenda Armonivet</p>
+            <h2>Escoge día y hora cuando tu familia esté lista</h2>
+            <p>Se paga el valor total de la consulta para confirmar. Presencial según tu zona u online.</p>
+            <div class="about-actions about-actions--center">
+              <a class="btn btn-buy" href="./index.html#agendar">Ir a agendar</a>
+              <a class="btn btn-ghost" href="./index.html#servicios">Ver planes</a>
+            </div>
           </div>
         </div>
       </section>
     </main>
 
+    <div class="cart-overlay" data-cart-overlay hidden>
+      <div class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-dialog-title">
+        <button type="button" class="cart-dialog-close" data-cart-close aria-label="Cerrar">×</button>
+        <p class="cart-dialog-kicker" id="cart-dialog-title" data-cart-title>Agregaste a tu carrito</p>
+        <div data-cart-added></div>
+        <div class="cart-dialog-list" data-cart-list hidden></div>
+        <div class="cart-dialog-suggest" data-cart-suggest></div>
+        <div class="cart-dialog-actions">
+          <button type="button" class="btn btn-ghost" data-cart-continue>Seguir viendo</button>
+          <a class="btn btn-buy" href="./index.html#agendar" data-cart-checkout>Elegir hora y pagar</a>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div>
+          <a class="brand" href="./index.html#inicio">
+            <img src="./logo-mark.svg" alt="" width="40" height="36" />
+            <span>Armonivet</span>
+          </a>
+          <p>Etología clínica · Entrenamiento · Flores de Bach · Santiago</p>
+        </div>
+        <div>
+          <p class="footer-label">Comprar / Agendar</p>
+          <a href="./index.html#agendar">Agenda</a>
+          <a href="./about.html">Quiénes somos</a>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Formulario previo</a
+          >
+        </div>
+        <div>
+          <p class="footer-label">Redes</p>
+          <a href="https://www.instagram.com/armonivet/" target="_blank" rel="noopener noreferrer">Instagram @armonivet</a>
+        </div>
+        <div>
+          <p class="footer-label">Administración</p>
+          <a href="./admin/login.html" data-admin-login>Iniciar sesión</a>
+        </div>
+      </div>
       <div class="shell footer-bottom">
-        <p>© <span data-year></span> Armonivet. Santiago, Chile.</p>
+        <p>© <span data-year></span> Armonivet. Santiago, Chile. *Flores de Bach según evaluación.</p>
       </div>
     </footer>
-    <script>
-      document.querySelector("[data-year]").textContent = String(new Date().getFullYear());
-    </script>
+
+    <a
+      class="whatsapp-fab"
+      href="https://www.instagram.com/armonivet/"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Contactar Armonivet"
+      title="Contáctanos"
+    >
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M16.01 3C9.4 3 4 8.3 4 14.78c0 2.52.82 4.85 2.21 6.76L5 29l7.68-2.14a12.3 12.3 0 0 0 3.33.46c6.61 0 12-5.3 12-11.78C28.01 8.3 22.62 3 16.01 3zm6.93 16.68c-.29.82-1.45 1.5-2.38 1.7-.64.13-1.47.24-4.27-.92-3.58-1.48-5.88-5.1-6.06-5.34-.17-.24-1.45-1.93-1.45-3.68s.92-2.61 1.25-2.97c.33-.36.72-.45 1-.45h.72c.23 0 .54-.09.84.64.29.73 1 2.5 1.09 2.68.09.18.15.4.03.64-.12.24-.18.39-.36.6-.18.21-.38.47-.54.63-.18.18-.37.37-.16.73.21.36.93 1.53 2 2.48 1.38 1.22 2.54 1.6 2.9 1.78.36.18.57.15.78-.09.21-.24.9-1.05 1.14-1.41.24-.36.48-.3.81-.18.33.12 2.1.99 2.46 1.17.36.18.6.27.69.42.09.15.09.87-.2 1.69z"
+        />
+      </svg>
+    </a>
+
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
