@@ -87,23 +87,60 @@ export async function initBooking() {
 
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-book], [data-zone]");
-    if (!el) return;
+    if (!el || e.target.closest("[data-add]")) return;
     applyBookTarget(form, el);
   });
 
-  if (!isSupabaseConfigured || !supabase) {
-    if (statusEl) {
-      statusEl.hidden = false;
-      statusEl.textContent = "El calendario se activa cuando Supabase está configurado.";
+  const paintMonth = (byDayMap = {}) => {
+    if (monthEl) monthEl.textContent = monthLabel(cursor);
+    if (!gridEl) return;
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const first = new Date(year, month, 1);
+    const startPad = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (const name of WEEKDAYS) cells.push(`<span class="booking-dow">${name}</span>`);
+    for (let i = 0; i < startPad; i += 1) cells.push(`<span class="booking-day is-empty"></span>`);
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const key = `${year}-${pad(month + 1)}-${pad(day)}`;
+      const available = byDayMap[key]?.length || 0;
+      const isSelected = selectedDate === key;
+      const isToday = key === dateKey(new Date());
+      const disabled = available === 0;
+      cells.push(
+        `<button type="button" class="booking-day${disabled ? " is-disabled" : ""}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}" data-day="${key}" ${disabled ? "disabled" : ""}>
+          <strong>${day}</strong>
+          ${available ? `<em class="booking-dot" aria-label="${available} horas"></em>` : `<em class="booking-dot" hidden></em>`}
+        </button>`,
+      );
     }
-    return;
-  }
+    gridEl.innerHTML = cells.join("");
+  };
 
   let cursor = new Date();
   cursor.setDate(1);
   let selectedDate = null;
   let selectedSlot = null;
   let byDay = {};
+
+  paintMonth();
+
+  if (!isSupabaseConfigured || !supabase) {
+    prevBtn?.addEventListener("click", () => {
+      cursor.setMonth(cursor.getMonth() - 1);
+      paintMonth();
+    });
+    nextBtn?.addEventListener("click", () => {
+      cursor.setMonth(cursor.getMonth() + 1);
+      paintMonth();
+    });
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = "El calendario se activa cuando Supabase está configurado.";
+    }
+    return;
+  }
 
   const setStatus = (text, isError = false) => {
     if (!statusEl) return;
@@ -126,31 +163,8 @@ export async function initBooking() {
   };
 
   const renderMonth = () => {
-    if (monthEl) monthEl.textContent = monthLabel(cursor);
-    if (!gridEl) return;
-    const year = cursor.getFullYear();
-    const month = cursor.getMonth();
-    const first = new Date(year, month, 1);
-    const startPad = (first.getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells = [];
-    for (const name of WEEKDAYS) cells.push(`<span class="booking-dow">${name}</span>`);
-    for (let i = 0; i < startPad; i += 1) cells.push(`<span class="booking-day is-empty"></span>`);
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const key = `${year}-${pad(month + 1)}-${pad(day)}`;
-      const available = byDay[key]?.length || 0;
-      const isSelected = selectedDate === key;
-      const isToday = key === dateKey(new Date());
-      const disabled = available === 0;
-      cells.push(
-        `<button type="button" class="booking-day${disabled ? " is-disabled" : ""}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}" data-day="${key}" ${disabled ? "disabled" : ""}>
-          <strong>${day}</strong>
-          ${available ? `<em class="booking-dot" aria-label="${available} horas"></em>` : `<em class="booking-dot" hidden></em>`}
-        </button>`,
-      );
-    }
-    gridEl.innerHTML = cells.join("");
-    gridEl.querySelectorAll("[data-day]").forEach((btn) => {
+    paintMonth(byDay);
+    gridEl?.querySelectorAll("[data-day]").forEach((btn) => {
       btn.addEventListener("click", () => {
         selectedDate = btn.getAttribute("data-day");
         selectedSlot = null;
