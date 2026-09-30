@@ -119,7 +119,7 @@ export async function hydrateSiteContent() {
           <p>${etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" })}</p>
           <div class="offer-price-row">
             <span>${s.price_label || (s.price_from != null ? `Desde <strong>${formatCLP(s.price_from)}</strong>` : "")}</span>
-            <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="${s.title || "Consulta presencial"}">Agendar</a>
+            <button type="button" class="btn btn-buy btn-buy--sm" data-add="${s.slug || ""}" data-book="${s.title || "Consulta presencial"}" data-price="${s.price_from ?? ""}">Agregar</button>
           </div>
         </div>
       </article>`
@@ -175,7 +175,7 @@ export async function hydrateSiteContent() {
           <p class="price-sector">Desde</p>
           <p class="price-amount">${formatCLP(z.price)}</p>
           <p class="price-zones">${z.zones_text || ""}</p>
-          <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Consulta Etología Clínica" data-zone="${z.name || ""}">Agendar ${z.name}</a>
+          <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="${z.name || ""}" data-price="${z.price ?? 45000}" data-title="Consulta presencial · ${z.name || ""}">Agregar ${z.name}</button>
         </div>
       </article>`;
       })

@@ -86,14 +86,24 @@
           </form>
 
           <div class="topbar-actions">
-            <a
-              class="btn btn-header"
-              href="#agendar"
-            >
-              Agendar hora
-            </a>
+            <button type="button" class="cart-btn" data-cart-open aria-label="Abrir carrito">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm10 0a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM7.2 6h13.3l-1.4 7H8.1L6.4 4H3V2h4.4z"
+                />
+              </svg>
+              <span class="cart-btn-count" data-cart-count hidden>0</span>
+            </button>
+            <a class="btn btn-header" href="#agendar">Agendar hora</a>
           </div>
 
+          <button type="button" class="cart-btn cart-btn--mobile" data-cart-open aria-label="Abrir carrito">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path fill="currentColor" d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm10 0a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM7.2 6h13.3l-1.4 7H8.1L6.4 4H3V2h4.4z"/>
+            </svg>
+            <span class="cart-btn-count" data-cart-count hidden>0</span>
+          </button>
           <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="menu-movil">
             <span class="sr-only">Abrir menú</span>
             <span></span><span></span>
@@ -119,6 +129,7 @@
         <a href="#servicios">Servicios</a>
         <a href="#valores">Precios</a>
         <a href="#agendar">Agenda</a>
+        <button type="button" data-cart-open>Carrito</button>
         <a href="#reseñas">Reseñas</a>
         <a href="#medios">Medios</a>
         <a
@@ -339,7 +350,7 @@
                 <p>Ideal para agresividad, miedo y ansiedad. Mismo plan de 30 días, desde cualquier comuna.</p>
                 <div class="offer-price-row">
                   <span>Desde <strong>$45.000</strong></span>
-                  <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Consulta remota" data-zone="Online">Agendar</a>
+                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-online" data-book="Consulta remota" data-zone="Online" data-price="45000">Agregar</button>
                 </div>
               </div>
             </article>
@@ -376,7 +387,7 @@
                 <p>¿Tu cachorro se orina y se defeca en todas partes? ¿Muerde todo lo que pilla en casa, incluido a ustedes?</p>
                 <div class="offer-price-row">
                   <span>Desde <strong>$45.000</strong></span>
-                  <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Entrenamiento temprano">Conocer más</a>
+                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento-temprano" data-book="Entrenamiento temprano" data-price="45000">Agregar</button>
                 </div>
               </div>
             </article>
@@ -395,7 +406,7 @@
                 <p>Educación guiada para el día a día y el vínculo familiar.</p>
                 <div class="offer-price-row">
                   <span>Desde <strong>$45.000</strong></span>
-                  <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Entrenamiento">Agendar</a>
+                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento" data-book="Entrenamiento" data-price="45000">Agregar</button>
                 </div>
               </div>
             </article>
@@ -483,12 +494,13 @@
                       <li><strong>Sector B</strong> Desde $50.000 <span>Providencia y limítrofes</span></li>
                       <li><strong>Sector C</strong> Desde $55.000 <span>Oriente, sur y más lejanas</span></li>
                     </ul>
-                    <a
+                    <button
+                      type="button"
                       class="btn btn-buy btn-buy--sm"
-                      href="#agendar"
+                      data-add="consulta-presencial"
                       data-book="Consulta presencial"
-                      >Agendar</a
-                    >
+                      data-price="45000"
+                    >Agregar</button>
                   </div>
                 </article>
 
@@ -506,13 +518,14 @@
                       <li><strong>Formato</strong> Videollamada <span>Desde cualquier comuna</span></li>
                       <li><strong>Incluye</strong> Plan de trabajo <span>Sujeto a modificar</span></li>
                     </ul>
-                    <a
+                    <button
+                      type="button"
                       class="btn btn-buy btn-buy--sm"
-                      href="#agendar"
+                      data-add="consulta-online"
                       data-book="Consulta remota"
                       data-zone="Online"
-                      >Agendar online</a
-                    >
+                      data-price="45000"
+                    >Agregar</button>
                   </div>
                 </article>
 
@@ -530,12 +543,13 @@
                       <li><strong>Para</strong> Perros y gatos <span>Un motivo concreto</span></li>
                       <li><strong>Incluye</strong> Pauta clara <span>Para aplicar en casa</span></li>
                     </ul>
-                    <a
+                    <button
+                      type="button"
                       class="btn btn-buy btn-buy--sm"
-                      href="#agendar"
+                      data-add="asesoria"
                       data-book="Asesoría felina / canina"
-                      >Agendar</a
-                    >
+                      data-price="45000"
+                    >Agregar</button>
                   </div>
                 </article>
 
@@ -553,12 +567,13 @@
                       <li><strong>Foco</strong> Convivencia <span>Paseo, casa y calma</span></li>
                       <li><strong>Seguimiento</strong> 30 días <span>Si va con la consulta</span></li>
                     </ul>
-                    <a
+                    <button
+                      type="button"
                       class="btn btn-buy btn-buy--sm"
-                      href="#agendar"
+                      data-add="entrenamiento"
                       data-book="Entrenamiento"
-                      >Agendar</a
-                    >
+                      data-price="45000"
+                    >Agregar</button>
                   </div>
                 </article>
 
@@ -576,7 +591,7 @@
                       <li><strong>Foco</strong> Hábitos y mordida <span>Para toda la vida</span></li>
                       <li><strong>Con</strong> la Dra. Bárbara <span>Etología y entrenamiento</span></li>
                     </ul>
-                    <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Entrenamiento temprano">Conocer más</a>
+                    <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento-temprano" data-book="Entrenamiento temprano" data-price="45000">Agregar</button>
                   </div>
                 </article>
 
@@ -594,7 +609,7 @@
                       <li><strong>Cupos</strong> Limitados <span>Sujeto a disponibilidad</span></li>
                       <li><strong>Consulta</strong> Por WhatsApp <span>Para coordinar</span></li>
                     </ul>
-                    <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Cat y pet sitter / paseos educativos">Consultar</a>
+                    <button type="button" class="btn btn-buy btn-buy--sm" data-add="sitter" data-book="Cat y pet sitter / paseos educativos" data-price-label="Sujeto a disponibilidad">Agregar</button>
                   </div>
                 </article>
               </div>
@@ -659,7 +674,7 @@
                 <li>Guía de trabajo y plan por 30 días</li>
                 <li>Flores de Bach si corresponde</li>
               </ul>
-              <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Consulta presencial">Agendar</a>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-price="45000">Agregar</button>
             </article>
             <article class="plan-card" id="consulta-online">
               <p class="plan-badge">Más vendido</p>
@@ -671,7 +686,7 @@
                 <li>Ideal para agresividad, miedo y ansiedad</li>
                 <li>Mismo plan de modificación conductual</li>
               </ul>
-              <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Consulta remota" data-zone="Online">Agendar online</a>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-online" data-book="Consulta remota" data-zone="Online" data-price="45000">Agregar</button>
             </article>
             <article class="plan-card">
               <h3>Entrenamiento profesional</h3>
@@ -682,7 +697,7 @@
                 <li>Cachorros 3 a 6 meses</li>
                 <li>2 pacientes mismo hogar se cotiza</li>
               </ul>
-              <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Entrenamiento">Agendar</a>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento" data-book="Entrenamiento" data-price="45000">Agregar</button>
             </article>
           </div>
 
@@ -698,7 +713,7 @@
                 Educación de 3 a 6 meses con la Dra. Bárbara. Hábitos, mordidas y convivencia familiar.
                 Desde $45.000.
               </p>
-              <a class="btn btn-promo" href="#agendar" data-book="Entrenamiento temprano">Ver detalles</a>
+              <button type="button" class="btn btn-promo" data-add="entrenamiento-temprano" data-book="Entrenamiento temprano" data-price="45000">Agregar</button>
             </div>
             <figure class="promo-spotlight-photo">
               <img
@@ -735,13 +750,15 @@
                 <p class="price-sector">Desde</p>
                 <p class="price-amount">$45.000</p>
                 <p class="price-zones"><strong>Ñuñoa</strong> y <strong>Macul</strong></p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="#agendar"
-                  data-book="Consulta presencial"
-                  data-zone="Sector A"
-                  >Agendar Sector A</a
-                >
+                  <button
+                    type="button"
+                    class="btn btn-buy btn-buy--sm"
+                    data-add="consulta-presencial"
+                    data-book="Consulta presencial"
+                    data-zone="Sector A"
+                    data-price="45000"
+                    data-title="Consulta presencial · Sector A"
+                  >Agregar Sector A</button>
               </div>
             </article>
 
@@ -764,13 +781,15 @@
                   Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La
                   Florida.
                 </p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="#agendar"
-                  data-book="Consulta presencial"
-                  data-zone="Sector B"
-                  >Agendar Sector B</a
-                >
+                  <button
+                    type="button"
+                    class="btn btn-buy btn-buy--sm"
+                    data-add="consulta-presencial"
+                    data-book="Consulta presencial"
+                    data-zone="Sector B"
+                    data-price="50000"
+                    data-title="Consulta presencial · Sector B"
+                  >Agregar Sector B</button>
               </div>
             </article>
 
@@ -792,13 +811,15 @@
                   Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente
                   de Las Condes / La Reina / Vitacura / Peñalolén, San Bernardo, Puente Alto y Huechuraba.
                 </p>
-                <a
-                  class="btn btn-buy btn-buy--sm"
-                  href="#agendar"
-                  data-book="Consulta presencial"
-                  data-zone="Sector C"
-                  >Agendar Sector C</a
-                >
+                  <button
+                    type="button"
+                    class="btn btn-buy btn-buy--sm"
+                    data-add="consulta-presencial"
+                    data-book="Consulta presencial"
+                    data-zone="Sector C"
+                    data-price="55000"
+                    data-title="Consulta presencial · Sector C"
+                  >Agregar Sector C</button>
               </div>
             </article>
           </div>
@@ -1019,6 +1040,7 @@
                 <p class="booking-hint">Tocá un día del calendario para ver los horarios.</p>
               </div>
               <p class="booking-when" data-booking-when>Elegí un horario</p>
+              <div class="booking-cart" data-booking-cart hidden></div>
 
               <form class="booking-form" data-booking-form>
                 <input type="hidden" name="scheduled_at" />
@@ -1079,15 +1101,15 @@
                   <li>
                     <span>1</span>
                     <div>
-                      <h4>Pagá el valor total de la consulta</h4>
-                      <p>Como en una hora de psicólogo: la reserva se confirma con el pago completo.</p>
+                    <h4>Pagá el valor total en la plataforma</h4>
+                    <p>Tarjeta o el medio que tengas en Mercado Pago. El cobro confirma la hora.</p>
                     </div>
                   </li>
                   <li>
                     <span>2</span>
                     <div>
-                      <h4>Enviá el comprobante por WhatsApp</h4>
-                      <p>Escribinos con el comprobante para dejar la hora asegurada.</p>
+                    <h4>Confirmá el pago</h4>
+                    <p>Si Mercado Pago aún no está conectado, te dejamos el link de cobro configurado en Génesis.</p>
                     </div>
                   </li>
                   <li>
@@ -1099,13 +1121,7 @@
                   </li>
                 </ol>
                 <div class="booking-pay-actions">
-                  <a
-                    class="btn btn-buy"
-                    href="https://www.instagram.com/armonivet/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Enviar comprobante</a
-                  >
+                  <button type="button" class="btn btn-buy" data-pay-now>Pagar ahora</button>
                   <a
                     class="btn btn-ghost"
                     href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
@@ -1124,6 +1140,20 @@
         </div>
       </section>
     </main>
+
+    <div class="cart-overlay" data-cart-overlay hidden>
+      <div class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-dialog-title">
+        <button type="button" class="cart-dialog-close" data-cart-close aria-label="Cerrar">×</button>
+        <p class="cart-dialog-kicker" id="cart-dialog-title" data-cart-title>Agregaste a tu carrito</p>
+        <div data-cart-added></div>
+        <div class="cart-dialog-list" data-cart-list hidden></div>
+        <div class="cart-dialog-suggest" data-cart-suggest></div>
+        <div class="cart-dialog-actions">
+          <button type="button" class="btn btn-ghost" data-cart-continue>Seguir viendo</button>
+          <a class="btn btn-buy" href="#agendar" data-cart-checkout>Elegir hora y pagar</a>
+        </div>
+      </div>
+    </div>
 
     <footer class="site-footer">
       <div class="shell footer-grid">

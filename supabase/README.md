@@ -10,6 +10,7 @@ Ejecuta estos SQL en el **SQL Editor** de tu proyecto Supabase, en este orden:
 6. `copy_updates.sql` — textos de la web (opcional, si ya corriste el seed)
 7. `booking.sql` — agenda propia (reemplaza Calendly): horas libres + reserva web + bloqueos
 8. `prices_services.sql` — precios 2026, servicios nuevos y pago total (sin abono). Si ya corriste `booking.sql`, volvé a correrlo para el mensaje de reserva.
+9. `checkout.sql` — columnas extra de pagos para el carrito y Mercado Pago.
 
 La vinculación de WhatsApp + GPT está documentada en `GENESIS.md`. El webhook vive en Edge Functions; el dashboard solo lee Supabase.
 

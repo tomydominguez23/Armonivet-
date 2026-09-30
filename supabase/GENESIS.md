@@ -24,6 +24,7 @@ En el SQL Editor de Supabase, en este orden:
 2. `schema_v2.sql`
 3. `genesis.sql`  ← este archivo crea chats, pagos, recordatorios y auditoría
 4. `booking.sql`  ← agenda propia: Génesis y la web leen las mismas horas (`list_available_slots`)
+5. `checkout.sql`  ← carrito y Mercado Pago
 
 ## 2. Secretos (solo en Edge Functions)
 
@@ -37,6 +38,8 @@ Dashboard de Supabase → **Project Settings → Edge Functions → Secrets**:
 | `WHATSAPP_VERIFY_TOKEN` | Una frase que inventás vos (ej. `armonivet-genesis-2026`) |
 | `WHATSAPP_APP_SECRET` | App Secret de Meta (firma del webhook) |
 | `GENESIS_CRON_SECRET` | Opcional, para el cron de recordatorios |
+| `MERCADOPAGO_ACCESS_TOKEN` | Token de Mercado Pago (Checkout Pro). Con esto el carrito cobra en la web. |
+| `PUBLIC_SITE_URL` | URL pública, ej. `https://tomydominguez23.github.io/Armonivet-/` |
 
 **No** pongas estas claves en `.env` de Vite ni en GitHub Actions. Esa capa es pública.
 
