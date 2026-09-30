@@ -140,11 +140,12 @@ export async function initBooking() {
       const key = `${year}-${pad(month + 1)}-${pad(day)}`;
       const available = byDay[key]?.length || 0;
       const isSelected = selectedDate === key;
+      const isToday = key === dateKey(new Date());
       const disabled = available === 0;
       cells.push(
-        `<button type="button" class="booking-day${disabled ? " is-disabled" : ""}${isSelected ? " is-selected" : ""}" data-day="${key}" ${disabled ? "disabled" : ""}>
+        `<button type="button" class="booking-day${disabled ? " is-disabled" : ""}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}" data-day="${key}" ${disabled ? "disabled" : ""}>
           <strong>${day}</strong>
-          <em>${available ? `${available} horas` : "—"}</em>
+          ${available ? `<em class="booking-dot" aria-label="${available} horas"></em>` : `<em class="booking-dot" hidden></em>`}
         </button>`,
       );
     }
@@ -249,6 +250,25 @@ export async function initBooking() {
       form?.setAttribute("hidden", "");
       payEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
+    const payNow = root.querySelector("[data-pay-now]");
+    const runPay = async () => {
+      if (payNow) payNow.disabled = true;
+      setStatus("Abriendo el pago…");
+      const { startCheckout } = await import("./checkout.js");
+      const pay = await startCheckout({
+        appointmentId: data?.appointment_id,
+        name: String(fd.get("name") || "").trim(),
+        email: String(fd.get("email") || "").trim(),
+      });
+      if (payNow) payNow.disabled = false;
+      if (pay.redirected) return;
+      if (!pay.ok) {
+        setStatus(pay.error || "No se pudo iniciar el pago.", true);
+        return;
+      }
+      setStatus(pay.message || "Pago registrado. Te confirmamos cuando se acredite.");
+    };
+    payNow?.addEventListener("click", runPay, { once: true });
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});
@@ -263,4 +283,13 @@ export async function initBooking() {
   }
   renderMonth();
   renderSlots();
+
+  const paid = new URLSearchParams(window.location.search).get("pago") || (window.location.hash.includes("pago=") ? window.location.hash.split("pago=")[1] : "");
+  if (paid === "ok") {
+    if (payEl) payEl.hidden = false;
+    setStatus("Pago recibido. Tu hora quedó confirmada.");
+    import("./cart.js").then(({ clearCart }) => clearCart()).catch(() => {});
+  } else if (paid === "error") {
+    setStatus("El pago no se completó. Probá de nuevo o escribinos.", true);
+  }
 }

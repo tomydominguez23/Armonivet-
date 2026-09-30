@@ -179,6 +179,10 @@ import("./lib/booking.js")
   .then(({ initBooking }) => initBooking())
   .catch((err) => console.warn("[booking]", err));
 
+import("./lib/cart.js")
+  .then(({ initCart }) => initCart())
+  .catch((err) => console.warn("[cart]", err));
+
 /* Chat Genesis: reemplaza el botón WhatsApp con el widget de pre-consulta */
 import("./lib/genesis-chat.js")
   .then(({ default: initGenesisChat }) => initGenesisChat())

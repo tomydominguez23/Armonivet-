@@ -468,6 +468,7 @@
                   <label>Precio mínimo (CLP) <input type="number" name="min_price" /></label>
                 </div>
                 <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
+                <p class="hint">Si configurás <code>MERCADOPAGO_ACCESS_TOKEN</code> en Edge Functions, el carrito cobra en la plataforma. Este link es el respaldo.</p>
                 <label>Horarios (uno por línea, 24h). La web y Génesis usan estos mismos.
                   <textarea name="slot_hours" rows="4" placeholder="10:00&#10;12:00&#10;15:00&#10;17:30"></textarea>
                 </label>

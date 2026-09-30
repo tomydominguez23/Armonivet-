@@ -103,7 +103,7 @@ export async function trackEvent(eventType, label = null, metadata = {}) {
 }
 
 export function bindConversionTracking() {
-  document.querySelectorAll('a[href="#agendar"], a[href*="calendly.com"], [data-book]').forEach((el) => {
+  document.querySelectorAll('a[href="#agendar"], a[href*="calendly.com"], [data-book], [data-add]').forEach((el) => {
     if (el.dataset.trackAgendar) return;
     el.dataset.trackAgendar = "1";
     el.addEventListener("click", () => {
