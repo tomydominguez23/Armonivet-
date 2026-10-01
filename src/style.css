@@ -2242,6 +2242,7 @@ body.cart-open {
   margin: 0 0 0.15rem;
   font-size: 0.9rem;
   line-height: 1.25;
+  min-height: 2.5em;
 }
 
 .cart-suggest-card p {
@@ -2250,8 +2251,15 @@ body.cart-open {
   color: var(--muted);
 }
 
+.cart-suggest-card > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .cart-suggest-card .btn {
   width: 100%;
+  margin-top: auto;
 }
 
 .cart-dialog-actions {
