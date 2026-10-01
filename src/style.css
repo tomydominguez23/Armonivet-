@@ -2116,8 +2116,8 @@ body.cart-open {
 
 .cart-dialog {
   position: relative;
-  width: min(560px, 100%);
-  max-height: min(88vh, 760px);
+  width: min(760px, 100%);
+  max-height: min(88vh, 820px);
   overflow: auto;
   padding: 1.4rem 1.3rem 1.2rem;
   border-radius: 24px;
@@ -2217,35 +2217,49 @@ body.cart-open {
 
 .cart-suggest-grid {
   display: grid;
-  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .cart-suggest-card {
-  display: grid;
-  grid-template-columns: 72px 1fr auto;
-  gap: 0.7rem;
-  align-items: center;
-  padding: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
   border: 1px solid var(--line);
   border-radius: 16px;
+  min-width: 0;
 }
 
 .cart-suggest-card img {
-  width: 72px;
-  height: 72px;
+  width: 100%;
+  height: 110px;
   object-fit: cover;
   border-radius: 12px;
 }
 
 .cart-suggest-card h4 {
   margin: 0 0 0.15rem;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  min-height: 2.5em;
 }
 
 .cart-suggest-card p {
-  margin: 0;
-  font-size: 0.82rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+.cart-suggest-card > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cart-suggest-card .btn {
+  width: 100%;
+  margin-top: auto;
 }
 
 .cart-dialog-actions {
@@ -2493,12 +2507,22 @@ html.js .reveal.is-visible {
     height: 210px;
   }
 
-  .cart-suggest-card {
-    grid-template-columns: 64px 1fr;
+  .cart-suggest-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 0.7rem;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .cart-suggest-card .btn {
-    grid-column: 1 / -1;
+  .cart-suggest-card {
+    flex: 0 0 68%;
+    scroll-snap-align: start;
+  }
+
+  .cart-suggest-card img {
+    height: 96px;
   }
 
   .package-strip {
