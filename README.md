@@ -23,7 +23,39 @@ npm run build
 npm run preview
 ```
 
-La carpeta `dist/` queda lista para desplegar en cualquier hosting estático (Netlify, Vercel, GitHub Pages, etc.).
+La carpeta `dist/` queda lista para desplegar en cualquier hosting estático.
+
+### GitHub Pages
+
+Cada push a `main` publica en `https://tomydominguez23.github.io/Armonivet-/` (workflow **Deploy GitHub Pages**).
+
+### Tu servidor (actualización automática)
+
+Cuando hay un cambio en `main`, GitHub Actions **construye el sitio y lo sube a tu servidor**.
+
+En el repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Qué es |
+|---|---|
+| `DEPLOY_HOST` | IP o dominio del servidor (`armonivet.cl` o `123.45.67.89`) |
+| `DEPLOY_USER` | Usuario SSH o FTP |
+| `DEPLOY_PATH` | Carpeta pública, ej. `/home/USUARIO/public_html/` |
+| `DEPLOY_SSH_KEY` | Clave **privada** SSH (si el hosting tiene SSH) |
+| `DEPLOY_PORT` | Opcional. Puerto SSH, por defecto `22` |
+| `DEPLOY_PASSWORD` | Solo si no hay SSH: contraseña FTP |
+
+También tienen que existir `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (ya las usa Pages).
+
+**Si el servidor tiene SSH** (VPS o cPanel con SSH):
+
+1. En tu PC: `ssh-keygen -t ed25519 -C "github-armonivet" -f armonivet-deploy -N ""`
+2. En el servidor, agregá el contenido de `armonivet-deploy.pub` a `~/.ssh/authorized_keys`
+3. En GitHub, el contenido de `armonivet-deploy` (la clave **privada**) va en `DEPLOY_SSH_KEY`
+4. `DEPLOY_PATH` debe ser la carpeta del sitio, no todo el servidor
+
+**Si solo hay FTP** (Hostinger, hosting compartido sin SSH): no cargues `DEPLOY_SSH_KEY`. Usá `DEPLOY_PASSWORD` y en `DEPLOY_PATH` algo como `/public_html/`.
+
+Después de guardar los secretos, **Actions → Deploy servidor → Run workflow**. Cada commit siguiente a `main` actualiza la web solo.
 
 ## Configurar Supabase (obligatorio para el panel)
 

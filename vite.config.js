@@ -2,8 +2,8 @@ import { defineConfig } from "vite";
 import { resolve } from "node:path";
 
 export default defineConfig({
-  // Repo name for GitHub Pages project site
-  base: process.env.GITHUB_ACTIONS ? "/Armonivet-/" : "/",
+  // En el servidor propio usá VITE_BASE=/ . En GitHub Pages queda /Armonivet-/
+  base: process.env.VITE_BASE || (process.env.GITHUB_ACTIONS ? "/Armonivet-/" : "/"),
   build: {
     rollupOptions: {
       input: {
