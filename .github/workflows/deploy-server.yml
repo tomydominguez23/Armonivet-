@@ -44,3 +44,8 @@ jobs:
           local-dir: ./dist/
           server-dir: ${{ secrets.DEPLOY_PATH }}
           timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .well-known/**
+            cgi-bin/**
