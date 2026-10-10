@@ -37,7 +37,7 @@ En cPanel → **Cuentas de FTP** creá una cuenta con directorio `public_html`. 
 
 | Secret | De dónde sale en cPanel |
 |---|---|
-| `DEPLOY_HOST` | Servidor FTP (`ftp.tudominio.cl`) |
+| `DEPLOY_HOST` | IP del hosting (cPanel → columna derecha → Shared IP Address) |
 | `DEPLOY_USER` | Usuario FTP (`github@tudominio.cl`) |
 | `DEPLOY_PASSWORD` | Contraseña de esa cuenta FTP |
 | `DEPLOY_PATH` | `/` si la cuenta FTP ya entra en `public_html`; `/public_html/` si usás el usuario principal de cPanel |
