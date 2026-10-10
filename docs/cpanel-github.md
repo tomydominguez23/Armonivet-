@@ -51,10 +51,19 @@ Si en vez de una cuenta nueva usás el **usuario principal de cPanel** (el mismo
 - `DEPLOY_PASSWORD` = la contraseña de cPanel
 - `DEPLOY_PATH` = `/public_html/`
 
-### 3. Comprobar la carpeta pública (opcional)
+### 3. Comprobar la carpeta pública
 
-**Administrador de archivos** / **File Manager** → carpeta `public_html`.  
-Ahí es donde tiene que quedar el sitio. No borres a mano `.well-known` (SSL) ni `cgi-bin`.
+**Administrador de archivos** / **File Manager** → `public_html`.
+
+Ahí tienen que estar `index.html`, `assets/`, `admin/` y `.htaccess`, **al mismo nivel** que `cgi-bin`. Si ves una carpeta `GitHub/` y el dominio muestra “Index of /”, la cuenta FTP está subiendo adentro de esa carpeta:
+
+1. Entrá a `public_html/GitHub`.
+2. Seleccioná todo (`index.html`, `assets`, `admin`, `.htaccess`, etc.).
+3. **Mover** → destino `/public_html`.
+4. Borrá la carpeta `GitHub` si quedó vacía.
+5. En **Cuentas de FTP**, editá el directorio de la cuenta: tiene que ser `public_html`, no `public_html/GitHub`.
+
+No borres `.well-known` (SSL) ni `cgi-bin`.
 
 ---
 
@@ -124,6 +133,7 @@ La publicación sigue siendo GitHub Actions → FTP/SSH de cPanel.
 |---|---|
 | `getaddrinfo EAI_AGAIN` | GitHub no resuelve el nombre del servidor. Cambiá `DEPLOY_HOST` por la **IP** de cPanel (inicio → columna derecha → Shared IP Address). Sin `ftp://`. |
 | `530 Login authentication failed` | Usuario o contraseña. Al conectar por IP, `DEPLOY_USER` tiene que ser el **completo** de Configurar cliente FTP (`github@tudominio.cl`), no `github`. `DEPLOY_PASSWORD` es la de **esa** cuenta FTP, no la del login de cPanel. Sin espacios ni comillas. |
+| El dominio muestra **Index of /** con `GitHub/` y `cgi-bin/` | El sitio quedó en `public_html/GitHub`. Mové esos archivos a `public_html` y dejá el directorio FTP en `public_html`. |
 | Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Probá `/` y si no, `/public_html/`. Tiene que terminar en `/`. |
 | Se borró el SSL o el correo | La cuenta FTP no debe apuntar a `/home/usuario` entero, solo a `public_html`. |
 | El job **Deploy servidor** no corre | Falta `DEPLOY_HOST`. El workflow se salta si ese secreto está vacío. |
