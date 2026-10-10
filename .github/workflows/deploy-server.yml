@@ -7,9 +7,64 @@ on:
 
 jobs:
   deploy:
-    if: ${{ secrets.DEPLOY_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Elegir FTP o SSH
+        id: dest
+        env:
+          RAW_HOST: ${{ secrets.DEPLOY_HOST }}
+          RAW_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          FTP_PASS: ${{ secrets.DEPLOY_PASSWORD }}
+        run: |
+          HOST="$(printf '%s' "$RAW_HOST" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
+          HOST="${HOST#ftp://}"
+          HOST="${HOST#ftps://}"
+          HOST="${HOST#sftp://}"
+          HOST="${HOST%%/*}"
+          case "$HOST" in
+            *:21) HOST="${HOST%:21}" ;;
+            *:990) HOST="${HOST%:990}" ;;
+          esac
+          USER="$(printf '%s' "$RAW_USER" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
+          PASS="$(printf '%s' "$FTP_PASS" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
+          echo "::add-mask::$HOST"
+          echo "::add-mask::$USER"
+          echo "::add-mask::$PASS"
+          echo "host=$HOST" >> "$GITHUB_OUTPUT"
+          echo "user=$USER" >> "$GITHUB_OUTPUT"
+          {
+            echo "password<<__FTP_PW__"
+            printf '%s\n' "$PASS"
+            echo "__FTP_PW__"
+          } >> "$GITHUB_OUTPUT"
+          if [ -n "$USER" ] && [[ "$USER" != *@* ]]; then
+            echo "::warning::DEPLOY_USER no tiene @dominio. Al conectar por IP, cPanel pide el usuario de Configurar cliente FTP (ej. github@tudominio.cl), no solo github."
+          fi
+
+          if [ -z "$HOST" ]; then
+            echo "::error::Falta el secreto DEPLOY_HOST."
+            exit 1
+          fi
+
+          if [ -n "$SSH_KEY" ]; then
+            echo "mode=ssh" >> "$GITHUB_OUTPUT"
+          elif [ -n "$FTP_PASS" ]; then
+            echo "mode=ftp" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Falta DEPLOY_SSH_KEY o DEPLOY_PASSWORD."
+            exit 1
+          fi
+
+          if echo "$HOST" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "DEPLOY_HOST es una IP; listo para conectar."
+          else
+            if ! getent hosts "$HOST" >/dev/null 2>&1; then
+              echo "::error::GitHub no puede resolver DEPLOY_HOST (DNS EAI_AGAIN). En cPanel, a la derecha, copiá Shared IP Address / Dirección IP compartida y reemplazá el secreto DEPLOY_HOST por esa IP, sin ftp:// ni espacios."
+              exit 1
+            fi
+          fi
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -23,24 +78,31 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Publicar por SSH
-        if: ${{ secrets.DEPLOY_SSH_KEY != '' }}
+        if: steps.dest.outputs.mode == 'ssh'
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avz --delete --exclude .well-known --exclude cgi-bin
           path: dist/
           remote_path: ${{ secrets.DEPLOY_PATH }}
-          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_host: ${{ steps.dest.outputs.host }}
           remote_user: ${{ secrets.DEPLOY_USER }}
           remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
           remote_port: 22
 
       - name: Publicar por FTP
-        if: ${{ secrets.DEPLOY_SSH_KEY == '' && secrets.DEPLOY_PASSWORD != '' }}
+        if: steps.dest.outputs.mode == 'ftp'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
+          server: ${{ steps.dest.outputs.host }}
+          username: ${{ steps.dest.outputs.user }}
+          password: ${{ steps.dest.outputs.password }}
+          protocol: ftp
+          port: 21
           local-dir: ./dist/
           server-dir: ${{ secrets.DEPLOY_PATH }}
           timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .well-known/**
+            cgi-bin/**

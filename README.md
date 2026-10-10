@@ -29,31 +29,22 @@ La carpeta `dist/` queda lista para desplegar en cualquier hosting estático.
 
 Cada push a `main` publica en `https://tomydominguez23.github.io/Armonivet-/` (workflow **Deploy GitHub Pages**).
 
-### Tu servidor (actualización automática)
+### Tu servidor / cPanel (actualización automática)
 
-Cuando hay un cambio en `main`, GitHub Actions **construye el sitio y lo sube a tu servidor**.
+Cuando hay un cambio en `main`, GitHub Actions **construye el sitio y lo sube a cPanel**. Los datos se sacan de cPanel y se pegan en GitHub; el detalle clic a clic está en [`docs/cpanel-github.md`](docs/cpanel-github.md).
 
-En el repo → **Settings → Secrets and variables → Actions → New repository secret**:
+En cPanel → **Cuentas de FTP** creá una cuenta con directorio `public_html`. En **Configurar cliente FTP** copiá servidor y usuario. En el repo → **Settings → Secrets and variables → Actions**:
 
-| Secret | Qué es |
+| Secret | De dónde sale en cPanel |
 |---|---|
-| `DEPLOY_HOST` | IP o dominio del servidor (`armonivet.cl` o `123.45.67.89`) |
-| `DEPLOY_USER` | Usuario SSH o FTP |
-| `DEPLOY_PATH` | Carpeta pública, ej. `/home/USUARIO/public_html/` |
-| `DEPLOY_SSH_KEY` | Clave **privada** SSH (si el hosting tiene SSH) |
-| `DEPLOY_PORT` | Opcional. Puerto SSH, por defecto `22` |
-| `DEPLOY_PASSWORD` | Solo si no hay SSH: contraseña FTP |
+| `DEPLOY_HOST` | IP del hosting (cPanel → columna derecha → Shared IP Address) |
+| `DEPLOY_USER` | Usuario FTP (`github@tudominio.cl`) |
+| `DEPLOY_PASSWORD` | Contraseña de esa cuenta FTP |
+| `DEPLOY_PATH` | `/` si la cuenta FTP ya entra en `public_html`; `/public_html/` si usás el usuario principal de cPanel |
+
+No uses **Control de versiones Git** de cPanel para publicar: clona el código fuente y este sitio necesita el build (`dist/`).
 
 También tienen que existir `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (ya las usa Pages).
-
-**Si el servidor tiene SSH** (VPS o cPanel con SSH):
-
-1. En tu PC: `ssh-keygen -t ed25519 -C "github-armonivet" -f armonivet-deploy -N ""`
-2. En el servidor, agregá el contenido de `armonivet-deploy.pub` a `~/.ssh/authorized_keys`
-3. En GitHub, el contenido de `armonivet-deploy` (la clave **privada**) va en `DEPLOY_SSH_KEY`
-4. `DEPLOY_PATH` debe ser la carpeta del sitio, no todo el servidor
-
-**Si solo hay FTP** (Hostinger, hosting compartido sin SSH): no cargues `DEPLOY_SSH_KEY`. Usá `DEPLOY_PASSWORD` y en `DEPLOY_PATH` algo como `/public_html/`.
 
 Después de guardar los secretos, **Actions → Deploy servidor → Run workflow**. Cada commit siguiente a `main` actualiza la web solo.
 
