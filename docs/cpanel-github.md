@@ -123,7 +123,7 @@ La publicación sigue siendo GitHub Actions → FTP/SSH de cPanel.
 | Error | Qué revisar |
 |---|---|
 | `getaddrinfo EAI_AGAIN` | GitHub no resuelve el nombre del servidor. Cambiá `DEPLOY_HOST` por la **IP** de cPanel (inicio → columna derecha → Shared IP Address). Sin `ftp://`. |
-| `530 Login incorrect` | Usuario FTP mal copiado. Tiene que ser `github@tudominio.cl`, no solo `github`. Contraseña de esa cuenta, no la de cPanel. |
+| `530 Login authentication failed` | Usuario o contraseña. Al conectar por IP, `DEPLOY_USER` tiene que ser el **completo** de Configurar cliente FTP (`github@tudominio.cl`), no `github`. `DEPLOY_PASSWORD` es la de **esa** cuenta FTP, no la del login de cPanel. Sin espacios ni comillas. |
 | Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Probá `/` y si no, `/public_html/`. Tiene que terminar en `/`. |
 | Se borró el SSL o el correo | La cuenta FTP no debe apuntar a `/home/usuario` entero, solo a `public_html`. |
 | El job **Deploy servidor** no corre | Falta `DEPLOY_HOST`. El workflow se salta si ese secreto está vacío. |
