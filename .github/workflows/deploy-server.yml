@@ -7,9 +7,28 @@ on:
 
 jobs:
   deploy:
-    if: ${{ secrets.DEPLOY_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Elegir FTP o SSH
+        id: dest
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          FTP_PASS: ${{ secrets.DEPLOY_PASSWORD }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "::error::Falta el secreto DEPLOY_HOST (servidor FTP de cPanel)."
+            exit 1
+          fi
+          if [ -n "$SSH_KEY" ]; then
+            echo "mode=ssh" >> "$GITHUB_OUTPUT"
+          elif [ -n "$FTP_PASS" ]; then
+            echo "mode=ftp" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Falta DEPLOY_SSH_KEY o DEPLOY_PASSWORD."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -23,7 +42,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Publicar por SSH
-        if: ${{ secrets.DEPLOY_SSH_KEY != '' }}
+        if: steps.dest.outputs.mode == 'ssh'
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avz --delete --exclude .well-known --exclude cgi-bin
@@ -35,7 +54,7 @@ jobs:
           remote_port: 22
 
       - name: Publicar por FTP
-        if: ${{ secrets.DEPLOY_SSH_KEY == '' && secrets.DEPLOY_PASSWORD != '' }}
+        if: steps.dest.outputs.mode == 'ftp'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.DEPLOY_HOST }}
