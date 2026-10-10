@@ -30,10 +30,12 @@ Ahí aparecen los valores exactos:
 
 | Lo que muestra cPanel | Secret de GitHub | Ejemplo |
 |---|---|---|
-| **Servidor FTP** / FTP Server | `DEPLOY_HOST` | `ftp.tudominio.cl` |
+| **Dirección IP compartida** (columna derecha del inicio de cPanel) | `DEPLOY_HOST` | `123.45.67.89` |
 | **Usuario** / Username | `DEPLOY_USER` | `github@tudominio.cl` |
 | **Contraseña** (la que creaste) | `DEPLOY_PASSWORD` | *(no se muestra; es la que pusiste)* |
 | **Puerto** | no hace falta (usa 21) | `21` |
+
+`DEPLOY_HOST` tiene que ser la **IP** (solo números y puntos). No uses `ftp://`, ni `ftp.tudominio.cl`, si ese nombre todavía no tiene DNS.
 
 **Ruta (`DEPLOY_PATH`):** como esta cuenta FTP entra ya en `public_html`, el valor es:
 
@@ -120,6 +122,7 @@ La publicación sigue siendo GitHub Actions → FTP/SSH de cPanel.
 
 | Error | Qué revisar |
 |---|---|
+| `getaddrinfo EAI_AGAIN` | GitHub no resuelve el nombre del servidor. Cambiá `DEPLOY_HOST` por la **IP** de cPanel (inicio → columna derecha → Shared IP Address). Sin `ftp://`. |
 | `530 Login incorrect` | Usuario FTP mal copiado. Tiene que ser `github@tudominio.cl`, no solo `github`. Contraseña de esa cuenta, no la de cPanel. |
 | Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Probá `/` y si no, `/public_html/`. Tiene que terminar en `/`. |
 | Se borró el SSL o el correo | La cuenta FTP no debe apuntar a `/home/usuario` entero, solo a `public_html`. |

@@ -12,14 +12,27 @@ jobs:
       - name: Elegir FTP o SSH
         id: dest
         env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
+          RAW_HOST: ${{ secrets.DEPLOY_HOST }}
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           FTP_PASS: ${{ secrets.DEPLOY_PASSWORD }}
         run: |
+          HOST="$(printf '%s' "$RAW_HOST" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
+          HOST="${HOST#ftp://}"
+          HOST="${HOST#ftps://}"
+          HOST="${HOST#sftp://}"
+          HOST="${HOST%%/*}"
+          case "$HOST" in
+            *:21) HOST="${HOST%:21}" ;;
+            *:990) HOST="${HOST%:990}" ;;
+          esac
+          echo "::add-mask::$HOST"
+          echo "host=$HOST" >> "$GITHUB_OUTPUT"
+
           if [ -z "$HOST" ]; then
-            echo "::error::Falta el secreto DEPLOY_HOST (servidor FTP de cPanel)."
+            echo "::error::Falta el secreto DEPLOY_HOST."
             exit 1
           fi
+
           if [ -n "$SSH_KEY" ]; then
             echo "mode=ssh" >> "$GITHUB_OUTPUT"
           elif [ -n "$FTP_PASS" ]; then
@@ -27,6 +40,15 @@ jobs:
           else
             echo "::error::Falta DEPLOY_SSH_KEY o DEPLOY_PASSWORD."
             exit 1
+          fi
+
+          if echo "$HOST" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "DEPLOY_HOST es una IP; listo para conectar."
+          else
+            if ! getent hosts "$HOST" >/dev/null 2>&1; then
+              echo "::error::GitHub no puede resolver DEPLOY_HOST (DNS EAI_AGAIN). En cPanel, a la derecha, copiá Shared IP Address / Dirección IP compartida y reemplazá el secreto DEPLOY_HOST por esa IP, sin ftp:// ni espacios."
+              exit 1
+            fi
           fi
 
       - uses: actions/checkout@v4
@@ -48,7 +70,7 @@ jobs:
           switches: -avz --delete --exclude .well-known --exclude cgi-bin
           path: dist/
           remote_path: ${{ secrets.DEPLOY_PATH }}
-          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_host: ${{ steps.dest.outputs.host }}
           remote_user: ${{ secrets.DEPLOY_USER }}
           remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
           remote_port: 22
@@ -57,9 +79,11 @@ jobs:
         if: steps.dest.outputs.mode == 'ftp'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.DEPLOY_HOST }}
+          server: ${{ steps.dest.outputs.host }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_PASSWORD }}
+          protocol: ftp
+          port: 21
           local-dir: ./dist/
           server-dir: ${{ secrets.DEPLOY_PATH }}
           timeout: 60000
