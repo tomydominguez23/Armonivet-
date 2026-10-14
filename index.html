@@ -1104,14 +1104,14 @@
                     <span>1</span>
                     <div>
                     <h4>Pagá el valor total en la plataforma</h4>
-                    <p>Tarjeta o el medio que tengas en Mercado Pago. El cobro confirma la hora.</p>
+                    <p>Tarjeta o cuenta Mercado Pago, sin salir de esta web. El cobro confirma la hora.</p>
                     </div>
                   </li>
                   <li>
                     <span>2</span>
                     <div>
                     <h4>Confirmá el pago</h4>
-                    <p>Si Mercado Pago aún no está conectado, te dejamos el link de cobro configurado en Génesis.</p>
+                    <p>Cuando Mercado Pago lo aprueba, la hora queda confirmada sola.</p>
                     </div>
                   </li>
                   <li>
@@ -1142,6 +1142,17 @@
         </div>
       </section>
     </main>
+
+    <div class="pay-overlay" data-pay-overlay hidden>
+      <div class="pay-dialog" role="dialog" aria-modal="true" aria-labelledby="pay-dialog-title">
+        <button type="button" class="cart-dialog-close" data-pay-close aria-label="Cerrar">×</button>
+        <p class="cart-dialog-kicker" id="pay-dialog-title">Pago seguro con Mercado Pago</p>
+        <p class="pay-dialog-lead" data-pay-lead>Completá el pago acá mismo, sin salir de Armonivet.</p>
+        <div id="paymentBrick_container"></div>
+        <div id="statusScreenBrick_container" hidden></div>
+        <p class="pay-dialog-error" data-pay-error hidden></p>
+      </div>
+    </div>
 
     <div class="cart-overlay" data-cart-overlay hidden>
       <div class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-dialog-title">

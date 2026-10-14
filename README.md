@@ -25,6 +25,8 @@ npm run preview
 
 La carpeta `dist/` queda lista para desplegar en cualquier hosting estático.
 
+El cobro del carrito usa **Checkout API** de Mercado Pago (Payment Brick en el sitio). Credenciales y pasos: [`docs/mercadopago.md`](docs/mercadopago.md).
+
 ### GitHub Pages
 
 Cada push a `main` publica en `https://tomydominguez23.github.io/Armonivet-/` (workflow **Deploy GitHub Pages**).
