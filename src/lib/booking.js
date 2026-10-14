@@ -269,13 +269,18 @@ export async function initBooking() {
       if (payNow) payNow.disabled = true;
       setStatus("Abriendo el pago…");
       const { startCheckout } = await import("./checkout.js");
+      const { cartTotal, getCart, ZONE_PRICE } = await import("./cart.js");
+      const cartItems = getCart();
+      const zone = String(fd.get("zone") || "");
       const pay = await startCheckout({
         appointmentId: data?.appointment_id,
         name: String(fd.get("name") || "").trim(),
         email: String(fd.get("email") || "").trim(),
+        title: String(fd.get("service") || "").trim(),
+        amount: cartTotal(cartItems) || ZONE_PRICE[zone] || 45000,
       });
       if (payNow) payNow.disabled = false;
-      if (pay.redirected) return;
+      if (pay.redirected || pay.brick) return;
       if (!pay.ok) {
         setStatus(pay.error || "No se pudo iniciar el pago.", true);
         return;

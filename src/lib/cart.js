@@ -60,7 +60,7 @@ export const CATALOG = [
   },
 ];
 
-const ZONE_PRICE = { "Sector A": 45000, "Sector B": 50000, "Sector C": 55000, Online: 45000 };
+export const ZONE_PRICE = { "Sector A": 45000, "Sector B": 50000, "Sector C": 55000, Online: 45000 };
 
 export function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";

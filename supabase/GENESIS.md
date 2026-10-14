@@ -38,10 +38,13 @@ Dashboard de Supabase → **Project Settings → Edge Functions → Secrets**:
 | `WHATSAPP_VERIFY_TOKEN` | Una frase que inventás vos (ej. `armonivet-genesis-2026`) |
 | `WHATSAPP_APP_SECRET` | App Secret de Meta (firma del webhook) |
 | `GENESIS_CRON_SECRET` | Opcional, para el cron de recordatorios |
-| `MERCADOPAGO_ACCESS_TOKEN` | Token de Mercado Pago (Checkout Pro). Con esto el carrito cobra en la web. |
-| `PUBLIC_SITE_URL` | URL pública, ej. `https://tomydominguez23.github.io/Armonivet-/` |
+| `MERCADOPAGO_ACCESS_TOKEN` | Access Token de Mercado Pago (Checkout API). Solo en el servidor. |
+| `MERCADOPAGO_PUBLIC_KEY` | Public Key de la misma aplicación. El frontend la pide al servidor; no va en Vite. |
+| `PUBLIC_SITE_URL` | URL pública, ej. `https://armonivet.com` |
 
 **No** pongas estas claves en `.env` de Vite ni en GitHub Actions. Esa capa es pública.
+
+Guía de Mercado Pago (Checkout API): [`docs/mercadopago.md`](../docs/mercadopago.md).
 
 ## 3. Desplegar funciones (sin instalar nada)
 

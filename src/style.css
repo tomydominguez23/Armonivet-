@@ -2818,3 +2818,48 @@ html.js .reveal.is-visible {
     margin-top: 0;
   }
 }
+
+body.pay-open {
+  overflow: hidden;
+}
+
+.pay-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(28, 31, 35, 0.5);
+}
+
+.pay-overlay[hidden] {
+  display: none;
+}
+
+.pay-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(92vh, 900px);
+  overflow: auto;
+  padding: 1.4rem 1.2rem 1.3rem;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(28, 31, 35, 0.22);
+}
+
+.pay-dialog-lead {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.pay-dialog-error {
+  margin: 0.85rem 0 0;
+  color: #9b2c2c;
+  font-size: 0.9rem;
+}
+
+.pay-dialog-error[hidden] {
+  display: none;
+}

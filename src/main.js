@@ -183,6 +183,10 @@ import("./lib/cart.js")
   .then(({ initCart }) => initCart())
   .catch((err) => console.warn("[cart]", err));
 
+import("./lib/checkout.js")
+  .then(({ initCheckoutUi }) => initCheckoutUi())
+  .catch((err) => console.warn("[checkout]", err));
+
 /* Chat Genesis: reemplaza el botón WhatsApp con el widget de pre-consulta */
 import("./lib/genesis-chat.js")
   .then(({ default: initGenesisChat }) => initGenesisChat())
