@@ -1,58 +1,119 @@
-# Vincular Mercado Pago (Checkout API)
+# Paso a paso: vincular Mercado Pago
 
-El cobro se hace **en el sitio** (Payment Brick): tarjeta o cuenta Mercado Pago, sin mandar datos de tarjeta a nuestro servidor. El Access Token vive solo en Supabase Edge Functions.
+El cobro queda **en armonivet.com** (Checkout API / Payment Brick). El Access Token nunca va en GitHub ni en el admin.
 
-## 1. Crear la aplicación
+Hacé los bloques **en este orden**.
 
-1. Entrá a [Tus integraciones](https://www.mercadopago.cl/developers/panel/app) con la cuenta de Armonivet.
-2. **Crear aplicación**.
-3. Nombre: `Armonivet web`.
-4. Producto: **Checkout API** (el que te indicó Mercado Pago).
-5. Industria: servicios / veterinaria, o la más cercana.
+---
 
-## 2. Copiar las credenciales
+## 0. Publicar el código de la pasarela
 
-En la app, menú izquierdo:
+1. Abrí el PR: https://github.com/tomydominguez23/Armonivet-/pull/33
+2. **Merge pull request** (cuando deje de ser draft, **Ready for review** y después merge).
+3. Esperá a que GitHub Actions termine (Pages y, si aplica, Deploy servidor).
 
-- **Pruebas → Credenciales de prueba** para probar.
-- **Producción → Credenciales de producción** para cobrar de verdad (hay que activarlas: industria, URL del sitio `https://armonivet.com`, aceptar términos).
+Sin este merge, el sitio viejo no tiene el formulario de pago.
 
-Copiá:
+---
 
-| Dato | Dónde va |
+## 1. Crear la app en Mercado Pago
+
+1. Entrá a [Tus integraciones](https://www.mercadopago.cl/developers/panel/app) con la cuenta de cobro de Armonivet (no una cuenta personal de prueba, si ya tenés la de la clínica).
+2. Arriba a la derecha: **Crear aplicación** / **Create application**.
+3. Completá:
+   - **Nombre:** `Armonivet web`
+   - **Producto / solución:** **Checkout API** (el de la doc que te mandaron)
+   - **¿Qué tipo de integración?** Web / pagos online
+   - **Industria:** servicios, salud o la más cercana a veterinaria
+4. Creá la aplicación y abrila.
+
+---
+
+## 2. Copiar las credenciales de **prueba**
+
+Todavía no uses producción. Primero hay que ver que el formulario abre.
+
+1. En el menú izquierdo: **Pruebas** → **Credenciales de prueba** / **Test credentials**.
+2. Copiá y guardá en un bloc de notas (sin espacios ni comillas):
+
+| Qué ves en Mercado Pago | Nombre exacto en Supabase |
 |---|---|
-| **Public Key** (`APP_USR-…` o `TEST-…`) | Secret `MERCADOPAGO_PUBLIC_KEY` |
-| **Access Token** | Secret `MERCADOPAGO_ACCESS_TOKEN` |
+| **Public Key** | `MERCADOPAGO_PUBLIC_KEY` |
+| **Access Token** | `MERCADOPAGO_ACCESS_TOKEN` |
 
-Nunca pongas el Access Token en GitHub, `.env` de Vite ni el panel admin.
+La Public Key suele empezar con `TEST-`. El Access Token también.  
+**No** subas el Access Token a GitHub.
+
+---
 
 ## 3. Pegarlas en Supabase
 
-Supabase → proyecto Armonivet → **Project Settings → Edge Functions → Secrets**:
+1. Entrá a [Supabase](https://supabase.com/dashboard/project/xcnxqhjthrdvjtqezzct).
+2. **Project Settings** (engranaje) → **Edge Functions** → **Secrets**.
+3. **Add new secret**, uno por uno:
 
-- `MERCADOPAGO_ACCESS_TOKEN`
-- `MERCADOPAGO_PUBLIC_KEY`
-- `PUBLIC_SITE_URL` = `https://armonivet.com`
+| Name | Value |
+|---|---|
+| `MERCADOPAGO_PUBLIC_KEY` | la Public Key de prueba |
+| `MERCADOPAGO_ACCESS_TOKEN` | el Access Token de prueba |
+| `PUBLIC_SITE_URL` | `https://armonivet.com` |
 
-## 4. SQL (una vez)
+Si `PUBLIC_SITE_URL` ya existe, actualizalo a `https://armonivet.com` (sin barra al final).
 
-En **SQL Editor**, si no lo corriste: `supabase/checkout.sql`.
+---
 
-## 5. Publicar las funciones
+## 4. SQL (una sola vez)
 
-GitHub → **Actions → Deploy Edge Functions → Run workflow** (o un push a `main` que toque `supabase/functions`).
+1. En Supabase: **SQL Editor** → **New query**.
+2. Abrí en GitHub el archivo [`supabase/checkout.sql`](https://github.com/tomydominguez23/Armonivet-/blob/cursor/mercadopago-pasarela-e52e/supabase/checkout.sql), copiá todo y pegalo.
+3. **Run**. Si dice que las columnas ya existen, está bien: no pisa datos.
 
-Quedan tres funciones:
+---
 
-- `create-checkout` — arma el pago y la preferencia
-- `process-payment` — cobra la tarjeta tokenizada por el Brick
-- `mercadopago-webhook` — confirma el estado cuando Mercado Pago avisa
+## 5. Publicar las Edge Functions
 
-## 6. Probar
+Hace falta el secret `SUPABASE_ACCESS_TOKEN` en GitHub (si ya desplegaste Génesis, ya está).
 
-1. Abrí `https://armonivet.com`, agregá un servicio, reservá hora, **Pagar ahora**.
-2. Tiene que abrirse el formulario de Mercado Pago **en la misma página**.
-3. Con credenciales de prueba usá las [tarjetas de prueba](https://www.mercadopago.cl/developers/es/docs/checkout-api-payments/additional-content/test-cards).
-4. Si el pago está aprobado, la hora pasa a confirmada.
+1. Repo **Armonivet-** → **Actions**.
+2. A la izquierda: **Deploy Edge Functions**.
+3. **Run workflow** → branch **`main`** (después del merge) → **Run workflow**.
+4. El job tiene que quedar **verde**.
 
-Cuando funcione en prueba, cambiá los secrets por las credenciales de **producción** y volvé a pagar un monto real chico.
+Eso publica `create-checkout`, `process-payment` y `mercadopago-webhook`.
+
+---
+
+## 6. Probar en la web
+
+1. Abrí `https://armonivet.com` (Ctrl+F5).
+2. **Agregar** un servicio al carrito.
+3. Completá la agenda y **Reservar hora**.
+4. **Pagar ahora**.
+5. Tiene que abrirse un recuadro en la misma página (Mercado Pago), no un listado de carpetas ni un link genérico.
+
+Tarjetas de prueba (Chile): [documentación oficial](https://www.mercadopago.cl/developers/es/docs/checkout-api-payments/additional-content/test-cards).
+
+Si el pago sale **approved**, la hora queda confirmada sola.
+
+---
+
+## 7. Pasar a producción (cuando la prueba funcione)
+
+1. En Tus integraciones → tu app → **Producción** → **Credenciales de producción**.
+2. Activá: industria, sitio `https://armonivet.com`, términos.
+3. Copiá Public Key y Access Token de **producción** (`APP_USR-…`).
+4. En Supabase, **actualizá** los mismos dos secrets (no hace falta cambiar el nombre).
+5. No hace falta redesplegar funciones: leen los secrets al vuelo.
+6. Hacé un pago real chico y confirmá que entra en tu cuenta de Mercado Pago.
+
+---
+
+## Si algo falla
+
+| Qué ves | Qué hacer |
+|---|---|
+| “El pago quedó pendiente” / no abre el Brick | Faltan los secrets o las funciones no se desplegaron. Revisá el paso 3 y 5. |
+| Mercado Pago rechazó el cobro | Access Token mal copiado, o estás mezclando TEST con producción. |
+| El recuadro abre pero la tarjeta falla | Seguí usando credenciales TEST y tarjetas de prueba. |
+| Paga y la hora no se confirma | El webhook no está publicado. Volvé a correr **Deploy Edge Functions**. |
+| Te manda a otro sitio de MP y vuelve | Está usando el respaldo (redirect). Falta `MERCADOPAGO_PUBLIC_KEY`. |
