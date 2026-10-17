@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { applyMediaCache, collectMediaUrls, writeMediaCache } from "./media-cache.js";
+import { CONTROL_ZONE_PRICE } from "./cart.js";
 
 function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -152,7 +153,7 @@ export async function hydrateSiteContent() {
     packageZones.innerHTML = zones
       .map(
         (z) =>
-          `<li><strong>${z.name}</strong> Desde ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
+          `<li><strong>${z.name}</strong> ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
       )
       .join("");
   }
@@ -172,10 +173,12 @@ export async function hydrateSiteContent() {
           <span class="zone-badge">${z.badge || z.name}</span>
         </div>
         <div class="zone-body">
-          <p class="price-sector">Desde</p>
+          <p class="price-sector">Primera consulta</p>
           <p class="price-amount">${formatCLP(z.price)}</p>
+          <p class="price-control">Control ${formatCLP(CONTROL_ZONE_PRICE[z.name] || 50000)}</p>
           <p class="price-zones">${z.zones_text || ""}</p>
-          <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="${z.name || ""}" data-price="${z.price ?? 45000}" data-title="Consulta presencial · ${z.name || ""}">Agregar ${z.name}</button>
+          <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="${z.name || ""}" data-price="${z.price ?? 65000}" data-title="Consulta presencial · ${z.name || ""}">Agregar consulta</button>
+          <button type="button" class="btn btn-ghost btn-buy--sm" data-add="control-presencial" data-book="Control presencial" data-zone="${z.name || ""}" data-price="${CONTROL_ZONE_PRICE[z.name] || 50000}" data-title="Control presencial · ${z.name || ""}">Agregar control</button>
         </div>
       </article>`;
       })

@@ -6,7 +6,7 @@ export const CATALOG = [
     title: "Consulta Online Preferente",
     book: "Consulta remota",
     zone: "Online",
-    price: 45000,
+    price: 50000,
     desc: "Ideal para agresividad, miedo y ansiedad. Mismo plan de 30 días, desde cualquier comuna.",
     image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
     tag: "Más vendido",
@@ -16,7 +16,7 @@ export const CATALOG = [
     title: "Consulta Etología Clínica",
     book: "Consulta presencial",
     zone: "",
-    price: 45000,
+    price: 65000,
     desc: "Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.",
     image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
   },
@@ -58,9 +58,83 @@ export const CATALOG = [
     desc: "Cuidado y paseos educativos sujetos a disponibilidad.",
     image: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=900&q=80",
   },
+  {
+    id: "control-online",
+    title: "Control online",
+    book: "Control remoto",
+    zone: "Online",
+    price: 38000,
+    desc: "Seguimiento por videollamada después de la primera consulta.",
+    image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "control-presencial",
+    title: "Control presencial",
+    book: "Control presencial",
+    zone: "",
+    price: 50000,
+    desc: "Control a domicilio. Sector A y B $50.000 · Sector C $55.000.",
+    image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "pack-inicio-online",
+    title: "Pack Inicio online",
+    book: "Consulta remota",
+    zone: "Online",
+    price: 84000,
+    desc: "1 primera consulta online + 1 control online.",
+    image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
+    tag: "Pack",
+  },
+  {
+    id: "pack-continuidad-online",
+    title: "Pack Continuidad online",
+    book: "Consulta remota",
+    zone: "Online",
+    price: 120000,
+    desc: "1 primera consulta online + 2 controles online.",
+    image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
+    tag: "Pack",
+  },
+  {
+    id: "pack-mixto",
+    title: "Pack Acompañamiento mixto",
+    book: "Consulta presencial",
+    zone: "",
+    price: 98000,
+    desc: "1 primera consulta presencial + 1 control online.",
+    image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
+    tag: "Pack",
+  },
+  {
+    id: "pack-seguimiento-presencial",
+    title: "Pack Seguimiento presencial",
+    book: "Consulta presencial",
+    zone: "",
+    price: 155000,
+    desc: "1 primera consulta presencial + 2 controles presenciales.",
+    image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
+    tag: "Pack",
+  },
 ];
 
-export const ZONE_PRICE = { "Sector A": 45000, "Sector B": 50000, "Sector C": 55000, Online: 45000 };
+export const ZONE_PRICE = { "Sector A": 65000, "Sector B": 65000, "Sector C": 70000, Online: 50000 };
+export const CONTROL_ZONE_PRICE = { "Sector A": 50000, "Sector B": 50000, "Sector C": 55000, Online: 38000 };
+
+export function quoteAmount(service, zone) {
+  const s = String(service || "").toLowerCase();
+  const z = zone || "";
+  if (s.includes("pack") || s.includes("inicio online") || s.includes("continuidad") || s.includes("mixto")) {
+    return null;
+  }
+  if (s.includes("control")) {
+    if (s.includes("remot") || s.includes("online") || z === "Online") return 38000;
+    return CONTROL_ZONE_PRICE[z] || 50000;
+  }
+  if (s.includes("remot") || s.includes("online") || z === "Online") return 50000;
+  if (ZONE_PRICE[z]) return ZONE_PRICE[z];
+  return 65000;
+}
 
 export function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -119,9 +193,12 @@ function itemFromTrigger(el) {
   const zone = el.getAttribute("data-zone") || "";
   const priceAttr = el.getAttribute("data-price");
   const hasPrice = priceAttr != null && priceAttr !== "";
+  const isControl = id.includes("control") || String(catalog.book || "").toLowerCase().includes("control");
   const price = hasPrice
     ? Number(priceAttr)
-    : ZONE_PRICE[zone] ?? (catalog.price === null ? null : catalog.price ?? 45000);
+    : isControl
+      ? CONTROL_ZONE_PRICE[zone] ?? catalog.price ?? 50000
+      : ZONE_PRICE[zone] ?? (catalog.price === null ? null : catalog.price ?? 65000);
   const img = card?.querySelector("img");
   return {
     id,
@@ -138,6 +215,12 @@ function itemFromTrigger(el) {
 
 function slugFromBook(book) {
   const value = String(book || "").toLowerCase();
+  if (value.includes("inicio online")) return "pack-inicio-online";
+  if (value.includes("continuidad")) return "pack-continuidad-online";
+  if (value.includes("mixto")) return "pack-mixto";
+  if (value.includes("seguimiento presencial")) return "pack-seguimiento-presencial";
+  if (value.includes("control") && (value.includes("remot") || value.includes("online"))) return "control-online";
+  if (value.includes("control")) return "control-presencial";
   if (value.includes("remota") || value.includes("online")) return "consulta-online";
   if (value.includes("temprano")) return "entrenamiento-temprano";
   if (value.includes("sitter")) return "sitter";

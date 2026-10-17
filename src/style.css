@@ -1130,6 +1130,17 @@ p {
   gap: 0.9rem;
 }
 
+.pack-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.25rem;
+}
+
+.plan-price s {
+  color: var(--muted);
+  font-weight: 500;
+  margin-right: 0.35rem;
+}
+
 .plan-card {
   position: relative;
   background: #fff;
@@ -1341,9 +1352,15 @@ p {
   flex: 1;
 }
 
+.zone-body .btn-buy,
+.zone-body .btn-ghost {
+  margin-top: 0.45rem;
+  align-self: stretch;
+  text-align: center;
+}
+
 .zone-body .btn-buy {
   margin-top: 0.75rem;
-  align-self: flex-start;
 }
 
 .price-panels {
@@ -1376,8 +1393,46 @@ p {
   font-weight: 800;
 }
 
+.price-control {
+  margin: -0.15rem 0 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
 .price-zones {
   margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.control-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin: 1.35rem 0 0;
+}
+
+.control-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.control-card h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.02rem;
+}
+
+.control-card p {
+  margin: 0;
   font-size: 0.88rem;
   color: var(--muted);
 }
@@ -2433,6 +2488,8 @@ html.js .reveal.is-visible {
   .service-cards,
   .package-strip,
   .plan-cards,
+  .pack-cards,
+  .control-prices,
   .mid-banner-panel,
   .promo-spotlight-card {
     grid-template-columns: 1fr 1fr;
@@ -2488,6 +2545,8 @@ html.js .reveal.is-visible {
   .footer-grid,
   .service-cards,
   .plan-cards,
+  .pack-cards,
+  .control-prices,
   .mid-banner-panel,
   .promo-spotlight-card,
   .gallery-grid {

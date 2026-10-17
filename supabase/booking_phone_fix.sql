@@ -21,7 +21,7 @@ declare
   settings jsonb := '{}'::jsonb;
   tz text := 'America/Santiago';
   deposit int := 20000;
-  min_price int := 45000;
+  min_price int := 38000;
   v_phone text;
   pet text;
   avail jsonb;
@@ -45,7 +45,7 @@ begin
   settings := coalesce(settings, '{}'::jsonb);
   tz := coalesce(settings->>'timezone', 'America/Santiago');
   deposit := coalesce((settings->>'deposit_amount')::int, 20000);
-  min_price := coalesce((settings->>'min_price')::int, 45000);
+  min_price := coalesce((settings->>'min_price')::int, 38000);
 
   if (
     select count(*) from public.appointments

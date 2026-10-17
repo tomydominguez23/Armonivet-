@@ -21,8 +21,8 @@ insert into public.services (slug, title, description, price_from, price_label, 
     'etologia-clinica',
     'Consulta Etología Clínica',
     'Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.',
-    45000,
-    'Desde $45.000',
+    65000,
+    'Desde $65.000',
     'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80',
     null,
     2,
@@ -43,8 +43,8 @@ insert into public.services (slug, title, description, price_from, price_label, 
     'consulta-online',
     'Consulta Online Preferente',
     'Ideal para agresividad, miedo y ansiedad. Mismo plan de 30 días, desde cualquier comuna.',
-    45000,
-    'Desde $45.000',
+    50000,
+    '$50.000',
     'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80',
     'Más vendido',
     1,
@@ -102,7 +102,7 @@ insert into public.pricing_zones (name, badge, price, zones_text, image_url, map
   (
     'Sector A',
     'Sector A',
-    45000,
+    65000,
     'Ñuñoa y Macul',
     'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80',
     'https://maps.google.com/maps?q=Ñuñoa,+Santiago,+Chile&hl=es&z=13&output=embed',
@@ -112,7 +112,7 @@ insert into public.pricing_zones (name, badge, price, zones_text, image_url, map
   (
     'Sector B',
     'Sector B · Popular',
-    50000,
+    65000,
     'Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida.',
     'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80',
     'https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=13&output=embed',
@@ -122,7 +122,7 @@ insert into public.pricing_zones (name, badge, price, zones_text, image_url, map
   (
     'Sector C',
     'Sector C',
-    55000,
+    70000,
     'Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes / La Reina / Vitacura / Peñalolén, San Bernardo, Puente Alto y Huechuraba.',
     'https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=900&q=80',
     'https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed',
@@ -158,9 +158,9 @@ insert into public.site_settings (key, value) values
     "calendly_url": "https://calendly.com/armonivet/consulta-etologia-clinica",
     "form_url": "https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform",
     "instagram_url": "https://www.instagram.com/armonivet/",
-    "promo_text": "Desde $45.000 · Consulta + plan de 30 días · Flores de Bach si corresponde",
+    "promo_text": "Desde $50.000 · Primera consulta online · Flores de Bach si corresponde",
     "deposit_amount": 0,
-    "min_price": 45000
+    "min_price": 38000
   }'::jsonb)
 on conflict (key) do nothing;
 
