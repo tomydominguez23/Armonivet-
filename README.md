@@ -29,9 +29,13 @@ El cobro del carrito usa **Checkout API** de Mercado Pago (Payment Brick en el s
 
 ### GitHub Pages
 
-Cada push a `main` publica en `https://tomydominguez23.github.io/Armonivet-/` (workflow **Deploy GitHub Pages**).
+Cada push a `main` publica en `https://tomydominguez23.github.io/Armonivet-/` (workflow **Deploy GitHub Pages**). Eso **no** actualiza `armonivet.com`.
 
-### Tu servidor (actualización automática)
+### Tu servidor (armonivet.com)
+
+`https://armonivet.com` vive en cPanel (Apache). Lo actualiza el workflow **Deploy servidor**, no GitHub Pages.
+
+Paso a paso de secretos FTP: [`docs/cpanel-github.md`](docs/cpanel-github.md).
 
 Cuando hay un cambio en `main`, GitHub Actions **construye el sitio y lo sube a tu servidor**.
 
@@ -41,7 +45,7 @@ En el repo → **Settings → Secrets and variables → Actions → New reposito
 |---|---|
 | `DEPLOY_HOST` | IP o dominio del servidor (`armonivet.cl` o `123.45.67.89`) |
 | `DEPLOY_USER` | Usuario SSH o FTP |
-| `DEPLOY_PATH` | Carpeta pública, ej. `/home/USUARIO/public_html/` |
+| `DEPLOY_PATH` | Cuenta FTP en `public_html`: `/`. Usuario principal de cPanel: `/public_html/` |
 | `DEPLOY_SSH_KEY` | Clave **privada** SSH (si el hosting tiene SSH) |
 | `DEPLOY_PORT` | Opcional. Puerto SSH, por defecto `22` |
 | `DEPLOY_PASSWORD` | Solo si no hay SSH: contraseña FTP |
@@ -57,7 +61,7 @@ También tienen que existir `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (ya l
 
 **Si solo hay FTP** (Hostinger, hosting compartido sin SSH): no cargues `DEPLOY_SSH_KEY`. Usá `DEPLOY_PASSWORD` y en `DEPLOY_PATH` algo como `/public_html/`.
 
-Después de guardar los secretos, **Actions → Deploy servidor → Run workflow**. Cada commit siguiente a `main` actualiza la web solo.
+Después de guardar los secretos, **Actions → Deploy servidor → Run workflow**. Cada commit siguiente a `main` actualiza `armonivet.com`. GitHub Pages se actualiza aparte y puede verse al día mientras el dominio sigue viejo si este workflow falla.
 
 ## Configurar Supabase (obligatorio para el panel)
 
