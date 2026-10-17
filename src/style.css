@@ -2819,7 +2819,8 @@ html.js .reveal.is-visible {
   }
 }
 
-body.pay-open {
+body.pay-open,
+body.intake-open {
   overflow: hidden;
 }
 
@@ -2861,5 +2862,63 @@ body.pay-open {
 }
 
 .pay-dialog-error[hidden] {
+  display: none;
+}
+
+.intake-overlay {
+  z-index: 240;
+}
+
+.intake-dialog {
+  width: min(720px, 100%);
+  max-height: min(94vh, 960px);
+}
+
+.intake-ok {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: var(--paper);
+  margin-bottom: 0.85rem;
+}
+
+.intake-ok h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  color: var(--cta);
+}
+
+.intake-ok p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.intake-must {
+  margin: 0 0 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: #fff4e8;
+  color: var(--charcoal);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.intake-frame {
+  display: block;
+  width: 100%;
+  min-height: min(58vh, 560px);
+  border: 0;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.intake-wait {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.intake-wait[hidden],
+.intake-overlay [data-intake-actions][hidden] {
   display: none;
 }

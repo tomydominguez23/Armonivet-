@@ -1,6 +1,14 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { cartTotal, clearCart, getCart } from "./cart.js";
 
+const INTAKE_KEY = "armonivet.intakePending.v1";
+const INTAKE_FORM =
+  "https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform?embedded=true";
+
+let intakeLocked = false;
+let intakeFrameLoads = 0;
+let intakeOpenedAt = 0;
+
 function loadMpSdk() {
   if (window.MercadoPago) return Promise.resolve(window.MercadoPago);
   return new Promise((resolve, reject) => {
@@ -129,17 +137,17 @@ async function mountPaymentBrick(session) {
                 reject();
                 return;
               }
+              if (data?.status === "approved") {
+                clearCart();
+                showPaidIntake();
+                resolve();
+                return;
+              }
               if (data?.payment_id && data.status && data.status !== "pending") {
                 try {
                   await showStatusBrick(mp, data.payment_id);
                 } catch (err) {
                   console.warn("[mp-status]", err);
-                }
-                if (data.status === "approved") {
-                  clearCart();
-                  const params = new URLSearchParams(window.location.search);
-                  params.set("pago", "ok");
-                  history.replaceState({}, "", `${window.location.pathname}?${params}#agendar`);
                 }
               }
               resolve();
@@ -222,7 +230,72 @@ export async function startCheckout({ appointmentId, name, email, title, amount 
   return { ok: Boolean(data?.ok), ...data };
 }
 
+function intakeEls() {
+  const overlay = document.querySelector("[data-intake-overlay]");
+  return {
+    overlay,
+    frame: overlay?.querySelector("[data-intake-frame]"),
+    wait: overlay?.querySelector("[data-intake-wait]"),
+    actions: overlay?.querySelector("[data-intake-actions]"),
+    closeBtn: overlay?.querySelector("[data-intake-close]"),
+  };
+}
+
+function markIntakeSent() {
+  const { wait, actions, closeBtn } = intakeEls();
+  intakeLocked = false;
+  try {
+    localStorage.removeItem(INTAKE_KEY);
+  } catch {
+    /* ignore */
+  }
+  if (wait) wait.hidden = true;
+  if (actions) actions.hidden = false;
+  if (closeBtn) closeBtn.hidden = false;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("pago")) {
+    params.delete("pago");
+    const query = params.toString();
+    history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}#agendar`);
+  }
+}
+
+export function closePaidIntake() {
+  if (intakeLocked) return;
+  const { overlay, frame } = intakeEls();
+  if (frame) frame.src = "about:blank";
+  if (overlay) overlay.hidden = true;
+  document.body.classList.remove("intake-open");
+}
+
+export function showPaidIntake() {
+  const { overlay, frame, wait, actions, closeBtn } = intakeEls();
+  if (!overlay || !frame) return;
+  closePayOverlay();
+  intakeLocked = true;
+  intakeFrameLoads = 0;
+  intakeOpenedAt = Date.now();
+  try {
+    localStorage.setItem(INTAKE_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+  if (wait) wait.hidden = false;
+  if (actions) actions.hidden = true;
+  if (closeBtn) closeBtn.hidden = true;
+  overlay.hidden = false;
+  document.body.classList.add("intake-open");
+  frame.src = INTAKE_FORM;
+}
+
 export function initCheckoutUi() {
+  const { frame } = intakeEls();
+  frame?.addEventListener("load", () => {
+    if (frame.getAttribute("src") === "about:blank") return;
+    intakeFrameLoads += 1;
+    if (intakeFrameLoads >= 2 && Date.now() - intakeOpenedAt > 1500) markIntakeSent();
+  });
+
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-pay-close]")) {
       e.preventDefault();
@@ -230,8 +303,35 @@ export function initCheckoutUi() {
       return;
     }
     if (e.target.matches("[data-pay-overlay]")) closePayOverlay();
+    if (e.target.closest("[data-intake-done], [data-intake-close]")) {
+      e.preventDefault();
+      closePaidIntake();
+    }
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closePayOverlay();
+    if (e.key !== "Escape") return;
+    if (intakeLocked) {
+      e.preventDefault();
+      return;
+    }
+    closePaidIntake();
+    closePayOverlay();
   });
+  window.addEventListener("beforeunload", (e) => {
+    if (!intakeLocked) return;
+    e.preventDefault();
+    e.returnValue = "Todavía falta enviar el formulario obligatorio.";
+  });
+
+  const paid = new URLSearchParams(window.location.search).get("pago");
+  let pending = false;
+  try {
+    pending = localStorage.getItem(INTAKE_KEY) === "1";
+  } catch {
+    pending = false;
+  }
+  if (paid === "ok" || pending) {
+    clearCart();
+    showPaidIntake();
+  }
 }
