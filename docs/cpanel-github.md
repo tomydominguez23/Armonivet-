@@ -132,9 +132,23 @@ La publicación sigue siendo GitHub Actions → FTP/SSH de cPanel.
 | Error | Qué revisar |
 |---|---|
 | `getaddrinfo EAI_AGAIN` | GitHub no resuelve el nombre del servidor. Cambiá `DEPLOY_HOST` por la **IP** de cPanel (inicio → columna derecha → Shared IP Address). Sin `ftp://`. |
-| `530 Login authentication failed` | Usuario o contraseña. Al conectar por IP, `DEPLOY_USER` tiene que ser el **completo** de Configurar cliente FTP (`github@tudominio.cl`), no `github`. `DEPLOY_PASSWORD` es la de **esa** cuenta FTP, no la del login de cPanel. Sin espacios ni comillas. |
+| `530 Login authentication failed` | Usuario o contraseña. Al conectar por IP, `DEPLOY_USER` tiene que ser el **completo** de Configurar cliente FTP (`github@tudominio.com`), no `github`. `DEPLOY_PASSWORD` es la de **esa** cuenta FTP, no la del login de cPanel. Sin espacios ni comillas. |
+| `421 Home directory not available - aborting` | La cuenta FTP inicia sesión, pero **su carpeta home ya no existe**. Suele pasar si se borró `public_html/GitHub` y la cuenta seguía apuntando ahí. En cPanel → **Cuentas de FTP** → esa cuenta → **Directorio** tiene que ser `public_html` (la carpeta debe existir). Guardá y volvé a correr **Deploy servidor**. |
 | El dominio muestra **Index of /** con `GitHub/` y `cgi-bin/` | El sitio quedó en `public_html/GitHub`. Mové esos archivos a `public_html` y dejá el directorio FTP en `public_html`. |
-| Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Probá `/` y si no, `/public_html/`. Tiene que terminar en `/`. |
+| Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Con cuenta FTP en `public_html` usá `/` (el workflow lo trata como el home). Si usás el usuario principal de cPanel, `/public_html/`. |
 | Se borró el SSL o el correo | La cuenta FTP no debe apuntar a `/home/usuario` entero, solo a `public_html`. |
 | El job **Deploy servidor** no corre | Falta `DEPLOY_HOST`. El workflow se salta si ese secreto está vacío. |
 | Sitio sin imágenes o admin roto | Faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`. |
+
+### Cómo corregir el 421 (paso a paso)
+
+El usuario y la contraseña están bien (si fueran malos verías `530`). Falta la carpeta de inicio de esa cuenta:
+
+1. cPanel → **Administrador de archivos** → confirmá que existe `public_html` (con `index.html` adentro).
+2. cPanel → **Cuentas de FTP**.
+3. En la cuenta `github@armonivet.com` (o la que uses), clic en **Cambiar** / **Change Directory**.
+4. Directorio: `public_html` (no `public_html/GitHub`).
+5. Guardá. Si la cuenta quedó rota, **borrala y creala de nuevo** con directorio `public_html`.
+6. GitHub → **Actions** → **Deploy servidor** → **Run workflow**.
+
+No hace falta cambiar `DEPLOY_HOST` ni la contraseña si el 10 de octubre ya conectaba: el servidor FTP sigue en línea; solo cambió el home de la cuenta.
