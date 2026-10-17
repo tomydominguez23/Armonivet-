@@ -1154,6 +1154,28 @@
       </div>
     </div>
 
+    <div class="cart-overlay intake-overlay" data-intake-overlay hidden>
+      <div class="cart-dialog intake-dialog" role="dialog" aria-modal="true" aria-labelledby="intake-dialog-title">
+        <button type="button" class="cart-dialog-close" data-intake-close hidden aria-label="Cerrar">×</button>
+        <p class="cart-dialog-kicker" id="intake-dialog-title">Pago aprobado</p>
+        <div class="intake-ok">
+          <h3>Tu pago se acreditó</h3>
+          <p>La hora quedó confirmada. La Dra. Bárbara ya tiene el cobro asociado a tu reserva.</p>
+        </div>
+        <p class="intake-must">Obligatorio: rellená el formulario previo. No podés salir de esta pantalla hasta enviarlo, para que la consulta llegue con tu caso ya leído.</p>
+        <iframe
+          class="intake-frame"
+          data-intake-frame
+          title="Formulario previo a la consulta"
+          src="about:blank"
+        ></iframe>
+        <p class="intake-wait" data-intake-wait>Completá y enviá el formulario. Cuando Google confirme el envío, vas a poder continuar.</p>
+        <div class="cart-dialog-actions" data-intake-actions hidden>
+          <button type="button" class="btn btn-buy" data-intake-done>Listo, gracias</button>
+        </div>
+      </div>
+    </div>
+
     <div class="cart-overlay" data-cart-overlay hidden>
       <div class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-dialog-title">
         <button type="button" class="cart-dialog-close" data-cart-close aria-label="Cerrar">×</button>
