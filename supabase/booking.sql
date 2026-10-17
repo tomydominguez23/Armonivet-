@@ -125,7 +125,7 @@ declare
   tz text := 'America/Santiago';
   deposit int := 20000;
   min_price int := 45000;
-  phone text;
+  v_phone text;
   pet text;
   avail jsonb;
   ok boolean := false;
@@ -133,11 +133,11 @@ declare
   client_id uuid;
   appt public.appointments%rowtype;
 begin
-  phone := regexp_replace(coalesce(p_phone, ''), '\D', '', 'g');
+  v_phone := regexp_replace(coalesce(p_phone, ''), '\D', '', 'g');
   if length(trim(coalesce(p_name, ''))) < 2 then
     raise exception 'Escribí tu nombre';
   end if;
-  if length(phone) < 8 then
+  if length(v_phone) < 8 then
     raise exception 'Escribí un teléfono válido';
   end if;
   if p_scheduled_at is null then
@@ -152,7 +152,7 @@ begin
 
   if (
     select count(*) from public.appointments
-    where regexp_replace(coalesce(client_phone, ''), '\D', '', 'g') = phone
+    where regexp_replace(coalesce(client_phone, ''), '\D', '', 'g') = v_phone
       and created_at > now() - interval '24 hours'
       and status is distinct from 'cancelada'
   ) >= 3 then
@@ -176,8 +176,8 @@ begin
     else null
   end;
 
-  select id into client_id from public.clients
-    where regexp_replace(coalesce(phone, ''), '\D', '', 'g') = phone
+  select c.id into client_id from public.clients c
+    where regexp_replace(coalesce(c.phone, ''), '\D', '', 'g') = v_phone
     limit 1;
 
   if client_id is null then
@@ -185,7 +185,7 @@ begin
     values (
       trim(p_name),
       nullif(trim(coalesce(p_email, '')), ''),
-      phone,
+      v_phone,
       nullif(trim(coalesce(p_pet_name, '')), ''),
       pet,
       'agendado',
@@ -213,7 +213,7 @@ begin
     client_id,
     trim(p_name),
     nullif(trim(coalesce(p_email, '')), ''),
-    phone,
+    v_phone,
     nullif(trim(coalesce(p_pet_name, '')), ''),
     pet,
     coalesce(nullif(trim(p_service), ''), 'Consulta Etología Clínica'),
