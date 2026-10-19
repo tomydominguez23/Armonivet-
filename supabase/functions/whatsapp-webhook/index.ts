@@ -44,7 +44,18 @@ Deno.serve(async (req) => {
     }
 
     const inbound = extractInbound(payload);
-    if (!inbound.length) return json({ ok: true, empty: true });
+    if (!inbound.length) {
+      const inner = (payload.payload && typeof payload.payload === "object"
+        ? payload.payload
+        : payload) as Record<string, unknown>;
+      return json({
+        ok: true,
+        empty: true,
+        event: payload.event || null,
+        fromMe: inner.fromMe ?? null,
+        from: inner.from || inner.chatId || null,
+      });
+    }
 
     const db = serviceClient();
     const processed = [];
