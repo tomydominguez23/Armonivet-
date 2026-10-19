@@ -150,6 +150,28 @@ export async function upsertInbound(db: SupabaseClient, input: {
   return { conversationId: conv.id as string, duplicate: false, client, lead, conv };
 }
 
+async function insertSystemNote(db: SupabaseClient, conversationId: string, content: string) {
+  const { data: last } = await db
+    .from("wa_messages")
+    .select("author,content")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (last?.author === "sistema" && last?.content === content) return;
+  await db.from("wa_messages").insert({
+    conversation_id: conversationId,
+    direction: "out",
+    author: "sistema",
+    message_type: "text",
+    content,
+  });
+  await db
+    .from("wa_conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conversationId);
+}
+
 async function logAction(
   db: SupabaseClient,
   conversationId: string,
@@ -491,14 +513,41 @@ async function executeTool(
 
 export async function runGenesisTurn(db: SupabaseClient, conversationId: string, opts?: { deliver?: boolean }) {
   const settings = await loadGenesisSettings(db);
-  if (settings.enabled === false) return { skipped: true, reason: "genesis_disabled" };
-
   const { data: conversation, error } = await db.from("wa_conversations").select("*").eq("id", conversationId).single();
   if (error) throw error;
+
+  if (settings.enabled === false) {
+    await insertSystemNote(
+      db,
+      conversationId,
+      "Génesis está apagada. Activala en Admin → Génesis IA, o escribí acá para responder vos.",
+    );
+    return { skipped: true, reason: "genesis_disabled" };
+  }
   if (conversation.assigned_to === "humano" || conversation.status === "pausada_humano") {
     return { skipped: true, reason: "human_takeover" };
   }
 
+  try {
+    return await generateGenesisReply(db, conversationId, conversation, settings, opts);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    try {
+      await insertSystemNote(db, conversationId, `Génesis no pudo responder: ${message}`);
+    } catch {
+      /* the original error matters more than the note */
+    }
+    throw err;
+  }
+}
+
+async function generateGenesisReply(
+  db: SupabaseClient,
+  conversationId: string,
+  conversation: Record<string, unknown> & { client_id?: string | null; lead_id?: string | null; wa_phone?: string; wa_name?: string; pipeline?: string },
+  settings: Settings,
+  opts?: { deliver?: boolean },
+) {
   const [{ data: client }, { data: messages }, { data: appts }, { data: payments }] = await Promise.all([
     conversation.client_id
       ? db.from("clients").select("*").eq("id", conversation.client_id).maybeSingle()
@@ -529,10 +578,12 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
     })}`,
   ].join("\n\n");
 
-  const input: unknown[] = (messages || []).map((m) => ({
-    role: m.direction === "in" ? "user" : "assistant",
-    content: m.content || "",
-  }));
+  const input: unknown[] = (messages || [])
+    .filter((m) => m.author !== "sistema" && m.content)
+    .map((m) => ({
+      role: m.direction === "in" ? "user" : "assistant",
+      content: m.content || "",
+    }));
 
   const model = resolveModel(settings.model);
   let response = await runOpenAI({ model, instructions, input, tools: GENESIS_TOOLS });
@@ -573,7 +624,15 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
     .eq("id", conversationId);
 
   if (opts?.deliver !== false) {
-    await sendWhatsAppText(String(conversation.wa_phone), reply);
+    const sent = await sendWhatsAppText(String(conversation.wa_phone), reply);
+    if (!sent.ok) {
+      await insertSystemNote(
+        db,
+        conversationId,
+        `Génesis escribió, pero WhatsApp no salió (${sent.error || "Wazend no configurado"}). Revisá WAZEND_BASE_URL, WAZEND_API_KEY, WAZEND_SESSION y que la sesión esté WORKING.`,
+      );
+      return { skipped: false, reply, deliverError: sent.error || "send_failed" };
+    }
   }
   return { skipped: false, reply };
 }

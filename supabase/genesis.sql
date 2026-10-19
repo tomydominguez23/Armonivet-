@@ -84,6 +84,37 @@ create policy "admins manage wa conversations" on public.wa_conversations
   using (public.is_admin())
   with check (public.is_admin());
 
+-- Reaplicar CHECKs: tablas viejas pueden rechazar pausada_humano / derivado_humano
+do $$
+declare
+  r record;
+begin
+  for r in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.wa_conversations'::regclass
+      and contype = 'c'
+      and (
+        pg_get_constraintdef(oid) ilike '%pipeline%'
+        or pg_get_constraintdef(oid) ilike '%status%'
+        or pg_get_constraintdef(oid) ilike '%assigned_to%'
+      )
+  loop
+    execute format('alter table public.wa_conversations drop constraint if exists %I', r.conname);
+  end loop;
+  alter table public.wa_conversations
+    add constraint wa_conversations_status_check
+      check (status in ('abierta', 'pausada_humano', 'cerrada')),
+    add constraint wa_conversations_assigned_to_check
+      check (assigned_to in ('genesis', 'humano')),
+    add constraint wa_conversations_pipeline_check
+      check (pipeline in (
+        'nuevo', 'contactado', 'calificado', 'quiere_agendar', 'esperando_pago',
+        'pagado', 'agendado', 'atendido', 'seguimiento', 'control',
+        'no_responde', 'cancelado', 'perdido', 'derivado_humano'
+      ));
+end $$;
+
 -- -----------------------------------------------------------------------------
 -- Mensajes
 -- -----------------------------------------------------------------------------

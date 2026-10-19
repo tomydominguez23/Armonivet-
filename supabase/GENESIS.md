@@ -80,6 +80,8 @@ Con Wazend no hace falta plantilla HSM de Meta para responder en la ventana de 2
 2. **Simular mensaje**
 3. Génesis (si hay `OPENAI_API_KEY` **y créditos** en OpenAI) responde y el chat aparece en la bandeja.
 
+Si no hay respuesta, el hilo muestra una nota **Sistema** con el error. Para hablar vos, escribí en el recuadro de abajo (no hace falta que “Tomar conversación” habilite nada: al enviar se pausa Génesis).
+
 Si dice que no hay créditos: [Billing de OpenAI](https://platform.openai.com/settings/organization/billing). No hace falta redesplegar funciones.
 
 ## 6. Cron de recordatorios (abono 12 h, 24 h antes, etc.)
@@ -98,7 +100,8 @@ Podés usar un cron de GitHub Actions, pg_cron + pg_net, o el scheduler de Supab
 - Consulta horas libres reales (`list_available_slots`, misma agenda que la web)
 - Califica, agenda, reagenda, cancela
 - Crea abono de $20.000 con vencimiento a 12 h
-- Escala a humano (el dashboard puede **Tomar conversación**)
+- Escala a humano (el dashboard puede **Tomar conversación** o escribir directo; al enviar se pausa Génesis)
+- Si no puede responder, deja una nota **Sistema** en el hilo (créditos OpenAI, secretos de Wazend, Génesis apagada)
 - Deja rastro en `genesis_actions`
 
 Pagos reales (Flow / Mercado Pago / Webpay) y plantillas HSM son el siguiente paso, cuando tengas el link o la pasarela.

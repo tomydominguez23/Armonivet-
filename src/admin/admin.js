@@ -66,11 +66,36 @@ function edgeErrorMessage(error, data, fallback) {
   if (/invalid api key|incorrect api key/i.test(raw)) {
     return "La OPENAI_API_KEY de Supabase no es válida. Revisala en Project Settings → Edge Functions → Secrets.";
   }
-  if (/Failed to send|not found|404/i.test(raw)) {
+  if (/Failed to send a request to the Edge Function/i.test(raw)) {
     return "La función no está desplegada. En GitHub: Actions → Deploy Edge Functions → Run workflow.";
   }
   return raw;
 }
+
+async function invokeWhatsAppSend(body) {
+  const { data, error } = await requireSupabase().functions.invoke("whatsapp-send", { body });
+  let payload = data;
+  if (payload == null && error?.context) {
+    try {
+      payload = await error.context.json();
+    } catch {
+      payload = null;
+    }
+  }
+  if (error || payload?.ok === false || payload?.error) {
+    throw new Error(
+      edgeErrorMessage(error, payload, "No se pudo hablar por WhatsApp. Desplegá whatsapp-send."),
+    );
+  }
+  return payload;
+}
+
+const WA_AUTHOR_LABEL = {
+  cliente: "Cliente",
+  genesis: "Génesis",
+  humano: "Armonivet",
+  sistema: "Sistema",
+};
 
 function goToLogin() {
   window.location.replace(loginHref(window.location.href));
@@ -926,7 +951,9 @@ function bindAgendaCalendarOnce() {
 async function loadWhatsApp() {
   const listEl = $("[data-wa-list]");
   if (!listEl) return;
+  const seq = (state.waLoadSeq = (state.waLoadSeq || 0) + 1);
   const rows = await safeSelect("wa_conversations", "*", (q) => q.order("last_message_at", { ascending: false }).limit(80));
+  if (seq !== state.waLoadSeq) return;
   state.waConversations = rows;
   if (!rows.length) {
     listEl.innerHTML = `<p class="empty">Aún no hay chats de WhatsApp. Usá “Simular mensaje” o conectá el webhook.</p>`;
@@ -945,6 +972,7 @@ async function loadWhatsApp() {
       btn.addEventListener("click", () => openWaThread(btn.dataset.openWa));
     });
   }
+  if (seq !== state.waLoadSeq) return;
   if (state.waConversationId) await openWaThread(state.waConversationId);
   subscribeWaRealtime();
 }
@@ -954,14 +982,18 @@ async function openWaThread(id) {
   const conv = (state.waConversations || []).find((c) => c.id === id);
   const thread = $("[data-wa-thread]");
   if (!thread) return;
+  const threadSeq = (state.waThreadSeq = (state.waThreadSeq || 0) + 1);
   await requireSupabase().from("wa_conversations").update({ unread_count: 0 }).eq("id", id);
   const messages = await safeSelect("wa_messages", "*", (q) => q.eq("conversation_id", id).order("created_at", { ascending: true }).limit(200));
-  const paused = conv?.assigned_to === "humano";
+  if (threadSeq !== state.waThreadSeq) return;
+  const paused = conv?.assigned_to === "humano" || conv?.status === "pausada_humano";
   thread.innerHTML = `
     <header class="wa-thread-head">
       <div>
         <strong>${escapeHtml(conv?.wa_name || conv?.wa_phone || "Chat")}</strong>
-        <small>${escapeHtml(conv?.wa_phone || "")} · ${escapeHtml(conv?.pipeline || "")}</small>
+        <small>${escapeHtml(conv?.wa_phone || "")} · ${escapeHtml(conv?.pipeline || "")} · ${
+          paused ? "Génesis pausada · escribí acá para responder" : "Génesis activa · si escribís, se pausa"
+        }</small>
       </div>
       <div class="btn-row">
         ${paused
@@ -971,43 +1003,50 @@ async function openWaThread(id) {
     </header>
     <div class="wa-bubbles" data-wa-bubbles>
       ${messages
-        .map(
-          (m) => `<div class="wa-bubble wa-bubble--${m.direction}"><small>${escapeHtml(m.author)}</small><p>${escapeHtml(m.content || "")}</p></div>`
-        )
+        .map((m) => {
+          const sys = m.author === "sistema" ? " wa-bubble--sys" : "";
+          const label = WA_AUTHOR_LABEL[m.author] || m.author;
+          return `<div class="wa-bubble wa-bubble--${m.direction}${sys}"><small>${escapeHtml(label)}</small><p>${escapeHtml(m.content || "")}</p></div>`;
+        })
         .join("") || `<p class="empty">Sin mensajes</p>`}
     </div>
     <form class="wa-composer" data-wa-composer>
-      <input name="content" required placeholder="${paused ? "Escribí como Armonivet…" : "Génesis está activa. Tomá el chat para escribir."}" ${paused ? "" : "disabled"} />
-      <button class="btn btn-primary" type="submit" ${paused ? "" : "disabled"}>Enviar</button>
+      <input name="content" required autocomplete="off" placeholder="Escribí como Armonivet…" />
+      <button class="btn btn-primary" type="submit">Enviar</button>
     </form>`;
   const bubbles = $("[data-wa-bubbles]");
   if (bubbles) bubbles.scrollTop = bubbles.scrollHeight;
   $("[data-wa-pause]")?.addEventListener("click", async () => {
-    await requireSupabase()
-      .from("wa_conversations")
-      .update({ assigned_to: "humano", status: "pausada_humano", pipeline: "derivado_humano" })
-      .eq("id", id);
+    try {
+      await invokeWhatsAppSend({ conversation_id: id, action: "take" });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
     await loadWhatsApp();
   });
   $("[data-wa-resume]")?.addEventListener("click", async () => {
-    await requireSupabase()
-      .from("wa_conversations")
-      .update({ assigned_to: "genesis", status: "abierta" })
-      .eq("id", id);
+    try {
+      await invokeWhatsAppSend({ conversation_id: id, action: "resume" });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
     await loadWhatsApp();
   });
   $("[data-wa-composer]")?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const content = String(new FormData(e.currentTarget).get("content") || "").trim();
+    const form = e.currentTarget;
+    const input = form.querySelector("input[name=content]");
+    const btn = form.querySelector("button[type=submit]");
+    const content = String(new FormData(form).get("content") || "").trim();
     if (!content) return;
-    const { data, error } = await requireSupabase().functions.invoke("whatsapp-send", {
-      body: { conversation_id: id, content },
-    });
-    if (error) {
-      alert(edgeErrorMessage(error, data, "No se pudo enviar. Revisá que whatsapp-send esté desplegada."));
-      return;
+    if (input) input.disabled = true;
+    if (btn) btn.disabled = true;
+    try {
+      await invokeWhatsAppSend({ conversation_id: id, content });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
     }
-    await openWaThread(id);
+    await loadWhatsApp();
   });
   $$("[data-open-wa]").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.openWa === id));
 }
