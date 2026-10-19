@@ -133,6 +133,8 @@ La publicación sigue siendo GitHub Actions → FTP/SSH de cPanel.
 |---|---|
 | `getaddrinfo EAI_AGAIN` | GitHub no resuelve el nombre del servidor. Cambiá `DEPLOY_HOST` por la **IP** de cPanel (inicio → columna derecha → Shared IP Address). Sin `ftp://`. |
 | `530 Login authentication failed` | Usuario o contraseña. Al conectar por IP, `DEPLOY_USER` tiene que ser el **completo** de Configurar cliente FTP (`github@tudominio.cl`), no `github`. `DEPLOY_PASSWORD` es la de **esa** cuenta FTP, no la del login de cPanel. Sin espacios ni comillas. |
+| `421 ... cleartext sessions ... reconnect using TLS` | El hosting ya no acepta FTP sin cifrar. El workflow tiene que usar `protocol: ftps` en el puerto 21 (no hace falta cambiar secretos). |
+| `421 Home directory not available` | El directorio de la cuenta FTP no existe. En cPanel → Cuentas FTP, el home tiene que ser `public_html/armonivet.com` (o `public_html`), no una carpeta `GitHub` borrada. |
 | El dominio muestra **Index of /** con `GitHub/` y `cgi-bin/` | El sitio quedó en `public_html/GitHub`. Mové esos archivos a `public_html` y dejá el directorio FTP en `public_html`. |
 | Carpeta vacía o el sitio no cambia | `DEPLOY_PATH` incorrecto. Probá `/` y si no, `/public_html/`. Tiene que terminar en `/`. |
 | Se borró el SSL o el correo | La cuenta FTP no debe apuntar a `/home/usuario` entero, solo a `public_html`. |

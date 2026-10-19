@@ -106,8 +106,9 @@ jobs:
           server: ${{ steps.dest.outputs.host }}
           username: ${{ steps.dest.outputs.user }}
           password: ${{ steps.dest.outputs.password }}
-          protocol: ftp
+          protocol: ftps
           port: 21
+          security: loose
           local-dir: ./dist/
           server-dir: ${{ steps.dest.outputs.path }}
           timeout: 60000
