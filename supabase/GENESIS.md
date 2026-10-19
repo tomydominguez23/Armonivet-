@@ -3,18 +3,10 @@
 Génesis **no** se conecta directo a WhatsApp ni al JavaScript público de GitHub Pages.
 
 ```
-WhatsApp Cloud API
-        │  webhook
-        ▼
-Supabase Edge Function  ──▶  Postgres (única fuente de verdad)
-        │                            │
-        │ tools                      │ Realtime
-        ▼                            ▼
-   OpenAI GPT-5.6              Admin Armonivet
-        │
-        ▼
-  WhatsApp (respuesta)
+WhatsApp  →  Wazend  →  whatsapp-webhook  →  Génesis  →  Wazend sendText  →  WhatsApp
 ```
+
+Guía de Wazend: [`docs/wazend.md`](../docs/wazend.md). Cloud API de Meta sigue como respaldo si no hay `WAZEND_API_KEY`.
 
 ## 1. SQL
 
@@ -33,10 +25,14 @@ Dashboard de Supabase → **Project Settings → Edge Functions → Secrets**:
 | Secret | Qué es |
 |---|---|
 | `OPENAI_API_KEY` | Clave de OpenAI |
-| `WHATSAPP_TOKEN` | Token permanente de Cloud API |
-| `WHATSAPP_PHONE_NUMBER_ID` | ID del número |
-| `WHATSAPP_VERIFY_TOKEN` | Una frase que inventás vos (ej. `armonivet-genesis-2026`) |
-| `WHATSAPP_APP_SECRET` | App Secret de Meta (firma del webhook) |
+| `WAZEND_BASE_URL` | URL del servidor Wazend (panel) |
+| `WAZEND_API_KEY` | API Key de Wazend |
+| `WAZEND_SESSION` | Nombre de la sesión (ej. `S0001`) |
+| `WAZEND_WEBHOOK_HMAC` | Opcional, firma del webhook |
+| `WHATSAPP_TOKEN` | (Respaldo Meta) Token permanente de Cloud API |
+| `WHATSAPP_PHONE_NUMBER_ID` | (Respaldo Meta) ID del número |
+| `WHATSAPP_VERIFY_TOKEN` | (Respaldo Meta) Verify token |
+| `WHATSAPP_APP_SECRET` | (Respaldo Meta) App Secret |
 | `GENESIS_CRON_SECRET` | Opcional, para el cron de recordatorios |
 | `MERCADOPAGO_ACCESS_TOKEN` | Access Token de Mercado Pago (Checkout API). Solo en el servidor. |
 | `MERCADOPAGO_PUBLIC_KEY` | Public Key de la misma aplicación. El frontend la pide al servidor; no va en Vite. |
@@ -64,23 +60,19 @@ supabase link --project-ref xcnxqhjthrdvjtqezzct
 supabase functions deploy
 ```
 
-Callback URL para Meta:
+Callback URL (Wazend y Meta):
 
 ```
 https://xcnxqhjthrdvjtqezzct.supabase.co/functions/v1/whatsapp-webhook
 ```
 
-## 4. Meta / WhatsApp Cloud API
+## 4. Wazend (recomendado) o Meta Cloud API
 
-1. [developers.facebook.com](https://developers.facebook.com/) → app → producto **WhatsApp**.
-2. WhatsApp → Configuration → Webhook:
-   - Callback URL: la de arriba
-   - Verify token: el mismo `WHATSAPP_VERIFY_TOKEN`
-3. Subscribe al campo **messages**.
-4. En números de prueba, agregá el celular de Bárbara como destinatario.
-5. Cuando el negocio esté verificado, usá el número real de Armonivet.
+**Wazend:** pasos en [`docs/wazend.md`](../docs/wazend.md). Pegá la URL de arriba como webhook de la sesión, evento `message`.
 
-Recordatorios fuera de las 24 h del cliente requieren **plantillas** aprobadas por Meta. Génesis responde en texto libre solo si la persona escribió hace menos de 24 horas.
+**Meta (respaldo):** [developers.facebook.com](https://developers.facebook.com/) → WhatsApp → Webhook → la misma URL y `WHATSAPP_VERIFY_TOKEN`. Subscribe **messages**.
+
+Con Wazend no hace falta plantilla HSM de Meta para responder en la ventana de 24 h: Génesis contesta texto libre por `sendText`.
 
 ## 5. Probar sin WhatsApp
 
