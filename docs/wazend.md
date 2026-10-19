@@ -53,4 +53,8 @@ La sesión tiene que estar en estado **WORKING** (WhatsApp vinculado con QR).
 2. En el admin → **WhatsApp** tiene que aparecer el chat.
 3. Génesis responde por Wazend al mismo número.
 
+Si Génesis no responde, en el hilo aparece un recuadro **Sistema** con el motivo (OpenAI sin créditos, Génesis apagada, Wazend no envía).
+
+Para hablar vos: **Admin → WhatsApp → elegí el chat → escribí abajo y Enviar**. Eso pausa a Génesis y manda el texto por Wazend. No sirve escribir desde el celular vinculado a Wazend (eso no entra al panel).
+
 Si no responde: revisá que `OPENAI_API_KEY` tenga créditos y que la sesión Wazend esté `WORKING`. El envío humano desde el admin usa la misma función `whatsapp-send`.
