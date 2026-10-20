@@ -97,6 +97,98 @@ const WA_AUTHOR_LABEL = {
   sistema: "Sistema",
 };
 
+function csvEscape(value) {
+  const s = value == null ? "" : String(value);
+  if (/[;"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadCsv(filename, rows) {
+  const body = (rows || []).map((row) => row.map(csvEscape).join(";")).join("\n");
+  const blob = new Blob([`\uFEFF${body}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function tableToRows(table) {
+  const rows = [];
+  table.querySelectorAll("tr").forEach((tr) => {
+    if (tr.hidden) return;
+    const cells = [...tr.children].filter((c) => !c.classList.contains("entity-actions"));
+    if (!cells.length) return;
+    const values = cells.map((c) => c.innerText.replace(/\s+/g, " ").trim());
+    if (values.every((v) => !v || v === "—")) return;
+    rows.push(values);
+  });
+  return rows;
+}
+
+function enhanceTable(fromEl) {
+  const wrap = fromEl?.closest?.(".table-wrap");
+  const table = wrap?.querySelector("table");
+  if (!table) return;
+  let tools = wrap.querySelector(".table-tools");
+  if (!tools) {
+    tools = document.createElement("div");
+    tools.className = "table-tools";
+    tools.innerHTML = `
+      <input type="search" class="table-filter" placeholder="Filtrar A–Z, como en Excel…" autocomplete="off" />
+      <button type="button" class="btn btn-ghost" data-table-export>Exportar Excel</button>
+    `;
+    wrap.insertBefore(tools, table);
+    const input = tools.querySelector(".table-filter");
+    input.addEventListener("input", () => {
+      const q = input.value.trim().toLowerCase();
+      table.tBodies[0]?.querySelectorAll("tr").forEach((tr) => {
+        tr.hidden = Boolean(q) && !tr.innerText.toLowerCase().includes(q);
+      });
+    });
+    tools.querySelector("[data-table-export]").addEventListener("click", () => {
+      const name = wrap.dataset.exportName || "tabla";
+      downloadCsv(`armonivet-${name}.csv`, tableToRows(table));
+    });
+  }
+  table.querySelectorAll("thead th").forEach((th, i) => {
+    if (!th.textContent.trim()) return;
+    th.classList.add("is-sortable");
+    if (th.dataset.sortBound) return;
+    th.dataset.sortBound = "1";
+    th.title = "Clic para ordenar A–Z / Z–A";
+    th.addEventListener("click", () => {
+      const tbody = table.tBodies[0];
+      if (!tbody) return;
+      const dir = table.dataset.sortCol === String(i) && table.dataset.sortDir === "asc" ? "desc" : "asc";
+      const rows = [...tbody.rows].filter((r) => !r.querySelector(".empty"));
+      rows.sort((a, b) => {
+        const av = a.cells[i]?.innerText.trim() || "";
+        const bv = b.cells[i]?.innerText.trim() || "";
+        return dir === "asc"
+          ? av.localeCompare(bv, "es", { numeric: true, sensitivity: "base" })
+          : bv.localeCompare(av, "es", { numeric: true, sensitivity: "base" });
+      });
+      rows.forEach((r) => tbody.appendChild(r));
+      table.dataset.sortCol = String(i);
+      table.dataset.sortDir = dir;
+      table.querySelectorAll("thead th.is-sortable").forEach((h) => h.removeAttribute("aria-sort"));
+      th.setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
+    });
+  });
+}
+
+function linesToHours(raw, fallback) {
+  const hours = String(raw || "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return hours.length ? hours : fallback;
+}
+
 function goToLogin() {
   window.location.replace(loginHref(window.location.href));
 }
@@ -151,6 +243,66 @@ $("[data-menu-toggle]")?.addEventListener("click", () => {
 $("[data-range]")?.addEventListener("change", (e) => {
   state.days = Number(e.target.value) || 30;
   if (state.section === "dashboard") loadDashboard();
+});
+
+$("[data-export-all]")?.addEventListener("click", async () => {
+  const btn = $("[data-export-all]");
+  if (btn) btn.disabled = true;
+  try {
+    const [clients, leads, appts] = await Promise.all([
+      safeSelect("clients", "name,phone,email,pet_name,pet_type,status,consultation_reason,created_at", (q) =>
+        q.order("created_at", { ascending: false }).limit(2000),
+      ),
+      safeSelect("leads", "name,phone,email,pet_name,pet_type,status,consultation_reason,channel_slug,created_at", (q) =>
+        q.order("created_at", { ascending: false }).limit(2000),
+      ),
+      safeSelect(
+        "appointments",
+        "client_name,client_phone,service_title,scheduled_at,status,amount,deposit_paid,channel_slug,zone",
+        (q) => q.order("scheduled_at", { ascending: false }).limit(2000),
+      ),
+    ]);
+    downloadCsv("armonivet-metricas.csv", [
+      ["Métrica", "Valor"],
+      ["Exportado", new Date().toLocaleString("es-CL")],
+      ["Periodo (días)", state.days],
+      ["Visitas únicas", $("[data-kpi='visits_unique']")?.textContent || ""],
+      ["Leads", $("[data-kpi='leads_total']")?.textContent || ""],
+      ["Citas", $("[data-kpi='appointments_total']")?.textContent || ""],
+      ["Pagadas", $("[data-kpi='paid']")?.textContent || ""],
+      ["Asistieron", $("[data-kpi='arrived']")?.textContent || ""],
+      ["Ingresos", $("[data-kpi='revenue']")?.textContent || ""],
+      ["Seguimientos pendientes", $("[data-kpi='followups_pending']")?.textContent || ""],
+    ]);
+    await new Promise((r) => setTimeout(r, 400));
+    downloadCsv("armonivet-clientes.csv", [
+      ["Nombre", "Teléfono", "Email", "Mascota", "Especie", "Estado", "Motivo", "Alta"],
+      ...clients.map((c) => [c.name, c.phone, c.email, c.pet_name, c.pet_type, c.status, c.consultation_reason, c.created_at]),
+    ]);
+    await new Promise((r) => setTimeout(r, 400));
+    downloadCsv("armonivet-leads.csv", [
+      ["Nombre", "Teléfono", "Email", "Mascota", "Especie", "Estado", "Motivo", "Canal", "Alta"],
+      ...leads.map((l) => [l.name, l.phone, l.email, l.pet_name, l.pet_type, l.status, l.consultation_reason, l.channel_slug, l.created_at]),
+    ]);
+    await new Promise((r) => setTimeout(r, 400));
+    downloadCsv("armonivet-citas.csv", [
+      ["Cliente", "Teléfono", "Servicio", "Fecha", "Estado", "Monto", "Pagado", "Canal", "Zona"],
+      ...appts.map((a) => [
+        a.client_name,
+        a.client_phone,
+        a.service_title,
+        a.scheduled_at,
+        a.status,
+        a.amount,
+        a.deposit_paid ? "sí" : "no",
+        a.channel_slug,
+        a.zone,
+      ]),
+    ]);
+  } catch (err) {
+    alert(err instanceof Error ? err.message : "No se pudo exportar.");
+  }
+  if (btn) btn.disabled = false;
 });
 
 async function loadSection(section) {
@@ -712,6 +864,7 @@ async function loadAppointments() {
     </tr>`
     )
     .join("");
+  enhanceTable(body);
 
   body.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
     btn.addEventListener("click", () => openAppointmentModal(data.find((x) => x.id === btn.dataset.editAppointment)));
@@ -789,6 +942,7 @@ async function loadAgenda() {
           .join("")
       : `<tr><td colspan="7" class="empty">No hay citas para hoy.</td></tr>`;
     bindAppointmentRowActions(todayBody, rows);
+    enhanceTable(todayBody);
   }
 
   const weekBody = $("[data-agenda-week-body]");
@@ -809,6 +963,7 @@ async function loadAgenda() {
           .join("")
       : `<tr><td colspan="7" class="empty">Sin citas en los próximos 14 días.</td></tr>`;
     bindAppointmentRowActions(weekBody, rows);
+    enhanceTable(weekBody);
   }
 
   await renderAgendaCalendar(rows);
@@ -1109,10 +1264,27 @@ async function loadGenesisConfig() {
   form.deposit_amount.value = v.deposit_amount ?? 20000;
   form.min_price.value = v.min_price ?? 40000;
   form.payment_url.value = v.payment_url || "";
-  form.slot_hours.value = Array.isArray(v.slot_hours) ? v.slot_hours.join("\n") : "10:00\n12:00\n15:00\n17:30";
-  const workdays = Array.isArray(v.workdays) && v.workdays.length ? v.workdays.map(Number) : [1, 2, 3, 4, 5, 6];
-  form.querySelectorAll('input[name="wd"]').forEach((box) => {
-    box.checked = workdays.includes(Number(box.value));
+  const hoursOnline = Array.isArray(v.slot_hours_online) && v.slot_hours_online.length ? v.slot_hours_online : ["10:00", "12:00"];
+  const hoursPresencial =
+    Array.isArray(v.slot_hours_presencial) && v.slot_hours_presencial.length
+      ? v.slot_hours_presencial
+      : Array.isArray(v.slot_hours) && v.slot_hours.length
+        ? v.slot_hours
+        : ["15:00", "17:30"];
+  form.slot_hours_online.value = hoursOnline.join("\n");
+  form.slot_hours_presencial.value = hoursPresencial.join("\n");
+  const daysOnline = Array.isArray(v.workdays_online) && v.workdays_online.length ? v.workdays_online.map(Number) : [1, 2, 3, 4, 5];
+  const daysPresencial =
+    Array.isArray(v.workdays_presencial) && v.workdays_presencial.length
+      ? v.workdays_presencial.map(Number)
+      : Array.isArray(v.workdays) && v.workdays.length
+        ? v.workdays.map(Number)
+        : [1, 2, 3, 4, 5, 6];
+  form.querySelectorAll('input[name="wd_online"]').forEach((box) => {
+    box.checked = daysOnline.includes(Number(box.value));
+  });
+  form.querySelectorAll('input[name="wd_presencial"]').forEach((box) => {
+    box.checked = daysPresencial.includes(Number(box.value));
   });
   form.system_prompt.value = v.system_prompt || "";
 }
@@ -1130,17 +1302,22 @@ $("[data-genesis-form]")?.addEventListener("submit", async (e) => {
     min_price: Number(fd.get("min_price") || 40000),
     payment_url: String(fd.get("payment_url") || "").trim(),
     timezone: "America/Santiago",
-    slot_hours: String(fd.get("slot_hours") || "")
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
-    workdays: fd
-      .getAll("wd")
+    slot_hours_online: linesToHours(fd.get("slot_hours_online"), ["10:00", "12:00"]),
+    slot_hours_presencial: linesToHours(fd.get("slot_hours_presencial"), ["15:00", "17:30"]),
+    workdays_online: fd
+      .getAll("wd_online")
+      .map((n) => Number(n))
+      .filter((n) => n >= 0 && n <= 6),
+    workdays_presencial: fd
+      .getAll("wd_presencial")
       .map((n) => Number(n))
       .filter((n) => n >= 0 && n <= 6),
     system_prompt: String(fd.get("system_prompt") || "").trim(),
   };
-  if (!value.workdays.length) value.workdays = [1, 2, 3, 4, 5, 6];
+  if (!value.workdays_online.length) value.workdays_online = [1, 2, 3, 4, 5];
+  if (!value.workdays_presencial.length) value.workdays_presencial = [1, 2, 3, 4, 5, 6];
+  value.slot_hours = value.slot_hours_presencial;
+  value.workdays = [...new Set([...value.workdays_online, ...value.workdays_presencial])];
   await requireSupabase().from("site_settings").upsert({ key: "genesis", value });
   const ok = $("[data-genesis-ok]");
   if (ok) {
@@ -1172,6 +1349,7 @@ async function loadGenesis() {
       </tr>`;
     })
     .join("");
+  enhanceTable(body);
   body.querySelectorAll("[data-view-chat]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const row = rows.find((x) => x.id === btn.dataset.viewChat);
@@ -1227,6 +1405,7 @@ async function loadIntakes() {
       </tr>`
     )
     .join("");
+  enhanceTable(body);
   body.querySelectorAll("[data-view-intake]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const row = rows.find((x) => x.id === btn.dataset.viewIntake);
@@ -1368,6 +1547,7 @@ async function loadLeads() {
     </tr>`
     )
     .join("");
+  enhanceTable(body);
 
   body.querySelectorAll("[data-view-lead]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1558,6 +1738,7 @@ async function loadClients() {
     </tr>`
     )
     .join("");
+  enhanceTable(body);
 
   body.querySelectorAll("[data-view-client]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1782,6 +1963,7 @@ async function loadFollowups() {
     </tr>`;
     })
     .join("");
+  enhanceTable(body);
 
   const alertsEl = $("[data-followup-alerts]");
   if (alertsEl) {

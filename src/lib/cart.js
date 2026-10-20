@@ -339,6 +339,7 @@ function applyFirstItemToForm() {
     serviceSelect.value = first.book;
   }
   if (zoneSelect && first.zone) zoneSelect.value = first.zone;
+  form.dispatchEvent(new CustomEvent("armonivet:book-target", { bubbles: true }));
 }
 
 function closeModal() {
@@ -407,8 +408,11 @@ export function initCart() {
     }
     const checkout = e.target.closest("[data-cart-checkout]");
     if (checkout) {
+      e.preventDefault();
       closeModal();
       applyFirstItemToForm();
+      const href = checkout.getAttribute("href") || "#agendar";
+      window.dispatchEvent(new CustomEvent("armonivet:goto", { detail: { hash: href.includes("#") ? `#${href.split("#")[1]}` : "#agendar" } }));
       return;
     }
     const removeBtn = e.target.closest("[data-cart-remove]");
