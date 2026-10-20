@@ -16,7 +16,9 @@ En el SQL Editor de Supabase, en este orden:
 2. `schema_v2.sql`
 3. `genesis.sql`  ← este archivo crea chats, pagos, recordatorios y auditoría
 4. `booking.sql`  ← agenda propia: Génesis y la web leen las mismas horas (`list_available_slots`)
-5. `checkout.sql`  ← carrito y Mercado Pago
+5. `booking_phone_fix.sql` si ya corriste un booking.sql viejo
+6. `booking_modes.sql`  ← horarios separados online / presencial
+7. `checkout.sql`  ← carrito y Mercado Pago
 
 ## 2. Secretos (solo en Edge Functions)
 

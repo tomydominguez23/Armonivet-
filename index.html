@@ -114,10 +114,10 @@
       <nav class="cat-nav" aria-label="Categorías">
         <div class="shell cat-nav-inner">
           <a href="#ofertas">Destacados</a>
-          <a href="#servicios">Perros</a>
-          <a href="#servicios">Gatos</a>
-          <a href="#servicios">Online</a>
-          <a href="#servicios">Entrenamiento</a>
+          <a href="#servicios">Planes</a>
+          <a href="#consulta-online">Online</a>
+          <a href="#consulta-presencial">Presencial</a>
+          <a href="#entrenamiento">Entrenamiento</a>
           <a href="#valores">Precios</a>
           <a href="#reseñas">Reseñas</a>
           <a href="./about.html">Quiénes somos</a>
@@ -127,7 +127,10 @@
 
       <div class="mobile-nav" id="menu-movil" data-mobile-nav hidden>
         <a href="#ofertas">Destacados</a>
-        <a href="#servicios">Servicios</a>
+        <a href="#servicios">Planes</a>
+        <a href="#consulta-online">Online</a>
+        <a href="#consulta-presencial">Presencial</a>
+        <a href="#entrenamiento">Entrenamiento</a>
         <a href="#valores">Precios</a>
         <a href="#agendar">Agenda</a>
         <a href="./about.html">Quiénes somos</a>
@@ -641,7 +644,7 @@
               <strong>Asesoría</strong>
               <em>Desde $45.000</em>
             </a>
-            <a class="package-chip" href="#ofertas">
+            <a class="package-chip" href="#entrenamiento">
               <span class="chip-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7.5 4.5A2.5 2.5 0 1 1 5 7a2.5 2.5 0 0 1 2.5-2.5zM4 14.5C4 11.8 6.4 10 9 10c.7 0 1.4.1 2 .4V9.2A3.2 3.2 0 0 1 14.2 6h2.3c.8 0 1.5.7 1.5 1.5S17.3 9 16.5 9h-2.1v11h-2.3v-5.2c-.7.5-1.4.8-2.1.9V20H8v-4.2C5.8 15.3 4 15 4 14.5z"/></svg>
               </span>
@@ -666,7 +669,7 @@
 
           <p class="plans-kicker">Precios claros, según formato de atención</p>
           <div class="plan-cards">
-            <article class="plan-card featured">
+            <article class="plan-card featured" id="consulta-presencial">
               <p class="plan-badge">Presencial</p>
               <h3>Consulta presencial</h3>
               <p class="plan-price">Desde <strong>$65.000</strong></p>
@@ -690,7 +693,7 @@
               </ul>
               <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-online" data-book="Consulta remota" data-zone="Online" data-price="50000">Agregar</button>
             </article>
-            <article class="plan-card">
+            <article class="plan-card" id="entrenamiento">
               <h3>Entrenamiento profesional</h3>
               <p class="plan-price">Desde <strong>$45.000</strong></p>
               <p class="plan-note">Canino profesional o temprano (cachorros)</p>
@@ -1127,6 +1130,10 @@
 
           <div class="booking reveal" data-booking>
             <div class="booking-cal">
+              <div class="booking-mode" data-booking-mode role="tablist" aria-label="Tipo de hora">
+                <button type="button" class="booking-mode-btn is-active" data-mode="presencial">Presencial</button>
+                <button type="button" class="booking-mode-btn" data-mode="online">Online</button>
+              </div>
               <div class="booking-cal-head">
                 <button type="button" class="booking-nav" data-booking-prev aria-label="Mes anterior">‹</button>
                 <h3 data-booking-month>Calendario</h3>

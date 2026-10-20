@@ -193,10 +193,15 @@ async function logAction(
 
 type SlotRow = { at?: string; date?: string; time?: string; label?: string };
 
-async function loadAvailableSlots(db: SupabaseClient, days = 21) {
-  const { data, error } = await db.rpc("list_available_slots", { p_days: days });
+async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string | null) {
+  const payload: { p_days: number; p_mode?: string | null } = { p_days: days };
+  if (mode) payload.p_mode = mode;
+  let { data, error } = await db.rpc("list_available_slots", payload);
+  if (error && payload.p_mode) {
+    ({ data, error } = await db.rpc("list_available_slots", { p_days: days }));
+  }
   if (error) {
-    throw new Error("No pude leer la agenda. Hay que correr booking.sql en Supabase.");
+    throw new Error("No pude leer la agenda. Hay que correr booking.sql y booking_modes.sql en Supabase.");
   }
   return (data || {}) as {
     timezone?: string;
@@ -320,16 +325,23 @@ async function executeTool(
   if (name === "consultar_disponibilidad") {
     return run(async () => {
       const days = Math.min(45, Math.max(1, Number(args.days || 14)));
-      const avail = await loadAvailableSlots(db, days);
+      const rawMode = String(args.modalidad || "todas").toLowerCase();
+      const mode = rawMode.includes("online") || rawMode.includes("remot")
+        ? "online"
+        : rawMode.includes("presencial")
+          ? "presencial"
+          : null;
+      const avail = await loadAvailableSlots(db, days, mode);
       const slots = (avail.slots || []).slice(0, 16);
       return {
         timezone: avail.timezone || ctx.settings.timezone || "America/Santiago",
         deposit: avail.deposit ?? ctx.settings.deposit_amount ?? 20000,
+        modalidad: mode || "todas",
         hours: avail.hours || ctx.settings.slot_hours || ["10:00", "12:00", "15:00", "17:30"],
         count: slots.length,
         slots,
         hint: slots.length
-          ? "Ofrece 2 opciones concretas con fecha y hora de Chile. No inventes horarios."
+          ? "Ofrece 2 opciones concretas con fecha y hora de Chile, del tipo de consulta (online o presencial). No inventes horarios."
           : "No hay horas libres en este período. Ofrece otra semana o escala a humano.",
       };
     });

@@ -37,9 +37,12 @@ section[id],
 #incluye,
 #seguimiento,
 #consulta-online,
+#consulta-presencial,
+#entrenamiento,
 #flores,
+#packs,
 #agendar {
-  scroll-margin-top: 5.75rem;
+  scroll-margin-top: 6.5rem;
 }
 
 body {
@@ -2385,10 +2388,34 @@ body.cart-open {
   margin: 0;
 }
 
+.booking-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.booking-mode-btn {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--charcoal);
+}
+
+.booking-mode-btn.is-active {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: #fff;
+}
+
 .whatsapp-fab {
   position: fixed;
   right: 1.1rem;
-  bottom: 1.1rem;
+  bottom: max(1.1rem, env(safe-area-inset-bottom, 0px));
   z-index: 60;
   width: 56px;
   height: 56px;
@@ -2449,7 +2476,8 @@ html.js .reveal.is-visible {
 /* Responsive */
 @media (max-width: 980px) {
   .search-bar,
-  .topbar-actions .btn-header {
+  .topbar-actions .btn-header,
+  .cat-nav {
     display: none;
   }
 
@@ -2531,8 +2559,84 @@ html.js .reveal.is-visible {
 }
 
 @media (max-width: 720px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    padding-bottom: 4.5rem;
+  }
+
   .shell {
-    width: min(var(--shell), calc(100% - 1.35rem));
+    width: min(var(--shell), calc(100% - 1.2rem));
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .btn,
+  .btn-buy,
+  .btn-header,
+  .btn-primary,
+  .btn-ghost,
+  .booking-slot,
+  .booking-mode-btn,
+  .nav-toggle,
+  .cart-btn,
+  .package-arrow {
+    min-height: 44px;
+  }
+
+  .booking-day {
+    min-height: 48px;
+  }
+
+  .booking-grid {
+    gap: 0.2rem;
+  }
+
+  .mobile-nav a,
+  .mobile-nav button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0;
+  }
+
+  .cart-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .cart-dialog {
+    width: 100%;
+    max-height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    padding-bottom: max(1.2rem, env(safe-area-inset-bottom));
+  }
+
+  .hero-slide-grid {
+    padding: 1.6rem 0 2.2rem;
+  }
+
+  h1 {
+    max-width: none;
+  }
+
+  .package-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.55rem;
+    padding-bottom: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .package-chip {
+    flex: 0 0 auto;
   }
 
   .offer-grid,

@@ -49,6 +49,16 @@ function groupSlots(slots) {
   return byDay;
 }
 
+export function bookingModeFromService(service, zone) {
+  const blob = `${service || ""} ${zone || ""}`.toLowerCase();
+  if (blob.includes("online") || blob.includes("remot")) return "online";
+  return "presencial";
+}
+
+function slotsForMode(slots, mode) {
+  return (slots || []).filter((slot) => !slot.mode || slot.mode === mode);
+}
+
 function applyBookTarget(form, el) {
   if (!form || !el) return;
   const service = el.getAttribute("data-book");
@@ -66,6 +76,7 @@ function applyBookTarget(form, el) {
     serviceSelect.value = service;
   }
   if (zone && zoneSelect) zoneSelect.value = zone;
+  form.dispatchEvent(new CustomEvent("armonivet:book-target", { bubbles: true }));
 }
 
 export async function initBooking() {
@@ -84,6 +95,49 @@ export async function initBooking() {
   const nextBtn = root.querySelector("[data-booking-next]");
   const payEl = root.querySelector("[data-booking-pay]");
   const payMsg = root.querySelector("[data-booking-pay-msg]");
+  const modeBar = root.querySelector("[data-booking-mode]");
+
+  let allSlots = [];
+  let activeMode = "presencial";
+  let cursor = new Date();
+  cursor.setDate(1);
+  let selectedDate = null;
+  let selectedSlot = null;
+  let byDay = {};
+
+  const syncModeUi = () => {
+    modeBar?.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === activeMode);
+    });
+    if (form?.elements?.zone && activeMode === "online" && !form.elements.zone.value) {
+      form.elements.zone.value = "Online";
+    }
+  };
+
+  const setMode = (mode, { fromService = false } = {}) => {
+    activeMode = mode === "online" ? "online" : "presencial";
+    syncModeUi();
+    if (!fromService && form?.elements?.service) {
+      const current = String(form.elements.service.value || "");
+      const matches = bookingModeFromService(current, form.elements.zone?.value) === activeMode;
+      if (!matches) {
+        form.elements.service.value = activeMode === "online" ? "Consulta remota" : "Consulta presencial";
+        if (form.elements.zone) form.elements.zone.value = activeMode === "online" ? "Online" : "";
+      }
+    }
+    byDay = groupSlots(slotsForMode(allSlots, activeMode));
+    selectedSlot = null;
+    if (whenInput) whenInput.value = "";
+    if (whenLabel) whenLabel.textContent = "Elegí un horario";
+    const firstDay = Object.keys(byDay).sort()[0];
+    if (firstDay) {
+      selectedDate = firstDay;
+      cursor = parseISODate(firstDay);
+      cursor.setDate(1);
+    }
+    renderMonth();
+    renderSlots();
+  };
 
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-book], [data-zone]");
@@ -118,12 +172,6 @@ export async function initBooking() {
     gridEl.innerHTML = cells.join("");
   };
 
-  let cursor = new Date();
-  cursor.setDate(1);
-  let selectedDate = null;
-  let selectedSlot = null;
-  let byDay = {};
-
   paintMonth();
 
   if (!isSupabaseConfigured || !supabase) {
@@ -151,14 +199,21 @@ export async function initBooking() {
 
   const loadSlots = async () => {
     setStatus("Cargando horarios…");
-    const { data, error } = await supabase.rpc("list_available_slots", { p_days: 45 });
+    let data = null;
+    let error = null;
+    ({ data, error } = await supabase.rpc("list_available_slots", { p_days: 45, p_mode: null }));
     if (error) {
-      setStatus("No se pudieron cargar las horas. ¿Corriste booking.sql en Supabase?", true);
+      ({ data, error } = await supabase.rpc("list_available_slots", { p_days: 45 }));
+    }
+    if (error) {
+      setStatus("No se pudieron cargar las horas. ¿Corriste booking.sql y booking_modes.sql en Supabase?", true);
       console.warn("[booking]", error);
+      allSlots = [];
       byDay = {};
       return;
     }
-    byDay = groupSlots(data?.slots || []);
+    allSlots = data?.slots || [];
+    byDay = groupSlots(slotsForMode(allSlots, activeMode));
     setStatus("");
   };
 
@@ -180,9 +235,10 @@ export async function initBooking() {
     if (!slotsEl) return;
     const list = selectedDate ? byDay[selectedDate] || [] : [];
     if (dayLabel) {
+      const modeLabel = activeMode === "online" ? "online" : "presencial";
       dayLabel.textContent = selectedDate
-        ? new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "numeric", month: "long" }).format(parseISODate(selectedDate))
-        : "Elegí un día con horas libres";
+        ? `${new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "numeric", month: "long" }).format(parseISODate(selectedDate))} · ${modeLabel}`
+        : `Elegí un día con horas ${modeLabel}`;
     }
     if (!selectedDate) {
       slotsEl.innerHTML = `<p class="booking-hint">Tocá un día del calendario para ver los horarios.</p>`;
@@ -208,6 +264,18 @@ export async function initBooking() {
       });
     });
   };
+
+  form?.addEventListener("armonivet:book-target", () => {
+    setMode(bookingModeFromService(form.elements?.service?.value, form.elements?.zone?.value), { fromService: true });
+  });
+  form?.elements?.service?.addEventListener("change", () => {
+    setMode(bookingModeFromService(form.elements.service.value, form.elements.zone?.value), { fromService: true });
+  });
+  modeBar?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-mode]");
+    if (!btn) return;
+    setMode(btn.getAttribute("data-mode"));
+  });
 
   prevBtn?.addEventListener("click", () => {
     cursor.setMonth(cursor.getMonth() - 1);
@@ -295,6 +363,9 @@ export async function initBooking() {
   });
 
   await loadSlots();
+  activeMode = bookingModeFromService(form?.elements?.service?.value, form?.elements?.zone?.value);
+  byDay = groupSlots(slotsForMode(allSlots, activeMode));
+  syncModeUi();
   const firstDay = Object.keys(byDay).sort()[0];
   if (firstDay) {
     selectedDate = firstDay;

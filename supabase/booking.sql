@@ -25,8 +25,15 @@ grant select, insert, delete on public.booking_blocks to authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Horas libres (anon + Génesis). Timezone Chile.
+-- Online y presencial se configuran aparte (slot_hours_online / _presencial).
+-- Si la base ya tenía la función de 1 argumento, corré también booking_modes.sql.
 -- -----------------------------------------------------------------------------
-create or replace function public.list_available_slots(p_days integer default 21)
+drop function if exists public.list_available_slots(integer);
+
+create or replace function public.list_available_slots(
+  p_days integer default 21,
+  p_mode text default null
+)
 returns jsonb
 language plpgsql
 security definer
@@ -34,6 +41,10 @@ set search_path = public
 as $$
 declare
   settings jsonb := '{}'::jsonb;
+  hours_online text[];
+  hours_presencial text[];
+  days_online int[];
+  days_presencial int[];
   hours text[];
   workdays int[];
   tz text := 'America/Santiago';
@@ -44,62 +55,106 @@ declare
   now_ts timestamptz := now();
   out_slots jsonb := '[]'::jsonb;
   n int;
+  mode_name text;
+  want text;
 begin
   p_days := least(greatest(coalesce(p_days, 21), 1), 60);
+  want := nullif(lower(trim(coalesce(p_mode, ''))), '');
+  if want in ('todas', 'all', '*') then
+    want := null;
+  end if;
 
   select value into settings from public.site_settings where key = 'genesis';
   settings := coalesce(settings, '{}'::jsonb);
   tz := coalesce(settings->>'timezone', 'America/Santiago');
   deposit := coalesce((settings->>'deposit_amount')::int, 20000);
 
-  select coalesce(array_agg(x), array['10:00','12:00','15:00','17:30'])
-    into hours
+  select coalesce(array_agg(x), array['10:00','12:00'])
+    into hours_online
   from (
-    select jsonb_array_elements_text(coalesce(settings->'slot_hours', '["10:00","12:00","15:00","17:30"]'::jsonb)) as x
+    select jsonb_array_elements_text(
+      coalesce(settings->'slot_hours_online', settings->'slot_hours', '["10:00","12:00"]'::jsonb)
+    ) as x
+  ) s;
+
+  select coalesce(array_agg(x), array['15:00','17:30'])
+    into hours_presencial
+  from (
+    select jsonb_array_elements_text(
+      coalesce(settings->'slot_hours_presencial', settings->'slot_hours', '["15:00","17:30"]'::jsonb)
+    ) as x
+  ) s;
+
+  select coalesce(array_agg(x::int), array[1,2,3,4,5])
+    into days_online
+  from (
+    select jsonb_array_elements_text(
+      coalesce(settings->'workdays_online', settings->'workdays', '[1,2,3,4,5]'::jsonb)
+    ) as x
   ) s;
 
   select coalesce(array_agg(x::int), array[1,2,3,4,5,6])
-    into workdays
+    into days_presencial
   from (
-    select jsonb_array_elements_text(coalesce(settings->'workdays', '[1,2,3,4,5,6]'::jsonb)) as x
+    select jsonb_array_elements_text(
+      coalesce(settings->'workdays_presencial', settings->'workdays', '[1,2,3,4,5,6]'::jsonb)
+    ) as x
   ) s;
 
-  for n in 0 .. p_days - 1 loop
-    d := (now_ts at time zone tz)::date + n;
-    if extract(dow from d)::int = any(workdays)
-       and not exists (select 1 from public.booking_blocks b where b.day = d)
-    then
-      foreach h in array hours loop
-        slot := ((d::timestamp + h::time) at time zone tz);
-        if slot > now_ts
-           and not exists (
-             select 1 from public.appointments a
-             where a.scheduled_at = slot
-               and a.status is distinct from 'cancelada'
-           )
-        then
-          out_slots := out_slots || jsonb_build_array(jsonb_build_object(
-            'at', slot,
-            'date', to_char(d, 'YYYY-MM-DD'),
-            'time', h,
-            'label', to_char(d, 'DD/MM') || ' ' || h
-          ));
-        end if;
-      end loop;
+  foreach mode_name in array array['online','presencial'] loop
+    if want is not null and want is distinct from mode_name then
+      continue;
     end if;
+    if mode_name = 'online' then
+      hours := hours_online;
+      workdays := days_online;
+    else
+      hours := hours_presencial;
+      workdays := days_presencial;
+    end if;
+
+    for n in 0 .. p_days - 1 loop
+      d := (now_ts at time zone tz)::date + n;
+      if extract(dow from d)::int = any(workdays)
+         and not exists (select 1 from public.booking_blocks b where b.day = d)
+      then
+        foreach h in array hours loop
+          slot := ((d::timestamp + h::time) at time zone tz);
+          if slot > now_ts
+             and not exists (
+               select 1 from public.appointments a
+               where a.scheduled_at = slot
+                 and a.status is distinct from 'cancelada'
+             )
+          then
+            out_slots := out_slots || jsonb_build_array(jsonb_build_object(
+              'at', slot,
+              'date', to_char(d, 'YYYY-MM-DD'),
+              'time', h,
+              'mode', mode_name,
+              'label', to_char(d, 'DD/MM') || ' ' || h
+            ));
+          end if;
+        end loop;
+      end if;
+    end loop;
   end loop;
 
   return jsonb_build_object(
     'timezone', tz,
     'deposit', deposit,
-    'hours', to_jsonb(hours),
-    'workdays', to_jsonb(workdays),
+    'hours_online', to_jsonb(hours_online),
+    'hours_presencial', to_jsonb(hours_presencial),
+    'workdays_online', to_jsonb(days_online),
+    'workdays_presencial', to_jsonb(days_presencial),
+    'hours', to_jsonb(hours_presencial),
+    'workdays', to_jsonb(days_presencial),
     'slots', out_slots
   );
 end;
 $$;
 
-grant execute on function public.list_available_slots(integer) to anon, authenticated;
+grant execute on function public.list_available_slots(integer, text) to anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Reserva pública (web). Génesis sigue usando service role + tools.

@@ -85,6 +85,7 @@
                   <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
                   <button type="button" class="btn btn-ghost" data-open-lead>Nuevo lead</button>
                   <button type="button" class="btn btn-ghost" data-open-followup>Seguimiento</button>
+                  <button type="button" class="btn btn-ghost" data-export-all>Exportar Excel</button>
                 </div>
               </div>
 
@@ -228,7 +229,7 @@
                 </div>
               </article>
               <h3 class="subhead">Hoy</h3>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="agenda-hoy">
                 <table>
                   <thead>
                     <tr>
@@ -245,7 +246,7 @@
                 </table>
               </div>
               <h3 class="subhead">Próximos 14 días</h3>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="agenda-proximos">
                 <table>
                   <thead>
                     <tr>
@@ -279,7 +280,7 @@
                   <button type="button" class="btn btn-primary" data-open-lead>Nuevo lead</button>
                 </div>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="leads">
                 <table>
                   <thead>
                     <tr>
@@ -318,7 +319,7 @@
                   <button type="button" class="btn btn-primary" data-open-client>Nuevo cliente</button>
                 </div>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="clientes">
                 <table>
                   <thead>
                     <tr>
@@ -351,7 +352,7 @@
                 </div>
               </div>
               <div class="alert-cards" data-followup-alerts></div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="seguimientos">
                 <table>
                   <thead>
                     <tr>
@@ -375,7 +376,7 @@
                 <p>Registra citas agendadas, abonos y asistencia para medir conversión real.</p>
                 <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="citas">
                 <table>
                   <thead>
                     <tr>
@@ -415,7 +416,7 @@
               <div class="panel-toolbar">
                 <p>Conversaciones del chat Genesis en la web: activas, completadas o abandonadas.</p>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="chats-web">
                 <table>
                   <thead>
                     <tr>
@@ -437,7 +438,7 @@
               <div class="panel-toolbar">
                 <p>Fichas pre-consulta enviadas desde Genesis. La doctora las ve antes de la visita.</p>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" data-export-name="cuestionarios">
                 <table>
                   <thead>
                     <tr>
@@ -469,19 +470,39 @@
                 </div>
                 <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
                 <p class="hint">Si configurás <code>MERCADOPAGO_ACCESS_TOKEN</code> y <code>MERCADOPAGO_PUBLIC_KEY</code> en Edge Functions, el carrito cobra en la web con Checkout API. Este link es el respaldo.</p>
-                <label>Horarios (uno por línea, 24h). La web y Génesis usan estos mismos.
-                  <textarea name="slot_hours" rows="4" placeholder="10:00&#10;12:00&#10;15:00&#10;17:30"></textarea>
-                </label>
-                <fieldset class="workdays">
-                  <legend>Días de atención</legend>
-                  <label><input type="checkbox" name="wd" value="1" /> Lun</label>
-                  <label><input type="checkbox" name="wd" value="2" /> Mar</label>
-                  <label><input type="checkbox" name="wd" value="3" /> Mié</label>
-                  <label><input type="checkbox" name="wd" value="4" /> Jue</label>
-                  <label><input type="checkbox" name="wd" value="5" /> Vie</label>
-                  <label><input type="checkbox" name="wd" value="6" /> Sáb</label>
-                  <label><input type="checkbox" name="wd" value="0" /> Dom</label>
-                </fieldset>
+                <div class="form-row genesis-hours">
+                  <div>
+                    <label>Horas online (una por línea, 24h)
+                      <textarea name="slot_hours_online" rows="4" placeholder="10:00&#10;12:00"></textarea>
+                    </label>
+                    <fieldset class="workdays">
+                      <legend>Días online</legend>
+                      <label><input type="checkbox" name="wd_online" value="1" /> Lun</label>
+                      <label><input type="checkbox" name="wd_online" value="2" /> Mar</label>
+                      <label><input type="checkbox" name="wd_online" value="3" /> Mié</label>
+                      <label><input type="checkbox" name="wd_online" value="4" /> Jue</label>
+                      <label><input type="checkbox" name="wd_online" value="5" /> Vie</label>
+                      <label><input type="checkbox" name="wd_online" value="6" /> Sáb</label>
+                      <label><input type="checkbox" name="wd_online" value="0" /> Dom</label>
+                    </fieldset>
+                  </div>
+                  <div>
+                    <label>Horas presencial (una por línea, 24h)
+                      <textarea name="slot_hours_presencial" rows="4" placeholder="15:00&#10;17:30"></textarea>
+                    </label>
+                    <fieldset class="workdays">
+                      <legend>Días presencial</legend>
+                      <label><input type="checkbox" name="wd_presencial" value="1" /> Lun</label>
+                      <label><input type="checkbox" name="wd_presencial" value="2" /> Mar</label>
+                      <label><input type="checkbox" name="wd_presencial" value="3" /> Mié</label>
+                      <label><input type="checkbox" name="wd_presencial" value="4" /> Jue</label>
+                      <label><input type="checkbox" name="wd_presencial" value="5" /> Vie</label>
+                      <label><input type="checkbox" name="wd_presencial" value="6" /> Sáb</label>
+                      <label><input type="checkbox" name="wd_presencial" value="0" /> Dom</label>
+                    </fieldset>
+                  </div>
+                </div>
+                <p class="hint">La web y Génesis usan estas dos agendas. Una hora ocupada (online o presencial) no se ofrece en la otra.</p>
                 <label>Prompt de Génesis
                   <textarea name="system_prompt" rows="10"></textarea>
                 </label>

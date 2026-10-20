@@ -10,21 +10,101 @@ if (yearEl) {
   yearEl.textContent = String(new Date().getFullYear());
 }
 
+function closeMobileNav() {
+  if (!header || !navToggle || !mobileNav) return;
+  header.classList.remove("is-open");
+  navToggle.setAttribute("aria-expanded", "false");
+  mobileNav.hidden = true;
+}
+
+function headerOffset() {
+  return Math.round((header?.getBoundingClientRect().height || 72) + 12);
+}
+
+function scrollToId(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  const top = el.getBoundingClientRect().top + window.scrollY - headerOffset();
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  return true;
+}
+
+function hashTarget(hash) {
+  const raw = String(hash || "").replace(/^#/, "");
+  if (!raw || raw.includes("=")) return "";
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function gotoHash(hash, { push = true } = {}) {
+  const id = hashTarget(hash);
+  if (!id) return false;
+  closeMobileNav();
+  if (push && location.hash !== `#${id}`) {
+    history.pushState(null, "", `#${id}`);
+  }
+  window.setTimeout(() => scrollToId(id), 60);
+  return Boolean(document.getElementById(id));
+}
+
 if (navToggle && header && mobileNav) {
   navToggle.addEventListener("click", () => {
     const open = header.classList.toggle("is-open");
     navToggle.setAttribute("aria-expanded", String(open));
     mobileNav.hidden = !open;
   });
-
-  mobileNav.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", () => {
-      header.classList.remove("is-open");
-      navToggle.setAttribute("aria-expanded", "false");
-      mobileNav.hidden = true;
-    });
-  });
 }
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("a[href]");
+  if (!link || link.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  let url;
+  try {
+    url = new URL(link.href, window.location.href);
+  } catch {
+    return;
+  }
+  if (url.origin !== window.location.origin) return;
+  const here = window.location.pathname.replace(/\/index\.html$/i, "/");
+  const there = url.pathname.replace(/\/index\.html$/i, "/");
+  if (here !== there) {
+    closeMobileNav();
+    return;
+  }
+  const id = hashTarget(url.hash);
+  if (!id || !document.getElementById(id)) return;
+  e.preventDefault();
+  gotoHash(url.hash);
+});
+
+document.querySelectorAll(".search-bar").forEach((form) => {
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const dest = form.getAttribute("action") || "#agendar";
+    if (dest.startsWith("#") && document.getElementById(hashTarget(dest))) {
+      gotoHash(dest);
+      return;
+    }
+    window.location.href = dest.startsWith("#") ? `./index.html${dest}` : dest;
+  });
+});
+
+window.addEventListener("armonivet:goto", (e) => {
+  const hash = e.detail?.hash || "#agendar";
+  if (!gotoHash(hash)) {
+    window.location.href = hash.startsWith("#") ? `./index.html${hash}` : hash;
+  }
+});
+
+window.addEventListener("load", () => {
+  const id = hashTarget(window.location.hash);
+  if (id && document.getElementById(id)) {
+    window.setTimeout(() => scrollToId(id), 80);
+  }
+});
 
 const revealEls = document.querySelectorAll(".reveal");
 if ("IntersectionObserver" in window) {
