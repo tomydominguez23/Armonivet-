@@ -30,6 +30,7 @@
             <p class="nav-group">Operación</p>
             <button type="button" class="nav-item is-active" data-nav="dashboard">Dashboard</button>
             <button type="button" class="nav-item" data-nav="agenda">Agenda</button>
+            <button type="button" class="nav-item" data-nav="calendar">Calendario</button>
             <button type="button" class="nav-item" data-nav="leads">Leads</button>
             <button type="button" class="nav-item" data-nav="clients">Clientes</button>
             <button type="button" class="nav-item" data-nav="followups">Seguimiento</button>
@@ -208,6 +209,7 @@
               <div class="panel-toolbar">
                 <p>Citas de hoy, esta semana y pendientes de abono o asistencia.</p>
                 <div class="btn-row">
+                  <button type="button" class="btn btn-ghost" data-goto="calendar">Configurar disponibilidad</button>
                   <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
                 </div>
               </div>
@@ -218,7 +220,7 @@
                   <h3 data-cal-month>Calendario</h3>
                   <button type="button" class="btn btn-ghost" data-cal-next aria-label="Mes siguiente">›</button>
                 </div>
-                <p class="empty">Las horas libres salen de Génesis (días y horarios). Bloqueá un día para que no se reserve en la web ni por WhatsApp.</p>
+                <p class="empty">Los horarios salen de Calendario. Bloqueá un día para que no se reserve en la web ni por WhatsApp.</p>
                 <div class="admin-cal-grid" data-cal-grid></div>
                 <div class="admin-cal-day" data-cal-day-panel hidden>
                   <header>
@@ -262,6 +264,24 @@
                   <tbody data-agenda-week-body></tbody>
                 </table>
               </div>
+            </section>
+
+            <!-- Calendario -->
+            <section class="panel" data-panel="calendar">
+              <div class="panel-toolbar">
+                <p>Definí cómo se reserva, con las mismas opciones que Calendly: duración, horario semanal, anticipación, descansos y fechas especiales. La web y Génesis comparten esta agenda.</p>
+              </div>
+              <form class="settings-form calendar-form" data-calendar-form>
+                <div data-calendar-body>
+                  <p class="empty">Cargando agenda…</p>
+                </div>
+                <p class="form-error" data-calendar-error hidden></p>
+                <div class="btn-row">
+                  <button class="btn btn-primary" type="submit">Guardar calendario</button>
+                </div>
+                <p class="form-ok" data-calendar-ok hidden>Guardado. La web y Génesis usan esta agenda.</p>
+                <p class="cal-note">Al guardar, las horas de inicio ya quedan en la agenda actual. La anticipación mínima, los descansos entre citas, el tope por día y las fechas especiales se aplican en la reserva cuando corrés <code>supabase/calendar_settings.sql</code> en el SQL Editor de Supabase, después de <code>booking_modes.sql</code>.</p>
+              </form>
             </section>
 
             <!-- Leads -->
@@ -470,39 +490,7 @@
                 </div>
                 <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
                 <p class="hint">Si configurás <code>MERCADOPAGO_ACCESS_TOKEN</code> y <code>MERCADOPAGO_PUBLIC_KEY</code> en Edge Functions, el carrito cobra en la web con Checkout API. Este link es el respaldo.</p>
-                <div class="form-row genesis-hours">
-                  <div>
-                    <label>Horas online (una por línea, 24h)
-                      <textarea name="slot_hours_online" rows="4" placeholder="10:00&#10;12:00"></textarea>
-                    </label>
-                    <fieldset class="workdays">
-                      <legend>Días online</legend>
-                      <label><input type="checkbox" name="wd_online" value="1" /> Lun</label>
-                      <label><input type="checkbox" name="wd_online" value="2" /> Mar</label>
-                      <label><input type="checkbox" name="wd_online" value="3" /> Mié</label>
-                      <label><input type="checkbox" name="wd_online" value="4" /> Jue</label>
-                      <label><input type="checkbox" name="wd_online" value="5" /> Vie</label>
-                      <label><input type="checkbox" name="wd_online" value="6" /> Sáb</label>
-                      <label><input type="checkbox" name="wd_online" value="0" /> Dom</label>
-                    </fieldset>
-                  </div>
-                  <div>
-                    <label>Horas presencial (una por línea, 24h)
-                      <textarea name="slot_hours_presencial" rows="4" placeholder="15:00&#10;17:30"></textarea>
-                    </label>
-                    <fieldset class="workdays">
-                      <legend>Días presencial</legend>
-                      <label><input type="checkbox" name="wd_presencial" value="1" /> Lun</label>
-                      <label><input type="checkbox" name="wd_presencial" value="2" /> Mar</label>
-                      <label><input type="checkbox" name="wd_presencial" value="3" /> Mié</label>
-                      <label><input type="checkbox" name="wd_presencial" value="4" /> Jue</label>
-                      <label><input type="checkbox" name="wd_presencial" value="5" /> Vie</label>
-                      <label><input type="checkbox" name="wd_presencial" value="6" /> Sáb</label>
-                      <label><input type="checkbox" name="wd_presencial" value="0" /> Dom</label>
-                    </fieldset>
-                  </div>
-                </div>
-                <p class="hint">La web y Génesis usan estas dos agendas. Una hora ocupada (online o presencial) no se ofrece en la otra.</p>
+                <p class="hint">Los días, la duración y los límites de reserva se configuran en <button type="button" class="linkish" data-goto="calendar">Calendario</button>. Génesis ofrece las mismas horas que la web.</p>
                 <label>Prompt de Génesis
                   <textarea name="system_prompt" rows="10"></textarea>
                 </label>

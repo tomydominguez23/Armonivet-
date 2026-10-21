@@ -1,16 +1,18 @@
 import { isSupabaseConfigured, requireSupabase, supabase } from "../lib/supabase.js";
+import { createCalendarPanel } from "./calendar-panel.js";
 import { getSession, loginHref } from "./session.js";
 
 const titles = {
   dashboard: ["Dashboard", "Resumen operativo del consultorio"],
   agenda: ["Agenda", "Hoy, esta semana y citas por confirmar"],
+  calendar: ["Calendario", "Duración, disponibilidad y reglas de reserva"],
   leads: ["Leads", "Leads capturados desde Genesis y otros canales"],
   clients: ["Clientes", "Gestión de clientes y cuestionarios"],
   followups: ["Seguimiento", "Controles pendientes y recordatorios"],
   appointments: ["Citas", "Agenda, abonos y asistencia"],
   genesis: ["Chats web", "Conversaciones del widget Genesis en la web"],
   whatsapp: ["WhatsApp", "Bandeja de Génesis y toma humana"],
-  genesis_config: ["Génesis IA", "Prompt, modelo, pagos y horarios del agente"],
+  genesis_config: ["Génesis IA", "Prompt, modelo y reglas de cobro"],
   intakes: ["Cuestionarios", "Fichas pre-consulta para la Dra. Bárbara"],
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
@@ -37,10 +39,17 @@ const state = {
   editing: null,
   mediaFilter: "all",
   mediaItems: [],
+  preview: false,
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const calendarPanel = createCalendarPanel({
+  query: $,
+  queryAll: $$,
+  requireSupabase,
+  isPreview: () => state.preview,
+});
 
 function formatCLP(n) {
   return new Intl.NumberFormat("es-CL", {
@@ -181,14 +190,6 @@ function enhanceTable(fromEl) {
   });
 }
 
-function linesToHours(raw, fallback) {
-  const hours = String(raw || "")
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return hours.length ? hours : fallback;
-}
-
 function goToLogin() {
   window.location.replace(loginHref(window.location.href));
 }
@@ -211,6 +212,14 @@ function setSection(section, { syncHash = true } = {}) {
 
 async function boot() {
   const status = $("[data-boot-status]");
+  if (import.meta.env.DEV && new URLSearchParams(location.search).get("preview") === "calendar") {
+    state.preview = true;
+    $("[data-user-email]").textContent = "Vista previa";
+    $("[data-view='app']").hidden = false;
+    if (status) status.hidden = true;
+    setSection("calendar");
+    return;
+  }
   if (!isSupabaseConfigured) {
     goToLogin();
     return;
@@ -306,8 +315,10 @@ $("[data-export-all]")?.addEventListener("click", async () => {
 });
 
 async function loadSection(section) {
+  if (state.preview && section !== "calendar") return;
   if (section === "dashboard") return loadDashboard();
   if (section === "agenda") return loadAgenda();
+  if (section === "calendar") return calendarPanel.load();
   if (section === "leads") return loadLeads();
   if (section === "clients") return loadClients();
   if (section === "followups") return loadFollowups();
@@ -1264,28 +1275,6 @@ async function loadGenesisConfig() {
   form.deposit_amount.value = v.deposit_amount ?? 20000;
   form.min_price.value = v.min_price ?? 40000;
   form.payment_url.value = v.payment_url || "";
-  const hoursOnline = Array.isArray(v.slot_hours_online) && v.slot_hours_online.length ? v.slot_hours_online : ["10:00", "12:00"];
-  const hoursPresencial =
-    Array.isArray(v.slot_hours_presencial) && v.slot_hours_presencial.length
-      ? v.slot_hours_presencial
-      : Array.isArray(v.slot_hours) && v.slot_hours.length
-        ? v.slot_hours
-        : ["15:00", "17:30"];
-  form.slot_hours_online.value = hoursOnline.join("\n");
-  form.slot_hours_presencial.value = hoursPresencial.join("\n");
-  const daysOnline = Array.isArray(v.workdays_online) && v.workdays_online.length ? v.workdays_online.map(Number) : [1, 2, 3, 4, 5];
-  const daysPresencial =
-    Array.isArray(v.workdays_presencial) && v.workdays_presencial.length
-      ? v.workdays_presencial.map(Number)
-      : Array.isArray(v.workdays) && v.workdays.length
-        ? v.workdays.map(Number)
-        : [1, 2, 3, 4, 5, 6];
-  form.querySelectorAll('input[name="wd_online"]').forEach((box) => {
-    box.checked = daysOnline.includes(Number(box.value));
-  });
-  form.querySelectorAll('input[name="wd_presencial"]').forEach((box) => {
-    box.checked = daysPresencial.includes(Number(box.value));
-  });
   form.system_prompt.value = v.system_prompt || "";
 }
 
@@ -1301,23 +1290,8 @@ $("[data-genesis-form]")?.addEventListener("submit", async (e) => {
     deposit_amount: Number(fd.get("deposit_amount") || 20000),
     min_price: Number(fd.get("min_price") || 40000),
     payment_url: String(fd.get("payment_url") || "").trim(),
-    timezone: "America/Santiago",
-    slot_hours_online: linesToHours(fd.get("slot_hours_online"), ["10:00", "12:00"]),
-    slot_hours_presencial: linesToHours(fd.get("slot_hours_presencial"), ["15:00", "17:30"]),
-    workdays_online: fd
-      .getAll("wd_online")
-      .map((n) => Number(n))
-      .filter((n) => n >= 0 && n <= 6),
-    workdays_presencial: fd
-      .getAll("wd_presencial")
-      .map((n) => Number(n))
-      .filter((n) => n >= 0 && n <= 6),
     system_prompt: String(fd.get("system_prompt") || "").trim(),
   };
-  if (!value.workdays_online.length) value.workdays_online = [1, 2, 3, 4, 5];
-  if (!value.workdays_presencial.length) value.workdays_presencial = [1, 2, 3, 4, 5, 6];
-  value.slot_hours = value.slot_hours_presencial;
-  value.workdays = [...new Set([...value.workdays_online, ...value.workdays_presencial])];
   await requireSupabase().from("site_settings").upsert({ key: "genesis", value });
   const ok = $("[data-genesis-ok]");
   if (ok) {

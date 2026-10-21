@@ -154,6 +154,7 @@ a {
 .auth-card input,
 .settings-form input,
 .settings-form textarea,
+.settings-form select,
 .modal-body input,
 .modal-body textarea,
 .modal-body select,
@@ -164,6 +165,17 @@ a {
   padding: 0.7rem 0.85rem;
   background: #fff;
   color: var(--ink);
+}
+
+.settings-form input[type="checkbox"],
+.settings-form input[type="radio"],
+.modal-body input[type="checkbox"],
+.modal-body input[type="radio"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border-radius: 4px;
+  accent-color: var(--cta);
 }
 
 .form-error {
@@ -1708,4 +1720,185 @@ th {
 
 .workdays legend {
   font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.linkish {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--brand-dark);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.calendar-form {
+  max-width: 980px;
+}
+
+.settings-form label.check-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+}
+
+.cal-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.cal-card h3 {
+  margin: 0;
+}
+
+.cal-card > .btn {
+  justify-self: start;
+}
+
+.cal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.cal-tab,
+.cal-mini {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--brand-dark);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cal-tab {
+  padding: 0.55rem 0.95rem;
+}
+
+.cal-mini {
+  padding: 0.28rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.cal-tab.is-active,
+.cal-preset.is-active {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: #fff;
+}
+
+.cal-presets,
+.cal-day-actions,
+.cal-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cal-day {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cal-ranges,
+.cal-overrides,
+.cal-override {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cal-override {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cal-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.settings-form .cal-range input,
+.settings-form .cal-inline input,
+.settings-form .cal-inline select {
+  width: auto;
+}
+
+.settings-form .cal-range input[type="time"] {
+  min-width: 7.5rem;
+}
+
+.cal-off {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.cal-remove {
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+}
+
+.cal-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cal-preview-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cal-preview-list span {
+  font-weight: 600;
+}
+
+.cal-note {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  background: #f4f8f6;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+}
+
+@media (max-width: 860px) {
+  .cal-grid,
+  .cal-day {
+    grid-template-columns: 1fr;
+  }
 }

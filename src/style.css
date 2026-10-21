@@ -2393,9 +2393,19 @@ body.cart-open {
 
 .booking-mode {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.4rem;
   margin-bottom: 0.85rem;
+}
+
+.booking-meta {
+  margin: -0.35rem 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.booking-mode-btn[hidden] {
+  display: none;
 }
 
 .booking-mode-btn {
