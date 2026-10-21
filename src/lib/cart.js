@@ -22,11 +22,11 @@ export const CATALOG = [
   },
   {
     id: "entrenamiento-temprano",
-    title: "Entrenamiento temprano",
-    book: "Entrenamiento temprano",
+    title: "Educación temprana para cachorros",
+    book: "Educación temprana para cachorros",
     zone: "",
     price: 45000,
-    desc: "Educación de 3 a 6 meses: hábitos, mordidas y convivencia en casa.",
+    desc: "Educación temprana para cachorros: orientación sobre eliminación, mordidas, socialización e independencia.",
     image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80",
     tag: "Cachorros",
   },
@@ -36,17 +36,8 @@ export const CATALOG = [
     book: "Entrenamiento",
     zone: "",
     price: 45000,
-    desc: "Educación guiada para el día a día y el vínculo familiar.",
+    desc: "Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.",
     image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "asesoria",
-    title: "Asesoría felina / canina",
-    book: "Asesoría felina / canina",
-    zone: "",
-    price: 45000,
-    desc: "Miedo, ruidos, mudanzas y convivencia.",
-    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=900&q=80",
   },
   {
     id: "sitter",
@@ -185,10 +176,10 @@ function itemFromTrigger(el) {
   const aliases = {
     "etologia-clinica": "consulta-presencial",
     "entrenamiento-basico": "entrenamiento",
-    "asesoria-felina-canina": "asesoria",
     "cat-pet-sitter": "sitter",
   };
   const id = aliases[rawId] || rawId;
+  if (id === "asesoria" || id === "asesoria-felina-canina") return null;
   const catalog = catalogById(id) || {};
   const zone = el.getAttribute("data-zone") || "";
   const priceAttr = el.getAttribute("data-price");
@@ -213,8 +204,15 @@ function itemFromTrigger(el) {
   };
 }
 
+function foldText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function slugFromBook(book) {
-  const value = String(book || "").toLowerCase();
+  const value = foldText(book);
   if (value.includes("inicio online")) return "pack-inicio-online";
   if (value.includes("continuidad")) return "pack-continuidad-online";
   if (value.includes("mixto")) return "pack-mixto";
@@ -222,14 +220,14 @@ function slugFromBook(book) {
   if (value.includes("control") && (value.includes("remot") || value.includes("online"))) return "control-online";
   if (value.includes("control")) return "control-presencial";
   if (value.includes("remota") || value.includes("online")) return "consulta-online";
-  if (value.includes("temprano")) return "entrenamiento-temprano";
+  if (value.includes("temprano") || value.includes("educacion")) return "entrenamiento-temprano";
   if (value.includes("sitter")) return "sitter";
-  if (value.includes("asesor")) return "asesoria";
-  if (value.includes("entrenamiento")) return "entrenamiento";
+  if (value.includes("entrenamiento") || value.includes("obediencia")) return "entrenamiento";
   return "consulta-presencial";
 }
 
 export function addToCart(item) {
+  if (!item || item.id === "asesoria" || item.id === "asesoria-felina-canina") return readCart();
   const items = readCart();
   const idx = items.findIndex((row) => row.id === item.id);
   if (idx >= 0) {
@@ -383,6 +381,8 @@ function openModal({ mode = "added", item = null } = {}) {
 }
 
 export function initCart() {
+  const cleaned = readCart().filter((row) => row.id !== "asesoria" && row.id !== "asesoria-felina-canina");
+  if (cleaned.length !== readCart().length) writeCart(cleaned);
   renderBadge(readCart().length);
   renderBookingSummary();
 
@@ -391,6 +391,7 @@ export function initCart() {
     if (addBtn) {
       e.preventDefault();
       const item = itemFromTrigger(addBtn);
+      if (!item) return;
       addToCart(item);
       applyFirstItemToForm();
       openModal({ mode: "added", item });
