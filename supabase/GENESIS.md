@@ -18,7 +18,8 @@ En el SQL Editor de Supabase, en este orden:
 4. `booking.sql`  ← agenda propia: Génesis y la web leen las mismas horas (`list_available_slots`)
 5. `booking_phone_fix.sql` si ya corriste un booking.sql viejo
 6. `booking_modes.sql`  ← horarios separados online / presencial
-7. `checkout.sql`  ← carrito y Mercado Pago
+7. `calendar_settings.sql`  ← duración, anticipación, descansos y fechas de Calendario
+8. `checkout.sql`  ← carrito y Mercado Pago
 
 ## 2. Secretos (solo en Edge Functions)
 

@@ -98,6 +98,7 @@ export async function initBooking() {
   const modeBar = root.querySelector("[data-booking-mode]");
 
   let allSlots = [];
+  let calendarConfig = null;
   let activeMode = "presencial";
   let cursor = new Date();
   cursor.setDate(1);
@@ -105,7 +106,31 @@ export async function initBooking() {
   let selectedSlot = null;
   let byDay = {};
 
+  const modeConfig = (mode) => calendarConfig?.[mode] || null;
+  const modeEnabled = (mode) => {
+    const cfg = modeConfig(mode);
+    return !cfg || cfg.enabled !== false;
+  };
+  const applyCalendarPrefs = () => {
+    modeBar?.querySelectorAll("[data-mode]").forEach((btn) => {
+      const mode = btn.getAttribute("data-mode");
+      const cfg = modeConfig(mode);
+      btn.hidden = Boolean(cfg && cfg.enabled === false);
+      if (cfg?.name) btn.textContent = cfg.name;
+    });
+    const cfg = modeConfig(activeMode);
+    const meta = root.querySelector("[data-booking-meta]");
+    if (meta) {
+      const bits = [];
+      if (cfg?.duration_minutes) bits.push(`${cfg.duration_minutes} min`);
+      if (cfg?.location) bits.push(cfg.location);
+      meta.hidden = bits.length === 0;
+      meta.textContent = bits.join(" · ");
+    }
+  };
+
   const syncModeUi = () => {
+    applyCalendarPrefs();
     modeBar?.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-mode") === activeMode);
     });
@@ -115,7 +140,26 @@ export async function initBooking() {
   };
 
   const setMode = (mode, { fromService = false } = {}) => {
-    activeMode = mode === "online" ? "online" : "presencial";
+    const next = mode === "online" ? "online" : "presencial";
+    if (!modeEnabled(next)) {
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.textContent = `La modalidad ${next === "online" ? "online" : "presencial"} no está abierta para reservar.`;
+        statusEl.classList.add("is-error");
+      }
+      if (modeEnabled(activeMode)) {
+        syncModeUi();
+        return;
+      }
+      activeMode = modeEnabled("presencial") ? "presencial" : "online";
+    } else {
+      activeMode = next;
+      if (statusEl?.textContent?.includes("no está abierta")) {
+        statusEl.hidden = true;
+        statusEl.textContent = "";
+        statusEl.classList.remove("is-error");
+      }
+    }
     syncModeUi();
     if (!fromService && form?.elements?.service) {
       const current = String(form.elements.service.value || "");
@@ -197,13 +241,23 @@ export async function initBooking() {
     statusEl.classList.toggle("is-error", Boolean(isError));
   };
 
+  const loadCalendarPrefs = async () => {
+    const { data, error } = await supabase.from("site_settings").select("value").eq("key", "calendar").maybeSingle();
+    if (error) {
+      console.warn("[booking] calendar", error);
+      return;
+    }
+    calendarConfig = data?.value || null;
+  };
+
   const loadSlots = async () => {
     setStatus("Cargando horarios…");
     let data = null;
     let error = null;
-    ({ data, error } = await supabase.rpc("list_available_slots", { p_days: 45, p_mode: null }));
+    const horizon = Math.min(180, Math.max(1, Number(calendarConfig?.window_days) || 60));
+    ({ data, error } = await supabase.rpc("list_available_slots", { p_days: horizon, p_mode: null }));
     if (error) {
-      ({ data, error } = await supabase.rpc("list_available_slots", { p_days: 45 }));
+      ({ data, error } = await supabase.rpc("list_available_slots", { p_days: horizon }));
     }
     if (error) {
       setStatus("No se pudieron cargar las horas. ¿Corriste booking.sql y booking_modes.sql en Supabase?", true);
@@ -259,7 +313,8 @@ export async function initBooking() {
         const at = btn.getAttribute("data-at");
         selectedSlot = list.find((s) => s.at === at) || { at };
         if (whenInput) whenInput.value = at;
-        if (whenLabel) whenLabel.textContent = formatWhen(at);
+        const duration = modeConfig(activeMode)?.duration_minutes;
+        if (whenLabel) whenLabel.textContent = duration ? `${formatWhen(at)} · ${duration} min` : formatWhen(at);
         slotsEl.querySelectorAll(".booking-slot").forEach((el) => el.classList.toggle("is-selected", el === btn));
       });
     });
@@ -324,7 +379,10 @@ export async function initBooking() {
     await loadSlots();
     renderMonth();
     renderSlots();
-    const okMsg = data?.message || "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
+    const okMsg =
+      String(calendarConfig?.confirmation_message || "").trim() ||
+      data?.message ||
+      "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
     setStatus(okMsg);
     if (payMsg) payMsg.textContent = okMsg;
     if (payEl) {
@@ -362,10 +420,15 @@ export async function initBooking() {
       .catch(() => {});
   });
 
-  await loadSlots();
+  await loadCalendarPrefs();
   activeMode = bookingModeFromService(form?.elements?.service?.value, form?.elements?.zone?.value);
+  if (!modeEnabled(activeMode)) activeMode = modeEnabled("presencial") ? "presencial" : "online";
+  await loadSlots();
   byDay = groupSlots(slotsForMode(allSlots, activeMode));
   syncModeUi();
+  if (calendarConfig && !modeEnabled("online") && !modeEnabled("presencial")) {
+    setStatus("La agenda no está recibiendo reservas en este momento.", true);
+  }
   const firstDay = Object.keys(byDay).sort()[0];
   if (firstDay) {
     selectedDate = firstDay;
