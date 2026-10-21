@@ -47,7 +47,18 @@ En el panel de la sesión (o `PUT /api/sessions/{session}`):
 
 La sesión tiene que estar en estado **WORKING** (WhatsApp vinculado con QR).
 
-## 4. Probar
+## 4. Si escribís y no aparece en el admin
+
+El backend ya recibe webhooks. Si el chat no sale, Wazend **no está pegándole** a esa URL (o escribiste desde el mismo celular vinculado).
+
+1. En la sesión, webhook URL exacta:
+   `https://xcnxqhjthrdvjtqezzct.supabase.co/functions/v1/whatsapp-webhook`
+2. Eventos: `message` (y si existe, también `message.any`).
+3. Dejá HMAC vacío al principio.
+4. Escribí desde **otro** celular **al número que vinculaste**. No sirve escribir desde el mismo WhatsApp vinculado (eso es `fromMe` y Génesis lo ignora).
+5. Recargá admin → WhatsApp.
+
+## 5. Probar
 
 1. Escribí al WhatsApp de Armonivet desde otro celular.
 2. En el admin → **WhatsApp** tiene que aparecer el chat.

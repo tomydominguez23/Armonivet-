@@ -102,6 +102,26 @@ function wazendEvents(payload: Record<string, unknown>) {
   return [payload];
 }
 
+function wazendFromMe(inner: Record<string, unknown>) {
+  const data = inner._data && typeof inner._data === "object" ? inner._data as Record<string, unknown> : {};
+  const key = data.key && typeof data.key === "object" ? data.key as Record<string, unknown> : {};
+  return inner.fromMe === true || inner.fromMe === "true" || key.fromMe === true;
+}
+
+function wazendText(inner: Record<string, unknown>) {
+  const data = inner._data && typeof inner._data === "object" ? inner._data as Record<string, unknown> : {};
+  const msg = data.message && typeof data.message === "object" ? data.message as Record<string, unknown> : {};
+  const extended = msg.extendedTextMessage && typeof msg.extendedTextMessage === "object"
+    ? msg.extendedTextMessage as Record<string, unknown>
+    : {};
+  const image = msg.imageMessage && typeof msg.imageMessage === "object"
+    ? msg.imageMessage as Record<string, unknown>
+    : {};
+  return String(
+    inner.body || inner.caption || inner.text || msg.conversation || extended.text || image.caption || "",
+  ).trim();
+}
+
 export function extractWazendInbound(payload: Record<string, unknown>) {
   const messages: Array<{
     from: string;
@@ -116,28 +136,24 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
     const inner = (event.payload && typeof event.payload === "object"
       ? event.payload
       : event) as Record<string, unknown>;
-    if (inner.fromMe === true) continue;
-    const fromRaw = String(inner.from || inner.chatId || "");
+    if (wazendFromMe(inner)) continue;
+    const data = inner._data && typeof inner._data === "object" ? inner._data as Record<string, unknown> : {};
+    const key = data.key && typeof data.key === "object" ? data.key as Record<string, unknown> : {};
+    const fromRaw = String(inner.from || inner.chatId || inner.participant || key.remoteJid || "");
     if (!fromRaw || fromRaw.includes("@g.us") || fromRaw.includes("@broadcast") || fromRaw.includes("@newsletter")) {
       continue;
     }
     const phone = phoneFromChatId(fromRaw);
     if (!phone) continue;
-    const body = String(inner.body || inner.caption || inner.text || "").trim();
     const hasMedia = Boolean(inner.hasMedia);
-    const type = hasMedia ? "media" : "text";
-    const text = body || (hasMedia ? "[archivo]" : "");
+    const text = wazendText(inner) || (hasMedia ? "[archivo]" : "");
     if (!text) continue;
-    const pushName = String(
-      (inner._data as { notifyName?: string } | undefined)?.notifyName ||
-        (event.me as { pushName?: string } | undefined)?.pushName ||
-        "",
-    );
+    const pushName = String(data.pushName || data.notifyName || inner.notifyName || "");
     messages.push({
       from: phone,
       name: pushName,
-      id: String(inner.id || event.id || ""),
-      type,
+      id: String(inner.id || key.id || event.id || ""),
+      type: hasMedia ? "media" : "text",
       text,
     });
   }
