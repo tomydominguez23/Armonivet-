@@ -30,6 +30,30 @@ function etologiaCopy(text, { fallback = false } = {}) {
   return raw;
 }
 
+const HIDDEN_SERVICE_SLUGS = new Set(["asesoria-felina-canina"]);
+const LOCK_COPY_SLUGS = new Set(["entrenamiento-basico", "entrenamiento-temprano"]);
+const PUBLIC_COPY = {
+  "entrenamiento-basico": {
+    title: "Entrenamiento canino profesional",
+    description:
+      "Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.",
+    book: "Entrenamiento",
+  },
+  "entrenamiento-temprano": {
+    title: "Educación temprana para cachorros",
+    description: "Orientación sobre eliminación, mordidas, socialización e independencia. Desde los 2 meses.",
+    book: "Educación temprana para cachorros",
+  },
+};
+
+function publicCopy(service) {
+  return PUBLIC_COPY[service?.slug] || {
+    title: service?.title || "",
+    description: etologiaCopy(service?.description, { fallback: service?.slug === "etologia-clinica" }),
+    book: service?.title || "Consulta presencial",
+  };
+}
+
 function zoneShort(text) {
   const raw = String(text || "").replace(/<[^>]+>/g, "").trim();
   if (!raw) return "";
@@ -90,7 +114,10 @@ export async function hydrateSiteContent() {
 
   // Offers / services cards — only replace if we have image URLs
   const offerGrid = document.querySelector("[data-offers-grid]") || document.querySelector(".offer-grid");
-  const offerServices = (services || []).filter((s) => s.section === "ofertas" || s.section === "ambos").slice(0, 4);
+  const offerServices = (services || [])
+    .filter((s) => s.section === "ofertas" || s.section === "ambos")
+    .filter((s) => !HIDDEN_SERVICE_SLUGS.has(s.slug))
+    .slice(0, 4);
   if (offerGrid && offerServices.length) {
     const cards = Array.from(offerGrid.querySelectorAll(".offer-card"));
     if (cards.length === offerServices.length) {
@@ -101,6 +128,7 @@ export async function hydrateSiteContent() {
           if (s.slug) img.setAttribute("data-cms-service", s.slug);
           setImgSrc(img, s.image_url);
         }
+        if (LOCK_COPY_SLUGS.has(s.slug)) return;
         const title = card.querySelector("h3");
         const desc = card.querySelector(".offer-body p");
         if (title && s.title) title.textContent = s.title;
@@ -108,23 +136,24 @@ export async function hydrateSiteContent() {
       });
     } else if (offerServices.some((s) => isSafeImageUrl(s.image_url))) {
       offerGrid.innerHTML = offerServices
-        .map(
-          (s) => `
+        .map((s) => {
+          const copy = publicCopy(s);
+          return `
       <article class="offer-card reveal is-visible">
         <figure>
-          <img src="${s.image_url || ""}" data-cms-service="${s.slug || ""}" alt="${s.title}" />
+          <img src="${s.image_url || ""}" data-cms-service="${s.slug || ""}" alt="${copy.title}" />
           ${s.tag ? `<span class="offer-tag">${s.tag}</span>` : ""}
         </figure>
         <div class="offer-body">
-          <h3>${s.title}</h3>
-          <p>${etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" })}</p>
+          <h3>${copy.title}</h3>
+          <p>${copy.description}</p>
           <div class="offer-price-row">
             <span>${s.price_label || (s.price_from != null ? `Desde <strong>${formatCLP(s.price_from)}</strong>` : "")}</span>
-            <button type="button" class="btn btn-buy btn-buy--sm" data-add="${s.slug || ""}" data-book="${s.title || "Consulta presencial"}" data-price="${s.price_from ?? ""}">Agregar</button>
+            <button type="button" class="btn btn-buy btn-buy--sm" data-add="${s.slug || ""}" data-book="${copy.book}" data-price="${s.price_from ?? ""}">Agregar</button>
           </div>
         </div>
-      </article>`
-        )
+      </article>`;
+        })
         .join("");
     }
   }
@@ -137,11 +166,16 @@ export async function hydrateSiteContent() {
 
   document.querySelectorAll("[data-plan-slug]").forEach((card) => {
     const slug = card.getAttribute("data-plan-slug");
+    if (HIDDEN_SERVICE_SLUGS.has(slug)) {
+      card.remove();
+      return;
+    }
     const service = (services || []).find((s) => s.slug === slug);
     if (!service) return;
     const img = card.querySelector("img");
     if (img && slug) img.setAttribute("data-cms-service", slug);
     setImgSrc(img, service.image_url);
+    if (LOCK_COPY_SLUGS.has(slug)) return;
     const title = card.querySelector("h3");
     const desc = card.querySelector(":scope > div > p");
     if (title && service.title) title.textContent = service.title;

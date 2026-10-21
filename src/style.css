@@ -1110,8 +1110,11 @@ p {
 }
 
 .package-chip strong {
-  font-size: 0.86rem;
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.2;
   color: var(--charcoal);
+  overflow-wrap: anywhere;
 }
 
 .package-chip em {

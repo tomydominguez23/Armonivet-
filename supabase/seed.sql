@@ -53,7 +53,7 @@ insert into public.services (slug, title, description, price_from, price_label, 
   (
     'entrenamiento-basico',
     'Entrenamiento canino profesional',
-    'Educación guiada para el día a día y el vínculo familiar.',
+    'Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.',
     45000,
     'Desde $45.000',
     'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=900&q=80',
@@ -74,8 +74,8 @@ insert into public.services (slug, title, description, price_from, price_label, 
   ),
   (
     'entrenamiento-temprano',
-    'Entrenamiento temprano',
-    '¿Tu cachorro se orina y se defeca en todas partes? ¿Muerde todo lo que pilla en casa, incluido a ustedes? Educación temprana de 3 a 6 meses, con la Dra. Bárbara.',
+    'Educación temprana para cachorros',
+    'Orientación sobre eliminación, mordidas, socialización e independencia. Edad: 2 a 6 meses. Modalidad online.',
     45000,
     'Desde $45.000',
     'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80',
@@ -95,6 +95,10 @@ insert into public.services (slug, title, description, price_from, price_label, 
     'ambos'
   )
 on conflict (slug) do nothing;
+
+update public.services
+set active = false
+where slug = 'asesoria-felina-canina';
 
 -- Zonas de precio (idempotente)
 delete from public.pricing_zones;
