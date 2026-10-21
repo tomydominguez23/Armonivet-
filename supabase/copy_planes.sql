@@ -17,7 +17,7 @@ where slug = 'entrenamiento-basico';
 update public.services
 set
   title = 'Educación temprana para cachorros',
-  description = 'Orientación sobre eliminación, mordidas, socialización e independencia. Edad: 2 a 6 meses. Modalidad online.',
+  description = 'Educación temprana para cachorros: orientación sobre eliminación, mordidas, socialización e independencia. Edad: 2 meses a 6 meses. Modalidad online.',
   price_from = 45000,
   price_label = 'Desde $45.000',
   tag = 'Cachorros',

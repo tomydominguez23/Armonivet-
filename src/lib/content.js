@@ -30,8 +30,8 @@ function etologiaCopy(text, { fallback = false } = {}) {
   return raw;
 }
 
-const HIDDEN_SERVICE_SLUGS = new Set(["asesoria-felina-canina"]);
-const LOCK_COPY_SLUGS = new Set(["entrenamiento-basico", "entrenamiento-temprano"]);
+const HIDDEN_SERVICE_SLUGS = new Set(["asesoria-felina-canina", "asesoria"]);
+const LOCK_COPY_SLUGS = new Set(["entrenamiento-basico", "entrenamiento-temprano", "entrenamiento"]);
 const PUBLIC_COPY = {
   "entrenamiento-basico": {
     title: "Entrenamiento canino profesional",
@@ -39,12 +39,25 @@ const PUBLIC_COPY = {
       "Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.",
     book: "Entrenamiento",
   },
+  entrenamiento: {
+    title: "Entrenamiento canino profesional",
+    description:
+      "Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.",
+    book: "Entrenamiento",
+  },
   "entrenamiento-temprano": {
     title: "Educación temprana para cachorros",
-    description: "Orientación sobre eliminación, mordidas, socialización e independencia. Desde los 2 meses.",
+    description:
+      "Educación temprana para cachorros: orientación sobre eliminación, mordidas, socialización e independencia.",
     book: "Educación temprana para cachorros",
   },
 };
+
+function isHiddenService(service) {
+  const slug = String(service?.slug || "").toLowerCase();
+  const title = String(service?.title || "").toLowerCase();
+  return HIDDEN_SERVICE_SLUGS.has(slug) || /asesor[ií]a\s+felina/i.test(title);
+}
 
 function publicCopy(service) {
   return PUBLIC_COPY[service?.slug] || {
@@ -116,46 +129,28 @@ export async function hydrateSiteContent() {
   const offerGrid = document.querySelector("[data-offers-grid]") || document.querySelector(".offer-grid");
   const offerServices = (services || [])
     .filter((s) => s.section === "ofertas" || s.section === "ambos")
-    .filter((s) => !HIDDEN_SERVICE_SLUGS.has(s.slug))
-    .slice(0, 4);
-  if (offerGrid && offerServices.length) {
-    const cards = Array.from(offerGrid.querySelectorAll(".offer-card"));
-    if (cards.length === offerServices.length) {
-      offerServices.forEach((s, i) => {
-        const card = cards[i];
-        const img = card.querySelector("img");
-        if (img) {
-          if (s.slug) img.setAttribute("data-cms-service", s.slug);
-          setImgSrc(img, s.image_url);
-        }
-        if (LOCK_COPY_SLUGS.has(s.slug)) return;
-        const title = card.querySelector("h3");
-        const desc = card.querySelector(".offer-body p");
-        if (title && s.title) title.textContent = s.title;
-        if (desc) desc.textContent = etologiaCopy(s.description, { fallback: s.slug === "etologia-clinica" });
-      });
-    } else if (offerServices.some((s) => isSafeImageUrl(s.image_url))) {
-      offerGrid.innerHTML = offerServices
-        .map((s) => {
-          const copy = publicCopy(s);
-          return `
-      <article class="offer-card reveal is-visible">
-        <figure>
-          <img src="${s.image_url || ""}" data-cms-service="${s.slug || ""}" alt="${copy.title}" />
-          ${s.tag ? `<span class="offer-tag">${s.tag}</span>` : ""}
-        </figure>
-        <div class="offer-body">
-          <h3>${copy.title}</h3>
-          <p>${copy.description}</p>
-          <div class="offer-price-row">
-            <span>${s.price_label || (s.price_from != null ? `Desde <strong>${formatCLP(s.price_from)}</strong>` : "")}</span>
-            <button type="button" class="btn btn-buy btn-buy--sm" data-add="${s.slug || ""}" data-book="${copy.book}" data-price="${s.price_from ?? ""}">Agregar</button>
-          </div>
-        </div>
-      </article>`;
-        })
-        .join("");
-    }
+    .filter((s) => !isHiddenService(s));
+  if (offerGrid) {
+    Array.from(offerGrid.querySelectorAll(".offer-card")).forEach((card) => {
+      const slug = card.querySelector("[data-cms-service]")?.getAttribute("data-cms-service") || "";
+      const titleText = card.querySelector("h3")?.textContent || "";
+      if (HIDDEN_SERVICE_SLUGS.has(slug) || /asesor[ií]a\s+felina/i.test(titleText)) {
+        card.remove();
+        return;
+      }
+      const service = offerServices.find((row) => row.slug === slug);
+      if (!service) return;
+      const img = card.querySelector("img");
+      if (img) {
+        img.setAttribute("data-cms-service", service.slug);
+        setImgSrc(img, service.image_url);
+      }
+      if (LOCK_COPY_SLUGS.has(service.slug)) return;
+      const title = card.querySelector("h3");
+      const desc = card.querySelector(".offer-body p");
+      if (title && service.title) title.textContent = service.title;
+      if (desc) desc.textContent = etologiaCopy(service.description, { fallback: service.slug === "etologia-clinica" });
+    });
   }
 
   document.querySelectorAll("[data-cms-service]").forEach((img) => {
@@ -166,7 +161,8 @@ export async function hydrateSiteContent() {
 
   document.querySelectorAll("[data-plan-slug]").forEach((card) => {
     const slug = card.getAttribute("data-plan-slug");
-    if (HIDDEN_SERVICE_SLUGS.has(slug)) {
+    const titleText = card.querySelector("h3")?.textContent || "";
+    if (HIDDEN_SERVICE_SLUGS.has(slug) || /asesor[ií]a\s+felina/i.test(titleText)) {
       card.remove();
       return;
     }

@@ -53,7 +53,7 @@ insert into public.services (slug, title, description, price_from, price_label, 
   (
     'entrenamiento-temprano',
     'Educación temprana para cachorros',
-    'Orientación sobre eliminación, mordidas, socialización e independencia. Edad: 2 a 6 meses. Modalidad online.',
+    'Educación temprana para cachorros: orientación sobre eliminación, mordidas, socialización e independencia. Edad: 2 meses a 6 meses. Modalidad online.',
     45000,
     'Desde $45.000',
     'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80',
