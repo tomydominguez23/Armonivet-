@@ -30,19 +30,23 @@ jobs:
           USER="$(printf '%s' "$RAW_USER" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
           PASS="$(printf '%s' "$FTP_PASS" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
           DEST="$(printf '%s' "$RAW_PATH" | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')"
-          if [ -z "$DEST" ]; then
-            DEST="/"
+          # Si DEPLOY_PATH es "/", GitHub lo enmascara en logs y a veces vacía el output.
+          # "./" es el home de la cuenta FTP (public_html si así está creada).
+          if [ -z "$DEST" ] || [ "$DEST" = "/" ]; then
+            DEST="./"
+          else
+            case "$DEST" in
+              */) ;;
+              *) DEST="${DEST}/" ;;
+            esac
           fi
-          case "$DEST" in
-            */) ;;
-            *) DEST="${DEST}/" ;;
-          esac
           echo "::add-mask::$HOST"
           echo "::add-mask::$USER"
           echo "::add-mask::$PASS"
           echo "host=$HOST" >> "$GITHUB_OUTPUT"
           echo "user=$USER" >> "$GITHUB_OUTPUT"
           echo "path=$DEST" >> "$GITHUB_OUTPUT"
+          echo "La cuenta FTP tiene que tener un directorio home que exista (public_html). El 421 Home directory not available aparece si se borró GitHub/ y la cuenta seguía apuntando ahí."
           {
             echo "password<<__FTP_PW__"
             printf '%s\n' "$PASS"
@@ -104,8 +108,8 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ steps.dest.outputs.host }}
-          username: ${{ steps.dest.outputs.user }}
-          password: ${{ steps.dest.outputs.password }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
           protocol: ftp
           port: 21
           local-dir: ./dist/
