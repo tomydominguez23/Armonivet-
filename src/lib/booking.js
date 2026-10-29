@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { applyZoneToCart, cartTotal, formatCLP, getCart, quoteAmount, serviceMode } from "./cart.js";
 
 const TZ = "America/Santiago";
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -50,13 +51,7 @@ function groupSlots(slots) {
 }
 
 export function bookingModeFromService(service, zone) {
-  const blob = `${service || ""} ${zone || ""}`.toLowerCase();
-  if (blob.includes("online") || blob.includes("remot")) return "online";
-  return "presencial";
-}
-
-function slotsForMode(slots, mode) {
-  return (slots || []).filter((slot) => !slot.mode || slot.mode === mode);
+  return serviceMode(service, zone);
 }
 
 function applyBookTarget(form, el) {
@@ -100,6 +95,7 @@ export async function initBooking() {
   let allSlots = [];
   let calendarConfig = null;
   let activeMode = "presencial";
+  let lastSector = "Sector A";
   let cursor = new Date();
   cursor.setDate(1);
   let selectedDate = null;
@@ -166,10 +162,17 @@ export async function initBooking() {
       const matches = bookingModeFromService(current, form.elements.zone?.value) === activeMode;
       if (!matches) {
         form.elements.service.value = activeMode === "online" ? "Consulta remota" : "Consulta presencial";
-        if (form.elements.zone) form.elements.zone.value = activeMode === "online" ? "Online" : "";
+        if (form.elements.zone) {
+          form.elements.zone.value =
+            activeMode === "online"
+              ? "Online"
+              : form.elements.zone.value && form.elements.zone.value !== "Online"
+                ? form.elements.zone.value
+                : "Sector A";
+        }
       }
     }
-    byDay = groupSlots(slotsForMode(allSlots, activeMode));
+    byDay = groupSlots(slotsForModes(relevantModes()));
     selectedSlot = null;
     if (whenInput) whenInput.value = "";
     if (whenLabel) whenLabel.textContent = "Elegí un horario";
@@ -218,20 +221,10 @@ export async function initBooking() {
 
   paintMonth();
 
-  if (!isSupabaseConfigured || !supabase) {
-    prevBtn?.addEventListener("click", () => {
-      cursor.setMonth(cursor.getMonth() - 1);
-      paintMonth();
-    });
-    nextBtn?.addEventListener("click", () => {
-      cursor.setMonth(cursor.getMonth() + 1);
-      paintMonth();
-    });
-    if (statusEl) {
-      statusEl.hidden = false;
-      statusEl.textContent = "El calendario se activa cuando Supabase está configurado.";
-    }
-    return;
+  const calendarOffline = !isSupabaseConfigured || !supabase;
+  if (calendarOffline && statusEl) {
+    statusEl.hidden = false;
+    statusEl.textContent = "El calendario se activa cuando Supabase está configurado.";
   }
 
   const setStatus = (text, isError = false) => {
@@ -242,6 +235,7 @@ export async function initBooking() {
   };
 
   const loadCalendarPrefs = async () => {
+    if (calendarOffline || !supabase) return;
     const { data, error } = await supabase.from("site_settings").select("value").eq("key", "calendar").maybeSingle();
     if (error) {
       console.warn("[booking] calendar", error);
@@ -251,6 +245,11 @@ export async function initBooking() {
   };
 
   const loadSlots = async () => {
+    if (calendarOffline || !supabase) {
+      allSlots = [];
+      byDay = {};
+      return;
+    }
     setStatus("Cargando horarios…");
     let data = null;
     let error = null;
@@ -267,8 +266,81 @@ export async function initBooking() {
       return;
     }
     allSlots = data?.slots || [];
-    byDay = groupSlots(slotsForMode(allSlots, activeMode));
+    byDay = groupSlots(slotsForModes(relevantModes()));
     setStatus("");
+  };
+
+  const relevantModes = () => {
+    const fromCart = [...new Set(getCart().map((item) => serviceMode(item.book, item.zone)))];
+    if (fromCart.length > 1) return fromCart;
+    return [activeMode];
+  };
+
+  const slotsForModes = (modes) => {
+    const wanted = new Set(modes);
+    return (allSlots || []).filter((slot) => !slot.mode || wanted.has(slot.mode));
+  };
+
+  const serviceForMode = (mode) => getCart().find((item) => serviceMode(item.book, item.zone) === mode);
+
+  const refreshBookingZonePrices = () => {
+    const select = form?.elements?.zone;
+    const service = String(form?.elements?.service?.value || "");
+    if (!select) return;
+    Array.from(select.options).forEach((option) => {
+      const zone = option.value;
+      if (!zone) return;
+      const amount = quoteAmount(service, zone);
+      if (!amount) return;
+      option.setAttribute("data-price", String(amount));
+      const communes = option.getAttribute("data-communes") || "";
+      const short = communes.length > 52 ? `${communes.slice(0, 50)}…` : communes;
+      option.textContent = `${zone} · ${formatCLP(amount)}${short ? ` · ${short}` : ""}`;
+    });
+  };
+
+  const updateZoneHelp = () => {
+    const help = form?.querySelector("[data-zone-help]");
+    const zone = String(form?.elements?.zone?.value || "");
+    const service = String(form?.elements?.service?.value || "");
+    if (!help) return;
+    refreshBookingZonePrices();
+    const option = form?.elements?.zone?.selectedOptions?.[0];
+    const communes = option?.getAttribute("data-communes") || "";
+    const amount = quoteAmount(service, zone);
+    if (!zone) {
+      help.textContent = "Al elegir la zona ves el valor y las comunas que abarca. Ese valor es el que se cobra.";
+      return;
+    }
+    if (!amount) {
+      help.textContent = communes
+        ? `${communes}. Este servicio no cambia de precio por zona.`
+        : "Este servicio no cambia de precio por zona.";
+      return;
+    }
+    help.textContent = [formatCLP(amount), communes].filter(Boolean).join(". ");
+  };
+
+  const alignFormToMode = (mode) => {
+    const item = serviceForMode(mode);
+    if (item?.book && form?.elements?.service) {
+      const select = form.elements.service;
+      const match = Array.from(select.options).find((option) => option.value === item.book);
+      if (!match) {
+        const opt = document.createElement("option");
+        opt.value = item.book;
+        opt.textContent = item.book;
+        select.appendChild(opt);
+      }
+      select.value = item.book;
+    }
+    if (form?.elements?.zone) {
+      if (mode === "online") form.elements.zone.value = item?.zone || "Online";
+      else if (item?.zone) form.elements.zone.value = item.zone;
+    }
+    activeMode = mode;
+    syncModeUi();
+    updateZoneHelp();
   };
 
   const renderMonth = () => {
@@ -287,9 +359,11 @@ export async function initBooking() {
 
   const renderSlots = () => {
     if (!slotsEl) return;
+    const modes = relevantModes();
+    const mixed = modes.length > 1;
     const list = selectedDate ? byDay[selectedDate] || [] : [];
     if (dayLabel) {
-      const modeLabel = activeMode === "online" ? "online" : "presencial";
+      const modeLabel = mixed ? "presencial y online" : activeMode === "online" ? "online" : "presencial";
       dayLabel.textContent = selectedDate
         ? `${new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "numeric", month: "long" }).format(parseISODate(selectedDate))} · ${modeLabel}`
         : `Elegí un día con horas ${modeLabel}`;
@@ -302,34 +376,91 @@ export async function initBooking() {
       slotsEl.innerHTML = `<p class="booking-hint">Ese día no tiene horas libres.</p>`;
       return;
     }
-    slotsEl.innerHTML = list
-      .map(
-        (slot) =>
-          `<button type="button" class="booking-slot${selectedSlot?.at === slot.at ? " is-selected" : ""}" data-at="${slot.at}">${slot.time}</button>`,
-      )
-      .join("");
+    const slotButton = (slot, mode) =>
+      `<button type="button" class="booking-slot${selectedSlot?.at === slot.at && (selectedSlot?.mode || activeMode) === mode ? " is-selected" : ""}" data-at="${slot.at}" data-slot-mode="${mode}">${slot.time}</button>`;
+    if (!mixed) {
+      slotsEl.innerHTML = list.map((slot) => slotButton(slot, slot.mode || activeMode)).join("");
+    } else {
+      slotsEl.innerHTML = `<div class="booking-slot-groups">${modes
+        .map((mode) => {
+          const rows = list.filter((slot) => slot.mode === mode);
+          const item = serviceForMode(mode);
+          const title = item?.title || (mode === "online" ? "Online" : "Presencial");
+          const safeTitle = String(title).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+          const buttons = rows.length
+            ? rows.map((slot) => slotButton(slot, mode)).join("")
+            : `<p class="booking-hint">Sin horas ${mode === "online" ? "online" : "presenciales"} este día.</p>`;
+          return `<div class="booking-slot-group"><h4>${safeTitle} · Horario ${mode === "online" ? "online" : "presencial"}</h4><div class="booking-slot-row">${buttons}</div></div>`;
+        })
+        .join("")}</div>`;
+    }
     slotsEl.querySelectorAll("[data-at]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const at = btn.getAttribute("data-at");
-        selectedSlot = list.find((s) => s.at === at) || { at };
+        const mode = btn.getAttribute("data-slot-mode") || activeMode;
+        selectedSlot = list.find((slot) => slot.at === at && (!slot.mode || slot.mode === mode)) || { at, mode };
+        selectedSlot.mode = mode;
         if (whenInput) whenInput.value = at;
-        const duration = modeConfig(activeMode)?.duration_minutes;
-        if (whenLabel) whenLabel.textContent = duration ? `${formatWhen(at)} · ${duration} min` : formatWhen(at);
+        alignFormToMode(mode);
+        const duration = modeConfig(mode)?.duration_minutes;
+        const label = mode === "online" ? "online" : "presencial";
+        if (whenLabel) whenLabel.textContent = `${formatWhen(at)} · ${label}${duration ? ` · ${duration} min` : ""}`;
         slotsEl.querySelectorAll(".booking-slot").forEach((el) => el.classList.toggle("is-selected", el === btn));
       });
     });
   };
 
+  const syncServiceZone = (event) => {
+    let service = String(form?.elements?.service?.value || "");
+    let zone = String(form?.elements?.zone?.value || "");
+    if (/^Sector [ABC]$/.test(zone)) lastSector = zone;
+    const pickedOnline = event?.target === form?.elements?.zone && zone === "Online";
+    if (serviceMode(service, "") === "online") {
+      zone = "Online";
+      if (form?.elements?.zone && form.elements.zone.value !== "Online") form.elements.zone.value = "Online";
+    } else if (pickedOnline) {
+      service = /control/i.test(service) ? "Control remoto" : "Consulta remota";
+      if (form?.elements?.service) form.elements.service.value = service;
+      zone = "Online";
+    } else if (zone === "Online") {
+      zone = lastSector;
+      if (form?.elements?.zone) form.elements.zone.value = lastSector;
+    }
+    const mode = serviceMode(form?.elements?.service?.value || service, form?.elements?.zone?.value || zone);
+    setMode(mode, { fromService: true });
+    applyZoneToCart(form?.elements?.service?.value || service, form?.elements?.zone?.value || zone);
+    updateZoneHelp();
+  };
+
   form?.addEventListener("armonivet:book-target", () => {
-    setMode(bookingModeFromService(form.elements?.service?.value, form.elements?.zone?.value), { fromService: true });
+    syncServiceZone();
+    byDay = groupSlots(slotsForModes(relevantModes()));
+    renderMonth();
+    renderSlots();
   });
-  form?.elements?.service?.addEventListener("change", () => {
-    setMode(bookingModeFromService(form.elements.service.value, form.elements.zone?.value), { fromService: true });
-  });
+  form?.elements?.service?.addEventListener("change", syncServiceZone);
+  form?.elements?.zone?.addEventListener("change", syncServiceZone);
   modeBar?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-mode]");
     if (!btn) return;
     setMode(btn.getAttribute("data-mode"));
+  });
+  window.addEventListener("armonivet:zones", () => updateZoneHelp());
+  window.addEventListener("armonivet:cart", () => {
+    const modes = relevantModes();
+    if (modes.length === 1 && modes[0] !== activeMode) {
+      const item = serviceForMode(modes[0]);
+      if (item?.book && form?.elements?.service) form.elements.service.value = item.book;
+      if (form?.elements?.zone) {
+        form.elements.zone.value = modes[0] === "online" ? "Online" : item?.zone && item.zone !== "Online" ? item.zone : form.elements.zone.value || "Sector A";
+      }
+      setMode(modes[0], { fromService: true });
+      updateZoneHelp();
+      return;
+    }
+    byDay = groupSlots(slotsForModes(modes));
+    renderMonth();
+    renderSlots();
   });
 
   prevBtn?.addEventListener("click", () => {
@@ -353,7 +484,7 @@ export async function initBooking() {
       .catch(() => {});
   });
 
-  form?.addEventListener("submit", async (e) => {
+  if (!calendarOffline) form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
     const scheduled = String(fd.get("scheduled_at") || selectedSlot?.at || "").trim();
@@ -369,7 +500,6 @@ export async function initBooking() {
     const submit = form.querySelector("[type='submit']");
     if (submit) submit.disabled = true;
     setStatus("Reservando…");
-    const { cartTotal, formatCLP, getCart, quoteAmount } = await import("./cart.js");
     const { rememberHold, abandonHold } = await import("./checkout.js");
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim();
@@ -377,6 +507,7 @@ export async function initBooking() {
     const service = String(fd.get("service") || "Consulta Etología Clínica").trim();
     const zone = String(fd.get("zone") || "").trim();
     const notes = String(fd.get("notes") || "").trim();
+    applyZoneToCart(service, zone);
     const quoted = Math.round(Number(cartTotal(getCart()) || quoteAmount(service, zone) || 0));
     const payload = {
       p_name: name,
@@ -461,12 +592,19 @@ export async function initBooking() {
       .catch(() => {});
   });
 
+  if (calendarOffline) {
+    updateZoneHelp();
+    syncModeUi();
+    return;
+  }
+
   await loadCalendarPrefs();
   activeMode = bookingModeFromService(form?.elements?.service?.value, form?.elements?.zone?.value);
   if (!modeEnabled(activeMode)) activeMode = modeEnabled("presencial") ? "presencial" : "online";
   await loadSlots();
-  byDay = groupSlots(slotsForMode(allSlots, activeMode));
+  byDay = groupSlots(slotsForModes(relevantModes()));
   syncModeUi();
+  updateZoneHelp();
   if (calendarConfig && !modeEnabled("online") && !modeEnabled("presencial")) {
     setStatus("La agenda no está recibiendo reservas en este momento.", true);
   }

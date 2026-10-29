@@ -257,13 +257,13 @@
 
       <section class="benefits" aria-label="Beneficios Armonivet">
         <div class="shell benefits-grid">
-          <a class="benefit-link" href="#valores">
+          <a class="benefit-link" href="#nosotros">
             <span class="benefit-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg>
+              <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2 9.5 8.5 3 9l5 4.2L6.5 20 12 16.5 17.5 20 16 13.2 21 9l-6.5-.5L12 2z"/></svg>
             </span>
             <div>
-              <h3>A domicilio en Santiago</h3>
-              <p>Sectores A, B y C</p>
+              <h3>Excelencia en servicio</h3>
+              <p>Atención cercana y profesional</p>
             </div>
           </a>
           <a class="benefit-link" href="#consulta-online">
@@ -293,6 +293,36 @@
               <p>Primer frasco incluido*</p>
             </div>
           </a>
+        </div>
+      </section>
+
+      <section class="about" id="nosotros">
+        <div class="shell about-grid">
+          <div class="about-copy reveal">
+            <p class="eyebrow">Quiénes somos</p>
+            <h2>Respaldo profesional para recuperar la calma en casa</h2>
+            <p>
+              Armonivet es el trabajo de la Dra. Bárbara Castillo: médica veterinaria, diplomada en Etología Clínica y
+              entrenadora canina profesional. Atención ética, cercana y orientada a resultados reales.
+            </p>
+            <ul class="cred-list">
+              <li>Médico Veterinario</li>
+              <li>Dipl. Etología Clínica</li>
+              <li>Entrenadora Canina profesional</li>
+              <li>Terapia con Flores de Bach</li>
+            </ul>
+            <div class="about-actions">
+              <a class="btn btn-primary" href="./about.html">Conocé Armonivet y a la Dra. Bárbara</a>
+              <a class="btn btn-ghost" href="#agendar">Quiero agendar</a>
+            </div>
+          </div>
+          <figure class="about-doctor reveal">
+            <img data-cms-slot="about_doctor" data-fallback="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
+            <figcaption>
+              <strong>Dra. Bárbara Castillo</strong>
+              <span>Médico Veterinario · Dipl. Etología Clínica</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -331,7 +361,7 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Destacados</p>
-              <h2>Elige tu consulta y agenda hoy</h2>
+              <h2>Agenda con nosotros</h2>
             </div>
             <a
               class="text-link"
@@ -371,9 +401,17 @@
               <div class="offer-body">
                 <h3>Consulta Etología Clínica</h3>
                 <p>Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.</p>
+                <label class="zone-pick">Zona
+                  <select data-zone-pick aria-label="Zona y valor">
+                    <option value="Sector A" data-price="65000" data-communes="Ñuñoa y Macul" selected>Sector A · $65.000 · Ñuñoa y Macul</option>
+                    <option value="Sector B" data-price="65000" data-communes="Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector B · $65.000 · Providencia, Santiago Centro y más</option>
+                    <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                  </select>
+                </label>
+                <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa y Macul</p>
                 <div class="offer-price-row">
-                  <span>Desde <strong>$65.000</strong></span>
-                  <a class="btn btn-buy btn-buy--sm" href="#agendar" data-book="Consulta presencial">Agendar</a>
+                  <span data-offer-price>Desde <strong>$65.000</strong></span>
+                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="Sector A" data-price="65000" data-title-base="Consulta presencial" data-title="Consulta presencial · Sector A">Agregar</button>
                 </div>
               </div>
             </article>
@@ -443,36 +481,6 @@
         </div>
       </section>
 
-      <section class="about" id="nosotros">
-        <div class="shell about-grid">
-          <div class="about-copy reveal">
-            <p class="eyebrow">Quiénes somos</p>
-            <h2>Respaldo profesional para recuperar la calma en casa</h2>
-            <p>
-              Armonivet es el trabajo de la Dra. Bárbara Castillo: médica veterinaria, diplomada en Etología Clínica y
-              entrenadora canina profesional. Atención ética, cercana y orientada a resultados reales.
-            </p>
-            <ul class="cred-list">
-              <li>Médico Veterinario</li>
-              <li>Dipl. Etología Clínica</li>
-              <li>Entrenadora Canina profesional</li>
-              <li>Terapia con Flores de Bach</li>
-            </ul>
-            <div class="about-actions">
-              <a class="btn btn-primary" href="./about.html">Conocé Armonivet y a la Dra. Bárbara</a>
-              <a class="btn btn-ghost" href="#agendar">Quiero agendar</a>
-            </div>
-          </div>
-          <figure class="about-doctor reveal">
-            <img data-cms-slot="about_doctor" data-fallback="./dra-barbara.jpg" alt="Dra. Bárbara Castillo, médico veterinario y etóloga clínica" />
-            <figcaption>
-              <strong>Dra. Bárbara Castillo</strong>
-              <span>Médico Veterinario · Dipl. Etología Clínica</span>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
       <section class="services" id="servicios">
         <div class="shell">
           <div class="section-intro reveal">
@@ -494,17 +502,23 @@
                   <div>
                     <h3>Consulta Etología Clínica</h3>
                     <p>Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.</p>
-                    <ul class="package-zones" data-package-zones>
-                      <li><strong>Sector A</strong> $65.000 <span>Ñuñoa y Macul</span></li>
-                      <li><strong>Sector B</strong> $65.000 <span>Providencia y limítrofes</span></li>
-                      <li><strong>Sector C</strong> $70.000 <span>Oriente, sur y más lejanas</span></li>
-                    </ul>
+                    <label class="zone-pick">Zona
+                      <select data-zone-pick data-price-kind="consulta" aria-label="Zona y valor de la consulta presencial">
+                        <option value="Sector A" data-price="65000" data-communes="Ñuñoa y Macul" selected>Sector A · $65.000 · Ñuñoa y Macul</option>
+                        <option value="Sector B" data-price="65000" data-communes="Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector B · $65.000 · Providencia, Santiago Centro y más</option>
+                        <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                      </select>
+                    </label>
+                    <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa y Macul</p>
                     <button
                       type="button"
                       class="btn btn-buy btn-buy--sm"
                       data-add="consulta-presencial"
                       data-book="Consulta presencial"
+                      data-zone="Sector A"
                       data-price="65000"
+                      data-title-base="Consulta presencial"
+                      data-title="Consulta presencial · Sector A"
                     >Agregar</button>
                   </div>
                 </article>
@@ -598,64 +612,27 @@
             <button type="button" class="package-arrow" data-package-next aria-label="Ver siguientes planes">›</button>
           </div>
 
-          <div class="package-strip" data-package-strip>
-            <a class="package-chip" href="#valores">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg>
-              </span>
-              <strong>A domicilio</strong>
-              <em>Desde $65.000</em>
-            </a>
-            <a class="package-chip" href="#consulta-online">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h16v11H8l-4 3V5zm2 2v7.2l1.2-.9H18V7H6z"/></svg>
-              </span>
-              <strong>Online</strong>
-              <em>$50.000</em>
-            </a>
-            <a class="package-chip" href="#educacion-temprana">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 4c1.4 0 2.2 1.5 1.4 2.6L12 8.2l-1.4-1.6C9.8 5.5 10.6 4 12 4zm-5 6.2c1.1-.2 2 .8 1.6 1.8L8 14l-1.8-1.1C5.1 12 5.8 10.4 7 10.2zm10 0c1.2.2 1.9 1.8.8 2.7L16 14l-.6-2c-.4-1 1-2 2-1.8zM8.8 16.2c.8 1.3-.3 2.8-1.7 2.3L5 17.6l1.6-1.8c.7-.8 2-.5 2.2.4zm6.4 0c.2-.9 1.5-1.2 2.2-.4l1.6 1.8-2.1.9c-1.4.5-2.5-1-1.7-2.3z"/></svg>
-              </span>
-              <strong>Educación temprana<br>para cachorros</strong>
-              <em>Desde $45.000</em>
-            </a>
-            <a class="package-chip" href="#entrenamiento">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7.5 4.5A2.5 2.5 0 1 1 5 7a2.5 2.5 0 0 1 2.5-2.5zM4 14.5C4 11.8 6.4 10 9 10c.7 0 1.4.1 2 .4V9.2A3.2 3.2 0 0 1 14.2 6h2.3c.8 0 1.5.7 1.5 1.5S17.3 9 16.5 9h-2.1v11h-2.3v-5.2c-.7.5-1.4.8-2.1.9V20H8v-4.2C5.8 15.3 4 15 4 14.5z"/></svg>
-              </span>
-              <strong>Entrenamiento</strong>
-              <em>Desde $45.000</em>
-            </a>
-            <a class="package-chip" href="#flores">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M11 2h2v3.1c1.7.3 3 1.8 3 3.6 0 1.4-.8 2.6-2 3.2V21h-4v-9.1c-1.2-.6-2-1.8-2-3.2 0-1.8 1.3-3.3 3-3.6V2zm1 5.2A1.8 1.8 0 1 0 13.8 9 1.8 1.8 0 0 0 12 7.2z"/></svg>
-              </span>
-              <strong>Flores de Bach</strong>
-              <em>1.er frasco*</em>
-            </a>
-            <a class="package-chip" href="#packs">
-              <span class="chip-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2 9.5 8.5 3 9l5 4.2L6.5 20 12 16.5 17.5 20 16 13.2 21 9l-6.5-.5L12 2z"/></svg>
-              </span>
-              <strong>Packs</strong>
-              <em>Desde $84.000</em>
-            </a>
-          </div>
-
           <p class="plans-kicker">Precios claros, según formato de atención</p>
           <div class="plan-cards">
             <article class="plan-card featured" id="consulta-presencial">
               <p class="plan-badge">Presencial</p>
               <h3>Consulta presencial</h3>
               <p class="plan-price">Desde <strong>$65.000</strong></p>
-              <p class="plan-note">Sector A y B $65.000 · Sector C $70.000</p>
+              <p class="plan-note">El valor cambia según la zona.</p>
               <ul>
                 <li>Evaluación diagnóstica</li>
                 <li>Guía de trabajo y plan por 30 días</li>
                 <li>Flores de Bach si corresponde</li>
               </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-price="65000">Agregar</button>
+              <label class="zone-pick">Zona
+                <select data-zone-pick data-price-kind="consulta" aria-label="Zona y valor de la consulta presencial">
+                  <option value="Sector A" data-price="65000" data-communes="Ñuñoa y Macul" selected>Sector A · $65.000 · Ñuñoa y Macul</option>
+                  <option value="Sector B" data-price="65000" data-communes="Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector B · $65.000 · Providencia, Santiago Centro y más</option>
+                  <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                </select>
+              </label>
+              <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa y Macul</p>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="Sector A" data-price="65000" data-title-base="Consulta presencial" data-title="Consulta presencial · Sector A">Agregar</button>
             </article>
             <article class="plan-card" id="consulta-online">
               <p class="plan-badge">Más vendido</p>
@@ -686,27 +663,29 @@
           <div class="plan-cards pack-cards">
             <article class="plan-card">
               <p class="plan-badge">Pack</p>
-              <h3>Inicio online</h3>
+              <h3>Pack 1: Inicio online</h3>
               <p class="plan-price"><s>$88.000</s> <strong>$84.000</strong></p>
-              <p class="plan-note">1 primera consulta online + 1 control online</p>
+              <p class="plan-note">Comienza a comprender el comportamiento de tu mascota</p>
+              <p>Un primer paso para comprender qué le ocurre a tu mascota y comenzar a trabajar en sus problemas de comportamiento con orientación profesional.</p>
               <ul>
-                <li>Ahorrás $4.000 vs. comprar suelto</li>
-                <li>Control online a $38.000 incluido</li>
-                <li>Pago total para confirmar</li>
+                <li>1 consulta inicial de etología online.</li>
+                <li>1 control online para revisar avances y orientar los siguientes pasos.</li>
+                <li>Acompañamiento profesional para implementar las recomendaciones.</li>
               </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-inicio-online" data-book="Consulta remota" data-zone="Online" data-price="84000" data-title="Pack Inicio online">Agregar pack</button>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-inicio-online" data-book="Consulta remota" data-zone="Online" data-price="84000" data-title="Pack Inicio online">Elegir este pack</button>
             </article>
             <article class="plan-card featured">
-              <p class="plan-badge">Más ahorro</p>
-              <h3>Continuidad online</h3>
+              <p class="plan-badge">Recomendado</p>
+              <h3>Pack 2: Continuidad online</h3>
               <p class="plan-price"><s>$126.000</s> <strong>$120.000</strong></p>
-              <p class="plan-note">1 primera consulta online + 2 controles online</p>
+              <p class="plan-note">Más acompañamiento para avanzar en el proceso</p>
+              <p>Ideal para quienes buscan un seguimiento más cercano y necesitan tiempo para implementar las recomendaciones, evaluar avances y resolver nuevas dudas durante el proceso.</p>
               <ul>
-                <li>Ahorrás $6.000 vs. comprar suelto</li>
-                <li>Seguimiento de dos controles</li>
-                <li>Desde cualquier comuna</li>
+                <li>1 consulta inicial de etología online.</li>
+                <li>2 controles online de seguimiento.</li>
+                <li>Revisión de avances y orientación para ajustar las estrategias según la evolución del caso.</li>
               </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-continuidad-online" data-book="Consulta remota" data-zone="Online" data-price="120000" data-title="Pack Continuidad online">Agregar pack</button>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-continuidad-online" data-book="Consulta remota" data-zone="Online" data-price="120000" data-title="Pack Continuidad online">Elegir este pack</button>
             </article>
             <article class="plan-card">
               <p class="plan-badge">Mixto</p>
@@ -718,7 +697,7 @@
                 <li>Primera a domicilio y control por video</li>
                 <li>Base Sector A y B ($65.000 + $38.000)</li>
               </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-mixto" data-book="Consulta presencial" data-price="98000" data-title="Pack Acompañamiento mixto">Agregar pack</button>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-mixto" data-book="Consulta presencial" data-price="98000" data-title="Pack Acompañamiento mixto">Elegir este pack</button>
             </article>
             <article class="plan-card">
               <p class="plan-badge">Presencial</p>
@@ -730,9 +709,10 @@
                 <li>Base Sector A y B ($65.000 + 2 × $50.000)</li>
                 <li>Todo a domicilio</li>
               </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-seguimiento-presencial" data-book="Consulta presencial" data-price="155000" data-title="Pack Seguimiento presencial">Agregar pack</button>
+              <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-seguimiento-presencial" data-book="Consulta presencial" data-price="155000" data-title="Pack Seguimiento presencial">Elegir este pack</button>
             </article>
           </div>
+          <div class="plan-cards pack-cards" data-extra-packs></div>
 
         </div>
       </section>
@@ -1162,15 +1142,16 @@
                       <option value="Cat y pet sitter / paseos educativos">Cat y pet sitter / paseos educativos</option>
                     </select>
                   </label>
-                  <label>Zona
-                    <select name="zone">
-                      <option value="">A confirmar</option>
-                      <option value="Sector A">Sector A</option>
-                      <option value="Sector B">Sector B</option>
-                      <option value="Sector C">Sector C</option>
-                      <option value="Online">Online</option>
+                  <label class="booking-zone">Zona
+                    <select name="zone" data-booking-zone>
+                      <option value="">Elegí la zona</option>
+                      <option value="Sector A" data-price="65000" data-communes="Ñuñoa y Macul">Sector A · $65.000 · Ñuñoa y Macul</option>
+                      <option value="Sector B" data-price="65000" data-communes="Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector B · $65.000 · Providencia, Santiago Centro y más</option>
+                      <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                      <option value="Online" data-price="50000" data-communes="Cualquier comuna, por videollamada">Online · $50.000 · Cualquier comuna</option>
                     </select>
                   </label>
+                  <p class="zone-help" data-zone-help>Al elegir la zona ves el valor y las comunas que abarca. Ese valor es el que se cobra.</p>
                   <label class="booking-notes">Notas
                     <input name="notes" autocomplete="off" placeholder="Motivo o comuna (opcional)" />
                   </label>
