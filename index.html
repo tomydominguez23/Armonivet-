@@ -493,7 +493,7 @@
             <button type="button" class="package-arrow" data-package-prev aria-label="Ver planes anteriores">‹</button>
             <div class="package-viewport">
               <div class="package-track" data-package-track>
-                <article class="package-hero" data-package-hero data-plan-slug="etologia-clinica">
+                <article class="package-hero" id="consulta-presencial" data-package-hero data-plan-slug="etologia-clinica">
                   <img
                     data-cms-service="etologia-clinica"
                     data-fallback="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=640&q=80"
@@ -523,7 +523,7 @@
                   </div>
                 </article>
 
-                <article class="package-hero" data-plan-slug="consulta-online">
+                <article class="package-hero" id="consulta-online" data-plan-slug="consulta-online">
                   <img
                     data-cms-service="consulta-online"
                     data-fallback="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=640&q=80"
@@ -548,7 +548,7 @@
                   </div>
                 </article>
 
-                <article class="package-hero" data-plan-slug="entrenamiento-basico">
+                <article class="package-hero" id="entrenamiento" data-plan-slug="entrenamiento-basico">
                   <img
                     data-cms-service="entrenamiento-basico"
                     data-fallback="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=640&q=80"
@@ -610,53 +610,6 @@
               </div>
             </div>
             <button type="button" class="package-arrow" data-package-next aria-label="Ver siguientes planes">›</button>
-          </div>
-
-          <p class="plans-kicker">Precios claros, según formato de atención</p>
-          <div class="plan-cards">
-            <article class="plan-card featured" id="consulta-presencial">
-              <p class="plan-badge">Presencial</p>
-              <h3>Consulta presencial</h3>
-              <p class="plan-price">Desde <strong>$65.000</strong></p>
-              <p class="plan-note">El valor cambia según la zona.</p>
-              <ul>
-                <li>Evaluación diagnóstica</li>
-                <li>Guía de trabajo y plan por 30 días</li>
-                <li>Flores de Bach si corresponde</li>
-              </ul>
-              <label class="zone-pick">Zona
-                <select data-zone-pick data-price-kind="consulta" aria-label="Zona y valor de la consulta presencial">
-                  <option value="Sector A" data-price="65000" data-communes="Ñuñoa y Macul" selected>Sector A · $65.000 · Ñuñoa y Macul</option>
-                  <option value="Sector B" data-price="65000" data-communes="Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector B · $65.000 · Providencia, Santiago Centro y más</option>
-                  <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
-                </select>
-              </label>
-              <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa y Macul</p>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="Sector A" data-price="65000" data-title-base="Consulta presencial" data-title="Consulta presencial · Sector A">Agregar</button>
-            </article>
-            <article class="plan-card" id="consulta-online">
-              <p class="plan-badge">Más vendido</p>
-              <h3>Consulta online</h3>
-              <p class="plan-price"><strong>$50.000</strong></p>
-              <p class="plan-note">Primera consulta · cualquier comuna</p>
-              <ul>
-                <li>Videollamada con la Dra. Bárbara</li>
-                <li>Ideal para agresividad, miedo y ansiedad</li>
-                <li>Mismo plan de modificación conductual</li>
-              </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-online" data-book="Consulta remota" data-zone="Online" data-price="50000">Agregar</button>
-            </article>
-            <article class="plan-card" id="entrenamiento">
-              <h3>Entrenamiento canino profesional</h3>
-              <p class="plan-price">Desde <strong>$45.000</strong></p>
-              <p class="plan-note">Obediencia básica con refuerzo positivo</p>
-              <ul>
-                <li>Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa</li>
-                <li>Otro motivo de consulta debe pasar primero por etología</li>
-                <li>2 pacientes mismo hogar se cotiza</li>
-              </ul>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento" data-book="Entrenamiento" data-price="45000">Agregar</button>
-            </article>
           </div>
 
           <p class="plans-kicker" id="packs">Packs con ahorro frente al precio suelto</p>
