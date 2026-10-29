@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { applyMediaCache, collectMediaUrls, writeMediaCache } from "./media-cache.js";
-import { CONTROL_ZONE_PRICE } from "./cart.js";
+import { CONTROL_ZONE_PRICE, formatCLP as formatCartCLP, serviceMode } from "./cart.js";
 
 function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -70,8 +70,66 @@ function publicCopy(service) {
 function zoneShort(text) {
   const raw = String(text || "").replace(/<[^>]+>/g, "").trim();
   if (!raw) return "";
-  const first = raw.split(",")[0].trim();
-  return first.length > 42 ? `${first.slice(0, 40)}…` : first;
+  return raw.length > 52 ? `${raw.slice(0, 50)}…` : raw;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function fillZoneSelect(select, zones) {
+  const current = select.value;
+  const kind = select.getAttribute("data-price-kind") || "consulta";
+  const options = zones.map((zone) => {
+    const price = kind === "control" ? CONTROL_ZONE_PRICE[zone.name] || zone.price : zone.price;
+    const communes = String(zone.zones_text || "").replace(/<[^>]+>/g, "").trim();
+    const selected = zone.name === current ? " selected" : "";
+    return `<option value="${escapeHtml(zone.name)}" data-price="${price ?? ""}" data-communes="${escapeHtml(communes)}"${selected}>${escapeHtml(zone.name)} · ${formatCLP(price)} · ${escapeHtml(zoneShort(communes))}</option>`;
+  });
+  const online =
+    select.hasAttribute("data-booking-zone")
+      ? `<option value="Online" data-price="50000" data-communes="Cualquier comuna, por videollamada"${current === "Online" ? " selected" : ""}>Online · ${formatCLP(50000)} · Cualquier comuna</option>`
+      : "";
+  const placeholder = select.hasAttribute("data-booking-zone") ? `<option value="">Elegí la zona</option>` : "";
+  select.innerHTML = placeholder + options.join("") + online;
+  if (current) select.value = current;
+  const card = select.closest("article");
+  const option = select.selectedOptions?.[0];
+  const detail = card?.querySelector("[data-zone-detail]");
+  if (detail && option) {
+    detail.textContent = [formatCLP(option.getAttribute("data-price")), option.getAttribute("data-communes")].filter(Boolean).join(". ");
+  }
+  const btn = card?.querySelector("[data-add]");
+  if (btn && option?.value && !select.hasAttribute("data-booking-zone")) {
+    btn.setAttribute("data-zone", option.value);
+    if (option.getAttribute("data-price")) btn.setAttribute("data-price", option.getAttribute("data-price"));
+  }
+  const shown = option?.getAttribute("data-price");
+  const priceEl = card?.querySelector("[data-offer-price], .plan-price");
+  if (priceEl && shown && !select.hasAttribute("data-booking-zone")) {
+    priceEl.innerHTML = `<strong>${formatCLP(shown)}</strong>`;
+  }
+}
+
+function bookForService(service) {
+  const blob = `${service?.title || ""} ${service?.slug || ""}`.toLowerCase();
+  if (blob.includes("presencial") || blob.includes("domicilio")) {
+    return { book: blob.includes("control") ? "Control presencial" : "Consulta presencial", zone: "" };
+  }
+  if (blob.includes("cachorr") || blob.includes("tempran")) {
+    return { book: "Educación temprana para cachorros", zone: "Online" };
+  }
+  if (blob.includes("entren")) return { book: "Entrenamiento", zone: "" };
+  if (blob.includes("sitter")) return { book: "Cat y pet sitter / paseos educativos", zone: "" };
+  if (blob.includes("control") && (blob.includes("online") || blob.includes("remot"))) {
+    return { book: "Control remoto", zone: "Online" };
+  }
+  if (blob.includes("online") || blob.includes("remot")) return { book: "Consulta remota", zone: "Online" };
+  return { book: service?.title || "Consulta presencial", zone: "" };
 }
 
 export async function hydrateSiteContent() {
@@ -178,13 +236,49 @@ export async function hydrateSiteContent() {
     if (desc) desc.textContent = etologiaCopy(service.description, { fallback: slug === "etologia-clinica" });
   });
 
-  const packageZones = document.querySelector("[data-package-zones]");
-  if (packageZones && zones?.length) {
-    packageZones.innerHTML = zones
-      .map(
-        (z) =>
-          `<li><strong>${z.name}</strong> ${formatCLP(z.price)} <span>${zoneShort(z.zones_text)}</span></li>`,
-      )
+  if (zones?.length) {
+    document.querySelectorAll("[data-zone-pick], [data-booking-zone]").forEach((select) => fillZoneSelect(select, zones));
+    window.dispatchEvent(new CustomEvent("armonivet:zones"));
+  }
+
+  const known = new Set([
+    "consulta-online",
+    "consulta-presencial",
+    "etologia-clinica",
+    "entrenamiento",
+    "entrenamiento-basico",
+    "entrenamiento-temprano",
+    "sitter",
+    "cat-pet-sitter",
+    "pack-inicio-online",
+    "pack-continuidad-online",
+    "pack-mixto",
+    "pack-seguimiento-presencial",
+    "control-online",
+    "control-presencial",
+    "flores-de-bach",
+  ]);
+  document.querySelectorAll("[data-add], [data-plan-slug]").forEach((el) => {
+    const id = el.getAttribute("data-add") || el.getAttribute("data-plan-slug");
+    if (id) known.add(id);
+  });
+  const extraRoot = document.querySelector("[data-extra-packs]");
+  const extraServices = (services || []).filter((service) => service.active !== false && !isHiddenService(service) && !known.has(service.slug));
+  if (extraRoot && extraServices.length) {
+    extraRoot.innerHTML = extraServices
+      .map((service) => {
+        const target = bookForService(service);
+        const price = service.price_from;
+        const mode = serviceMode(target.book, target.zone);
+        return `
+          <article class="plan-card">
+            <p class="plan-badge">${escapeHtml(service.tag || (mode === "online" ? "Online" : "Presencial"))}</p>
+            <h3>${escapeHtml(service.title)}</h3>
+            <p class="plan-price">${price ? `<strong>${formatCartCLP(price)}</strong>` : escapeHtml(service.price_label || "A confirmar")}</p>
+            <p>${escapeHtml(service.description || "")}</p>
+            <button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-zone="${escapeHtml(target.zone)}" data-price="${price ?? ""}" data-title="${escapeHtml(service.title)}">Elegir este pack</button>
+          </article>`;
+      })
       .join("");
   }
 

@@ -73,7 +73,7 @@ export const CATALOG = [
     book: "Consulta remota",
     zone: "Online",
     price: 84000,
-    desc: "1 primera consulta online + 1 control online.",
+    desc: "Un primer paso para comprender qué le ocurre a tu mascota y comenzar a trabajar en sus problemas de comportamiento con orientación profesional.",
     image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
     tag: "Pack",
   },
@@ -83,7 +83,7 @@ export const CATALOG = [
     book: "Consulta remota",
     zone: "Online",
     price: 120000,
-    desc: "1 primera consulta online + 2 controles online.",
+    desc: "Ideal para quienes buscan un seguimiento más cercano y necesitan tiempo para implementar las recomendaciones, evaluar avances y resolver nuevas dudas durante el proceso.",
     image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=80",
     tag: "Pack",
   },
@@ -112,19 +112,88 @@ export const CATALOG = [
 export const ZONE_PRICE = { "Sector A": 65000, "Sector B": 65000, "Sector C": 70000, Online: 50000 };
 export const CONTROL_ZONE_PRICE = { "Sector A": 50000, "Sector B": 50000, "Sector C": 55000, Online: 38000 };
 
-export function quoteAmount(service, zone) {
-  const s = String(service || "").toLowerCase();
-  const z = zone || "";
-  if (s.includes("pack") || s.includes("inicio online") || s.includes("continuidad") || s.includes("mixto")) {
-    return null;
+export const ZONES = [
+  { id: "Sector A", communes: "Ñuñoa y Macul" },
+  {
+    id: "Sector B",
+    communes:
+      "Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida",
+  },
+  {
+    id: "Sector C",
+    communes:
+      "Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba",
+  },
+];
+
+export function foldText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export function serviceMode(service, zone) {
+  const blob = foldText(`${service || ""} ${zone || ""}`);
+  if (blob.includes("presencial") || blob.includes("domicilio")) return "presencial";
+  if (
+    blob.includes("online") ||
+    blob.includes("remot") ||
+    blob.includes("tempran") ||
+    blob.includes("educacion") ||
+    foldText(zone) === "online"
+  ) {
+    return "online";
   }
+  return "presencial";
+}
+
+export function isFixedPrice(service) {
+  const s = foldText(service);
+  return s.includes("pack") || s.includes("entren") || s.includes("tempran") || s.includes("educacion") || s.includes("sitter");
+}
+
+export function quoteAmount(service, zone) {
+  const s = foldText(service);
+  const z = zone || "";
+  if (s.includes("pack")) return null;
+  if (s.includes("sitter")) return null;
+  if (s.includes("tempran") || s.includes("educacion") || s.includes("entren")) return 45000;
   if (s.includes("control")) {
-    if (s.includes("remot") || s.includes("online") || z === "Online") return 38000;
+    if (s.includes("remot") || s.includes("online") || foldText(z) === "online") return 38000;
     return CONTROL_ZONE_PRICE[z] || 50000;
   }
-  if (s.includes("remot") || s.includes("online") || z === "Online") return 50000;
-  if (ZONE_PRICE[z]) return ZONE_PRICE[z];
-  return 65000;
+  if (s.includes("remot") || s.includes("online") || foldText(z) === "online") return 50000;
+  return ZONE_PRICE[z] || 65000;
+}
+
+export function zoneById(id) {
+  return ZONES.find((zone) => zone.id === id) || null;
+}
+
+export function applyZoneToCart(service, zone) {
+  const items = readCart();
+  if (!items.length || !zone) return items;
+  const wanted = foldText(service);
+  let changed = false;
+  const next = items.map((item) => {
+    const book = `${item.book || ""} ${item.title || ""}`;
+    if (isFixedPrice(book)) return item;
+    const same =
+      !wanted ||
+      foldText(item.book) === wanted ||
+      foldText(item.title).includes(wanted) ||
+      wanted.includes(foldText(item.book));
+    if (!same) return item;
+    if (serviceMode(item.book, zone) === "online" && serviceMode(service, "") === "presencial") return item;
+    const price = quoteAmount(item.book || service, zone);
+    if (!price || (item.price === price && item.zone === zone)) return item;
+    changed = true;
+    const base = String(item.title || service || "Consulta").replace(/\s*·\s*(Sector [ABC]|Online)$/i, "").trim();
+    return { ...item, price, zone, title: zone ? `${base} · ${zone}` : base };
+  });
+  if (changed) writeCart(next);
+  return changed ? next : items;
 }
 
 export function formatCLP(n) {
@@ -181,8 +250,10 @@ function itemFromTrigger(el) {
   const id = aliases[rawId] || rawId;
   if (id === "asesoria" || id === "asesoria-felina-canina") return null;
   const catalog = catalogById(id) || {};
-  const zone = el.getAttribute("data-zone") || "";
-  const priceAttr = el.getAttribute("data-price");
+  const pick = card?.querySelector("[data-zone-pick]");
+  const zone = pick?.value || el.getAttribute("data-zone") || "";
+  const pickedPrice = pick?.selectedOptions?.[0]?.getAttribute("data-price");
+  const priceAttr = pickedPrice || el.getAttribute("data-price");
   const hasPrice = priceAttr != null && priceAttr !== "";
   const isControl = id.includes("control") || String(catalog.book || "").toLowerCase().includes("control");
   const price = hasPrice
@@ -198,17 +269,13 @@ function itemFromTrigger(el) {
     zone,
     price: Number.isFinite(price) ? price : null,
     priceLabel: el.getAttribute("data-price-label") || catalog.priceLabel || "",
-    desc: card?.querySelector("p")?.textContent?.trim() || catalog.desc || "",
+    desc:
+      card?.querySelector("p:not(.plan-badge):not(.plan-price):not(.plan-note):not(.zone-detail)")?.textContent?.trim() ||
+      catalog.desc ||
+      "",
     image: img?.currentSrc || img?.getAttribute("src") || img?.getAttribute("data-fallback") || catalog.image || "",
     qty: 1,
   };
-}
-
-function foldText(text) {
-  return String(text || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function slugFromBook(book) {
@@ -281,6 +348,7 @@ function suggestCard(item) {
       <div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${priceText}</p>
+        <p class="cart-suggest-mode">${serviceMode(item.book, item.zone) === "online" ? "Horario online" : "Horario presencial"}</p>
         <button
           type="button"
           class="btn btn-buy btn-buy--sm"
@@ -386,7 +454,36 @@ export function initCart() {
   renderBadge(readCart().length);
   renderBookingSummary();
 
+  document.addEventListener("change", (e) => {
+    const pick = e.target.closest("[data-zone-pick]");
+    if (!pick) return;
+    const card = pick.closest("article");
+    const option = pick.selectedOptions?.[0];
+    const zone = pick.value;
+    const price = option?.getAttribute("data-price") || "";
+    const communes = option?.getAttribute("data-communes") || "";
+    const btn = card?.querySelector("[data-add]");
+    if (btn) {
+      btn.setAttribute("data-zone", zone);
+      if (price) btn.setAttribute("data-price", price);
+      const base = (btn.getAttribute("data-title-base") || card?.querySelector("h3")?.textContent || "Consulta presencial").trim();
+      btn.setAttribute("data-title", `${base} · ${zone}`);
+    }
+    const detail = card?.querySelector("[data-zone-detail]");
+    if (detail) {
+      detail.textContent = price ? `${formatCLP(Number(price))}. ${communes}` : communes;
+    }
+    const priceEl = card?.querySelector("[data-offer-price], .plan-price");
+    if (priceEl && price) priceEl.innerHTML = `<strong>${formatCLP(Number(price))}</strong>`;
+  });
+
   document.addEventListener("click", (e) => {
+    const card = e.target.closest(".plan-card, .package-hero, .offer-card, .promo-spotlight-card");
+    if (card && !e.target.closest("a, select, summary, input, textarea, button, label")) {
+      const addBtn = card.querySelector("[data-add]");
+      if (addBtn) addBtn.click();
+      return;
+    }
     const addBtn = e.target.closest("[data-add]");
     if (addBtn) {
       e.preventDefault();
