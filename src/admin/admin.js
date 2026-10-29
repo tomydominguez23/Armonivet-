@@ -59,6 +59,39 @@ function formatCLP(n) {
   }).format(Number(n || 0));
 }
 
+function statusLabel(status) {
+  if (status === "pendiente_pago") return "esperando pago";
+  return status || "";
+}
+
+async function overlayPaidAmounts(rows) {
+  if (!rows?.length) return rows || [];
+  const ids = rows.map((row) => row.id).filter(Boolean);
+  if (!ids.length) return rows;
+  try {
+    const { data, error } = await requireSupabase()
+      .from("payments")
+      .select("appointment_id, amount, status, paid_at, created_at")
+      .in("appointment_id", ids)
+      .eq("status", "pagado");
+    if (error || !data?.length) return rows;
+    const best = new Map();
+    for (const payment of data) {
+      if (!(Number(payment.amount) > 0) || !payment.appointment_id) continue;
+      const prev = best.get(payment.appointment_id);
+      const stamp = new Date(payment.paid_at || payment.created_at || 0).getTime();
+      const prevStamp = prev ? new Date(prev.paid_at || prev.created_at || 0).getTime() : -1;
+      if (!prev || stamp >= prevStamp) best.set(payment.appointment_id, payment);
+    }
+    return rows.map((row) => {
+      const payment = best.get(row.id);
+      return payment ? { ...row, amount: Number(payment.amount) } : row;
+    });
+  } catch {
+    return rows;
+  }
+}
+
 function formatDate(value) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("es-CL", {
@@ -514,7 +547,7 @@ async function loadDashboard() {
             (a) => `<button type="button" class="mini-card" data-goto="appointments">
           <strong>${escapeHtml(a.client_name || "Sin nombre")}</strong>
           <small>${formatDay(a.scheduled_at)} · ${escapeHtml(a.service_title || "Consulta")} · ${formatCLP(a.amount)}</small>
-          <span class="badge ${a.status}">${escapeHtml(a.status)}</span>
+          <span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span>
         </button>`
           )
           .join("")
@@ -574,7 +607,7 @@ async function loadDashboardExtras() {
   const fortnight = new Date(startOfDay());
   fortnight.setDate(fortnight.getDate() + 14);
 
-  const [appointments, leads, clients, followups, chats, intakes] = await Promise.all([
+  let [appointments, leads, clients, followups, chats, intakes] = await Promise.all([
     safeSelect("appointments", "*", (q) => q.order("scheduled_at", { ascending: true }).limit(250)),
     safeSelect("leads", "*", (q) => q.order("created_at", { ascending: false }).limit(80)),
     safeSelect("clients", "id,name,phone,pet_name,status,next_followup_at,last_contact_at", (q) =>
@@ -586,6 +619,7 @@ async function loadDashboardExtras() {
     safeSelect("chat_conversations", "*", (q) => q.order("updated_at", { ascending: false }).limit(40)),
     safeSelect("intake_forms", "*", (q) => q.order("created_at", { ascending: false }).limit(40)),
   ]);
+  appointments = await overlayPaidAmounts(appointments);
 
   const periodAppts = appointments.filter((a) => !a.created_at || a.created_at >= since || (a.scheduled_at && a.scheduled_at >= since));
   const today = appointments
@@ -689,7 +723,7 @@ function renderAgendaPreview(sel, rows, emptyText) {
           <strong>${escapeHtml(a.client_name || "Sin nombre")}</strong>
           <small>${escapeHtml(a.pet_name || "—")} · ${escapeHtml(a.service_title || "Consulta")}</small>
         </div>
-        <span class="badge ${a.status}">${escapeHtml(a.status)}</span>
+        <span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span>
       </button>`
     )
     .join("");
@@ -839,7 +873,7 @@ function renderStatus(rows) {
     return;
   }
   root.innerHTML = rows
-    .map((r) => `<div class="status-row"><span class="badge ${r.status}">${r.status}</span><strong>${r.total}</strong></div>`)
+    .map((r) => `<div class="status-row"><span class="badge ${r.status}">${escapeHtml(statusLabel(r.status))}</span><strong>${r.total}</strong></div>`)
     .join("");
 }
 
@@ -855,18 +889,19 @@ async function loadAppointments() {
     body.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
     return;
   }
-  if (!data?.length) {
+  const rows = await overlayPaidAmounts(data || []);
+  if (!rows.length) {
     body.innerHTML = `<tr><td colspan="7" class="empty">No hay citas. Crea la primera.</td></tr>`;
     return;
   }
-  body.innerHTML = data
+  body.innerHTML = rows
     .map(
       (a) => `<tr>
       <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small></td>
       <td>${escapeHtml(a.service_title || "—")}<br><small>${escapeHtml(a.pet_name || "")}</small></td>
       <td>${formatDate(a.scheduled_at)}</td>
       <td>${escapeHtml(a.channel_slug || "—")}</td>
-      <td><span class="badge ${a.status}">${a.status}</span></td>
+      <td><span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span></td>
       <td>${formatCLP(a.amount)}</td>
       <td class="entity-actions">
         <button class="btn btn-ghost" data-edit-appointment="${a.id}">Editar</button>
@@ -878,7 +913,7 @@ async function loadAppointments() {
   enhanceTable(body);
 
   body.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
-    btn.addEventListener("click", () => openAppointmentModal(data.find((x) => x.id === btn.dataset.editAppointment)));
+    btn.addEventListener("click", () => openAppointmentModal(rows.find((x) => x.id === btn.dataset.editAppointment)));
   });
   body.querySelectorAll("[data-del-appointment]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -916,7 +951,9 @@ function bindAppointmentRowActions(root, data) {
 }
 
 async function loadAgenda() {
-  const rows = await safeSelect("appointments", "*", (q) => q.order("scheduled_at", { ascending: true }).limit(250));
+  const rows = await overlayPaidAmounts(
+    await safeSelect("appointments", "*", (q) => q.order("scheduled_at", { ascending: true }).limit(250)),
+  );
   const today = rows.filter((a) => isToday(a.scheduled_at) && a.status !== "cancelada");
   const until = new Date(startOfDay());
   until.setDate(until.getDate() + 14);
@@ -945,7 +982,7 @@ async function loadAgenda() {
         <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small></td>
         <td>${escapeHtml(a.pet_name || "—")}</td>
         <td>${escapeHtml(a.service_title || "Consulta")}</td>
-        <td><span class="badge ${a.status}">${escapeHtml(a.status)}</span></td>
+        <td><span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span></td>
         <td>${formatCLP(a.amount)}</td>
         ${appointmentRowActions(a)}
       </tr>`
@@ -966,7 +1003,7 @@ async function loadAgenda() {
         <td><strong>${escapeHtml(a.client_name)}</strong></td>
         <td>${escapeHtml(a.pet_name || "—")}</td>
         <td>${escapeHtml(a.service_title || "Consulta")}</td>
-        <td><span class="badge ${a.status}">${escapeHtml(a.status)}</span></td>
+        <td><span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span></td>
         <td>${isPaidAppt(a) ? "Pagado" : "Pendiente"}</td>
         ${appointmentRowActions(a)}
       </tr>`
@@ -1445,8 +1482,16 @@ function openAppointmentModal(row) {
       <div class="form-row">
         <label>Estado
           <select name="status">
-            ${["agendada", "abonada", "llegó", "completada", "cancelada", "no_asistió"]
-              .map((s) => `<option value="${s}" ${row?.status === s ? "selected" : ""}>${s}</option>`)
+            ${[
+              ["agendada", "agendada"],
+              ["pendiente_pago", "esperando pago"],
+              ["abonada", "abonada"],
+              ["llegó", "llegó"],
+              ["completada", "completada"],
+              ["cancelada", "cancelada"],
+              ["no_asistió", "no_asistió"],
+            ]
+              .map(([value, label]) => `<option value="${value}" ${row?.status === value ? "selected" : ""}>${label}</option>`)
               .join("")}
           </select>
         </label>

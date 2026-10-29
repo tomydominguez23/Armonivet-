@@ -585,6 +585,11 @@ th {
   color: #0f6b52;
 }
 
+.badge.pendiente_pago {
+  background: #fff4e5;
+  color: #8a5a00;
+}
+
 .badge.cancelada,
 .badge.no_asistió {
   background: #fef3f2;

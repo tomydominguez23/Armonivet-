@@ -341,6 +341,18 @@ export async function initBooking() {
     renderMonth();
   });
 
+  window.addEventListener("armonivet:hold-released", () => {
+    if (payEl) payEl.hidden = true;
+    form?.removeAttribute("hidden");
+    setStatus("La hora se liberó porque el pago no se completó. Podés elegir otro horario.", true);
+    loadSlots()
+      .then(() => {
+        renderMonth();
+        renderSlots();
+      })
+      .catch(() => {});
+  });
+
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
@@ -357,32 +369,61 @@ export async function initBooking() {
     const submit = form.querySelector("[type='submit']");
     if (submit) submit.disabled = true;
     setStatus("Reservando…");
-    const { data, error } = await supabase.rpc("book_public_appointment", {
-      p_name: String(fd.get("name") || "").trim(),
+    const { cartTotal, formatCLP, getCart, quoteAmount } = await import("./cart.js");
+    const { rememberHold, abandonHold } = await import("./checkout.js");
+    const name = String(fd.get("name") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const petName = String(fd.get("pet_name") || "").trim();
+    const service = String(fd.get("service") || "Consulta Etología Clínica").trim();
+    const zone = String(fd.get("zone") || "").trim();
+    const notes = String(fd.get("notes") || "").trim();
+    const quoted = Math.round(Number(cartTotal(getCart()) || quoteAmount(service, zone) || 0));
+    const payload = {
+      p_name: name,
       p_phone: phone,
       p_scheduled_at: scheduled,
-      p_email: String(fd.get("email") || "").trim() || null,
-      p_pet_name: String(fd.get("pet_name") || "").trim() || null,
+      p_email: email || null,
+      p_pet_name: petName || null,
       p_pet_type: String(fd.get("pet_type") || "").trim() || null,
-      p_service: String(fd.get("service") || "Consulta Etología Clínica").trim(),
-      p_zone: String(fd.get("zone") || "").trim() || null,
-      p_notes: String(fd.get("notes") || "").trim() || null,
+      p_service: service,
+      p_zone: zone || null,
+      p_notes: notes || null,
+    };
+    let { data, error } = await supabase.rpc("book_public_appointment", {
+      ...payload,
+      p_amount: quoted >= 1000 ? quoted : null,
     });
+    if (error && /p_amount|schema cache|PGRST202|could not find the function/i.test(error.message || "")) {
+      ({ data, error } = await supabase.rpc("book_public_appointment", payload));
+    }
     if (submit) submit.disabled = false;
     if (error) {
       setStatus(error.message || "No se pudo reservar. Probá otra hora.", true);
       return;
     }
+    const amount = Math.round(Number(data?.amount || quoted || 0));
+    rememberHold({
+      appointmentId: data?.appointment_id,
+      name,
+      phone,
+      email,
+      title: service,
+      pet: petName,
+      when: scheduled,
+      amount,
+    });
     form.reset();
     selectedSlot = null;
     if (whenInput) whenInput.value = "";
     await loadSlots();
     renderMonth();
     renderSlots();
-    const okMsg =
+    const holdNote = "Te guardamos la hora por 20 minutos. Si el pago no se completa, el horario se libera.";
+    const base =
+      String(data?.message || "").trim() ||
       String(calendarConfig?.confirmation_message || "").trim() ||
-      data?.message ||
-      "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
+      holdNote;
+    const okMsg = `${base.includes("20 minutos") ? base : `${base} ${holdNote}`}${amount >= 1000 ? ` Total: ${formatCLP(amount)}.` : ""}`;
     setStatus(okMsg);
     if (payMsg) payMsg.textContent = okMsg;
     if (payEl) {
@@ -395,21 +436,21 @@ export async function initBooking() {
       if (payNow) payNow.disabled = true;
       setStatus("Abriendo el pago…");
       const { startCheckout } = await import("./checkout.js");
-      const { cartTotal, getCart, quoteAmount } = await import("./cart.js");
-      const cartItems = getCart();
-      const zone = String(fd.get("zone") || "");
-      const service = String(fd.get("service") || "").trim();
       const pay = await startCheckout({
         appointmentId: data?.appointment_id,
-        name: String(fd.get("name") || "").trim(),
-        email: String(fd.get("email") || "").trim(),
+        name,
+        email,
         title: service,
-        amount: cartTotal(cartItems) || quoteAmount(service, zone) || 50000,
+        amount: amount >= 1000 ? amount : undefined,
+        when: scheduled,
+        phone,
+        pet: petName,
       });
       if (payNow) payNow.disabled = false;
       if (pay.redirected || pay.brick) return;
       if (!pay.ok) {
-        setStatus(pay.error || "No se pudo iniciar el pago.", true);
+        await abandonHold();
+        setStatus(`${pay.error || "No se pudo iniciar el pago."} La hora volvió a quedar libre.`, true);
         return;
       }
       setStatus(pay.message || "Pago registrado. Te confirmamos cuando se acredite.");
@@ -444,6 +485,6 @@ export async function initBooking() {
     setStatus("Pago recibido. Tu hora quedó confirmada.");
     import("./cart.js").then(({ clearCart }) => clearCart()).catch(() => {});
   } else if (paid === "error") {
-    setStatus("El pago no se completó. Probá de nuevo o escribinos.", true);
+    setStatus("El pago no se completó. Esa hora volvió a quedar libre. Podés elegir otro horario.", true);
   }
 }
