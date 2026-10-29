@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { sendWhatsAppText } from "./whatsapp.ts";
 
 export const MP_API = "https://api.mercadopago.com";
 
@@ -28,31 +29,130 @@ export function mapPaymentStatus(status: string): "pagado" | "cancelado" | "pend
   return "pendiente";
 }
 
-export async function applyMercadoPagoPayment(
+type MpPayment = {
+  id?: number | string;
+  status?: string;
+  external_reference?: string;
+  transaction_amount?: number;
+};
+
+function formatCLP(amount: number) {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatChile(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function chargedAmount(pay: MpPayment, fallback: unknown) {
+  const fromMp = Number(pay.transaction_amount);
+  if (Number.isFinite(fromMp) && fromMp > 0) return Math.round(fromMp);
+  const stored = Number(fallback);
+  if (Number.isFinite(stored) && stored > 0) return Math.round(stored);
+  return 0;
+}
+
+async function sendPaymentReceipt(
   db: SupabaseClient,
-  pay: { id?: number | string; status?: string; external_reference?: string },
+  paymentId: string,
+  appointmentId: string,
+  amount: number,
+  mpId: number | string | undefined,
 ) {
+  try {
+    const { data: payRow, error } = await db
+      .from("payments")
+      .select("receipt_sent_at")
+      .eq("id", paymentId)
+      .maybeSingle();
+    if (error || payRow?.receipt_sent_at) return;
+
+    const { data: appt } = await db
+      .from("appointments")
+      .select("client_name, client_phone, pet_name, service_title, scheduled_at")
+      .eq("id", appointmentId)
+      .maybeSingle();
+    const phone = String(appt?.client_phone || "").trim();
+    if (!phone) return;
+
+    const when = appt?.scheduled_at ? formatChile(String(appt.scheduled_at)) : "";
+    const who = String(appt?.client_name || "").trim();
+    const lines = [
+      "Comprobante Armonivet",
+      `Hola${who ? ` ${who}` : ""}. Recibimos tu pago de ${formatCLP(amount)}.`,
+      appt?.service_title ? `Servicio: ${appt.service_title}` : "",
+      appt?.pet_name ? `Paciente: ${appt.pet_name}` : "",
+      when ? `Hora: ${when} (hora de Chile)` : "",
+      mpId != null ? `Mercado Pago: ${mpId}` : "",
+      "Tu hora quedó confirmada. Guardá este mensaje como comprobante.",
+    ].filter(Boolean);
+
+    const sent = await sendWhatsAppText(phone, lines.join("\n"));
+    if (sent?.ok) {
+      await db.from("payments").update({ receipt_sent_at: new Date().toISOString() }).eq("id", paymentId);
+    }
+  } catch (err) {
+    console.warn("[receipt]", err instanceof Error ? err.message : err);
+  }
+}
+
+export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment) {
   const reference = String(pay.external_reference || "");
-  if (!reference) return { updated: false };
+  if (!reference) return { updated: false, amount: 0 };
   const approved = pay.status === "approved";
   const status = mapPaymentStatus(String(pay.status || ""));
-  await db
+  const { data: current } = await db
     .from("payments")
-    .update({
-      status,
-      provider_ref: pay.id != null ? String(pay.id) : undefined,
-      paid_at: approved ? new Date().toISOString() : null,
-    })
-    .eq("id", reference);
+    .select("appointment_id, amount")
+    .eq("id", reference)
+    .maybeSingle();
+  const amount = chargedAmount(pay, current?.amount);
 
-  if (approved) {
-    const { data: row } = await db.from("payments").select("appointment_id").eq("id", reference).maybeSingle();
-    if (row?.appointment_id) {
+  const paymentUpdate: Record<string, unknown> = {
+    status,
+    provider_ref: pay.id != null ? String(pay.id) : undefined,
+    paid_at: approved ? new Date().toISOString() : null,
+  };
+  if (approved && amount > 0) paymentUpdate.amount = amount;
+
+  await db.from("payments").update(paymentUpdate).eq("id", reference);
+
+  const appointmentId = current?.appointment_id ? String(current.appointment_id) : "";
+  if (approved && appointmentId) {
+    const apptUpdate: Record<string, unknown> = { deposit_paid: true, status: "abonada" };
+    if (amount > 0) apptUpdate.amount = amount;
+    await db.from("appointments").update(apptUpdate).eq("id", appointmentId);
+    if (amount > 0) await sendPaymentReceipt(db, reference, appointmentId, amount, pay.id);
+  } else if (status === "cancelado" && appointmentId) {
+    const { data: appt } = await db
+      .from("appointments")
+      .select("status, notes, deposit_paid")
+      .eq("id", appointmentId)
+      .maybeSingle();
+    if (appt && appt.status === "pendiente_pago" && appt.deposit_paid !== true) {
+      const notes = [appt.notes, "Pago rechazado o cancelado. La hora volvió a quedar libre."]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       await db
         .from("appointments")
-        .update({ deposit_paid: true, status: "abonada" })
-        .eq("id", row.appointment_id);
+        .update({ status: "cancelada", notes })
+        .eq("id", appointmentId)
+        .eq("status", "pendiente_pago");
     }
   }
-  return { updated: true, status };
+  return { updated: true, status, amount };
 }

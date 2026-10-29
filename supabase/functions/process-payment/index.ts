@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     const { data: row, error: rowErr } = await db.from("payments").select("*").eq("id", paymentId).maybeSingle();
     if (rowErr || !row) return json({ error: "No encontramos ese pago." }, 404);
     if (row.status === "pagado") {
-      return json({ ok: true, status: "approved", payment_id: row.provider_ref, already: true });
+      return json({ ok: true, status: "approved", payment_id: row.provider_ref, amount: row.amount, already: true });
     }
 
     const cardToken = String(formData.token || "");
@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
       status: pay.status,
       status_detail: pay.status_detail,
       payment_id: pay.id,
+      amount: pay.transaction_amount ?? row.amount,
     });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);

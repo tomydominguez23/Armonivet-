@@ -20,6 +20,11 @@ En el SQL Editor de Supabase, en este orden:
 6. `booking_modes.sql`  ← horarios separados online / presencial
 7. `calendar_settings.sql`  ← duración, anticipación, descansos y fechas de Calendario
 8. `checkout.sql`  ← carrito y Mercado Pago
+9. `payment_holds.sql`  ← monto real, comprobante por WhatsApp y liberación de la hora si el pago no se completa
+
+`payment_holds.sql` se corre en el SQL Editor aunque ya hayas corrido los anteriores. Ajusta citas viejas: copia el monto del pago acreditado, estima el precio del servicio cuando nunca se guardó el cobro, y cancela reservas **web** que siguen en `agendada` sin pago hace más de 20 minutos. No cancela citas de WhatsApp ni las que ya están abonadas.
+
+Después de ese SQL, volvé a desplegar las Edge Functions (`process-payment` y `mercadopago-webhook`) para que el comprobante y el monto de Mercado Pago queden grabados.
 
 ## 2. Secretos (solo en Edge Functions)
 

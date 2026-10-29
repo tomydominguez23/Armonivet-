@@ -5,6 +5,79 @@
 -- el comportamiento anterior (horas fijas de Génesis).
 -- =============================================================================
 
+-- El estado pendiente_pago tiene que existir antes de reservar desde la web.
+do $$
+declare
+  r record;
+begin
+  for r in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel on rel.oid = con.conrelid
+    join pg_namespace nsp on nsp.oid = rel.relnamespace
+    where nsp.nspname = 'public'
+      and rel.relname = 'appointments'
+      and con.contype = 'c'
+      and pg_get_constraintdef(con.oid) ilike '%agendada%'
+  loop
+    execute format('alter table public.appointments drop constraint %I', r.conname);
+  end loop;
+end $$;
+
+alter table public.appointments
+  add constraint appointments_status_check
+  check (status in ('agendada', 'pendiente_pago', 'abonada', 'llegó', 'completada', 'cancelada', 'no_asistió'));
+
+-- Una reserva de la web bloquea la hora solo mientras el pago está en curso.
+create or replace function public.appointment_blocks_calendar(p public.appointments)
+returns boolean
+language sql
+stable
+as $$
+  select p.status is distinct from 'cancelada'
+    and not (
+      p.deposit_paid is not true
+      and p.created_at < now() - interval '20 minutes'
+      and (
+        p.status = 'pendiente_pago'
+        or (p.status = 'agendada' and coalesce(p.channel_slug, '') = 'web')
+      )
+      and not exists (
+        select 1 from public.payments pay
+        where pay.appointment_id = p.id
+          and pay.status = 'pagado'
+      )
+    );
+$$;
+
+create or replace function public.expire_unpaid_holds()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n integer;
+begin
+  update public.appointments
+    set status = 'cancelada',
+        notes = trim(concat_ws(' ', notes, 'Pago no completado: la hora volvió a quedar libre.'))
+  where deposit_paid is not true
+    and created_at < now() - interval '20 minutes'
+    and (
+      status = 'pendiente_pago'
+      or (status = 'agendada' and coalesce(channel_slug, '') = 'web')
+    )
+    and not exists (
+      select 1 from public.payments pay
+      where pay.appointment_id = appointments.id
+        and pay.status = 'pagado'
+    );
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
 drop function if exists public.list_available_slots(integer);
 
 create or replace function public.list_available_slots(
@@ -73,6 +146,7 @@ begin
   genesis := coalesce(genesis, '{}'::jsonb);
   calendar := coalesce(calendar, '{}'::jsonb);
   use_calendar := calendar ? 'online' or calendar ? 'presencial';
+  perform public.expire_unpaid_holds();
 
   tz := coalesce(nullif(calendar->>'timezone', ''), genesis->>'timezone', 'America/Santiago');
   deposit := coalesce((genesis->>'deposit_amount')::int, 20000);
@@ -136,7 +210,7 @@ begin
                and not exists (
                  select 1 from public.appointments a
                  where a.scheduled_at = slot
-                   and a.status is distinct from 'cancelada'
+                   and public.appointment_blocks_calendar(a)
                )
             then
               out_slots := out_slots || jsonb_build_array(jsonb_build_object(
@@ -206,7 +280,7 @@ begin
         if max_day > 0 then
           select count(*) into day_count
           from public.appointments a
-          where a.status is distinct from 'cancelada'
+          where public.appointment_blocks_calendar(a)
             and (a.scheduled_at at time zone tz)::date = d;
           if day_count >= max_day then
             continue;
@@ -263,7 +337,7 @@ begin
             if slot > now_ts + make_interval(mins => notice_mins)
                and not exists (
                  select 1 from public.appointments a
-                 where a.status is distinct from 'cancelada'
+                 where public.appointment_blocks_calendar(a)
                    and a.scheduled_at < slot + make_interval(mins => dur + buf_after + buf_before)
                    and a.scheduled_at + make_interval(mins => block_len + buf_after + buf_before) > slot
                )
@@ -314,6 +388,9 @@ $$;
 
 grant execute on function public.list_available_slots(integer, text) to anon, authenticated;
 
+drop function if exists public.book_public_appointment(text, text, timestamptz, text, text, text, text, text, text);
+drop function if exists public.book_public_appointment(text, text, timestamptz, text, text, text, text, text, text, integer);
+
 create or replace function public.book_public_appointment(
   p_name text,
   p_phone text,
@@ -323,7 +400,8 @@ create or replace function public.book_public_appointment(
   p_pet_type text default null,
   p_service text default 'Consulta Etología Clínica',
   p_zone text default null,
-  p_notes text default null
+  p_notes text default null,
+  p_amount integer default null
 )
 returns jsonb
 language plpgsql
@@ -336,6 +414,7 @@ declare
   tz text := 'America/Santiago';
   deposit int := 20000;
   min_price int := 38000;
+  v_amount int := 38000;
   v_phone text;
   pet text;
   avail jsonb;
@@ -365,7 +444,16 @@ begin
   tz := coalesce(nullif(calendar->>'timezone', ''), settings->>'timezone', 'America/Santiago');
   deposit := coalesce((settings->>'deposit_amount')::int, 20000);
   min_price := coalesce((settings->>'min_price')::int, 38000);
+  if p_amount is not null and p_amount >= 1000 then
+    v_amount := p_amount;
+  else
+    v_amount := min_price;
+  end if;
   msg := nullif(trim(coalesce(calendar->>'confirmation_message', '')), '');
+  msg := trim(concat_ws(' ',
+    coalesce(msg, 'Te guardamos la hora por 20 minutos.'),
+    'Si el pago no se completa, el horario se libera.'
+  ));
 
   blob := lower(coalesce(p_service, '') || ' ' || coalesce(p_zone, ''));
   if blob like '%online%' or blob like '%remot%' then
@@ -443,8 +531,8 @@ begin
     coalesce(nullif(trim(p_service), ''), 'Consulta Etología Clínica'),
     nullif(trim(coalesce(p_zone, '')), ''),
     p_scheduled_at,
-    'agendada',
-    min_price,
+    'pendiente_pago',
+    v_amount,
     deposit,
     false,
     'web',
@@ -458,10 +546,12 @@ begin
     'scheduled_at', appt.scheduled_at,
     'mode', v_mode,
     'deposit', deposit,
+    'amount', appt.amount,
+    'status', appt.status,
     'timezone', tz,
-    'message', coalesce(msg, 'Hora reservada. Para confirmar, pagá el valor total de la consulta.')
+    'message', msg
   );
 end;
 $$;
 
-grant execute on function public.book_public_appointment(text, text, timestamptz, text, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.book_public_appointment(text, text, timestamptz, text, text, text, text, text, text, integer) to anon, authenticated;

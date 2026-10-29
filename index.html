@@ -1181,13 +1181,13 @@
 
               <div class="booking-pay" data-booking-pay hidden>
                 <h3>Para confirmar tu hora</h3>
-                <p class="booking-pay-lead" data-booking-pay-msg>Tu hora quedó reservada. Completá estos pasos para confirmarla.</p>
+                <p class="booking-pay-lead" data-booking-pay-msg>Tu hora quedó reservada por 20 minutos. Si el pago no se completa, el horario se libera.</p>
                 <ol class="booking-pay-steps">
                   <li>
                     <span>1</span>
                     <div>
                     <h4>Pagá el valor total en la plataforma</h4>
-                    <p>Tarjeta o cuenta Mercado Pago, sin salir de esta web. El cobro confirma la hora.</p>
+                    <p>Tarjeta o cuenta Mercado Pago, sin salir de esta web. El cobro confirma la hora. Si cerrás sin pagar, esa hora vuelve a quedar libre.</p>
                     </div>
                   </li>
                   <li>
@@ -1230,7 +1230,7 @@
       <div class="pay-dialog" role="dialog" aria-modal="true" aria-labelledby="pay-dialog-title">
         <button type="button" class="cart-dialog-close" data-pay-close aria-label="Cerrar">×</button>
         <p class="cart-dialog-kicker" id="pay-dialog-title">Pago seguro con Mercado Pago</p>
-        <p class="pay-dialog-lead" data-pay-lead>Completá el pago acá mismo, sin salir de Armonivet.</p>
+        <p class="pay-dialog-lead" data-pay-lead>Completá el pago acá mismo. Si cerrás sin pagar, la hora se libera.</p>
         <div id="paymentBrick_container"></div>
         <div id="statusScreenBrick_container" hidden></div>
         <p class="pay-dialog-error" data-pay-error hidden></p>
@@ -1244,6 +1244,15 @@
         <div class="intake-ok">
           <h3>Tu pago se acreditó</h3>
           <p>La hora quedó confirmada. La Dra. Bárbara ya tiene el cobro asociado a tu reserva.</p>
+          <div class="pay-receipt" data-receipt hidden>
+            <p class="pay-receipt-kicker">Comprobante</p>
+            <dl>
+              <div><dt>Servicio</dt><dd data-receipt-service></dd></div>
+              <div><dt>Hora</dt><dd data-receipt-when></dd></div>
+              <div><dt>Monto pagado</dt><dd data-receipt-amount></dd></div>
+            </dl>
+            <p class="pay-receipt-note">También te lo enviamos por WhatsApp.</p>
+          </div>
         </div>
         <p class="intake-must">Obligatorio: rellená el formulario previo. No podés salir de esta pantalla hasta enviarlo, para que la consulta llegue con tu caso ya leído.</p>
         <iframe
