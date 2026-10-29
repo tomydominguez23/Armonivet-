@@ -17,7 +17,7 @@ export const TIMEZONES = [
 ];
 
 export const DEFAULT_CONFIRMATION =
-  "Hora reservada. Para confirmar, pagá el valor total de la consulta.";
+  "Hora reservada. Para confirmar, paga el valor total de la consulta.";
 
 const DOW_KEYS = ["0", "1", "2", "3", "4", "5", "6"];
 
@@ -295,7 +295,7 @@ export function validateCalendar(config) {
     seen.add(key);
     if (!item.closed) {
       const problem = rangesOverlap(item.ranges || []);
-      if (!item.ranges?.length || problem) errors.push(`Completá el horario especial del ${item.date}.`);
+      if (!item.ranges?.length || problem) errors.push(`Completa el horario especial del ${item.date}.`);
     }
   }
   return errors[0] || "";

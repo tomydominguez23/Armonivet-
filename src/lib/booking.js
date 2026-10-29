@@ -40,6 +40,21 @@ function normalizePhone(raw) {
   return digits;
 }
 
+function chilean(text) {
+  return String(text || "")
+    .replace(/\bElegí\b/g, "Elige")
+    .replace(/\bEscribí\b/g, "Escribe")
+    .replace(/\bProbá\b/g, "Prueba")
+    .replace(/\bPodés\b/g, "Puedes")
+    .replace(/\bpodés\b/g, "puedes")
+    .replace(/\bTocá\b/g, "Toca")
+    .replace(/\bPagá\b/g, "Paga")
+    .replace(/\bpagá\b/g, "paga")
+    .replace(/\bConfirmá\b/g, "Confirma")
+    .replace(/\bCompletá\b/g, "Completa")
+    .replace(/\bcerrás\b/g, "cierras");
+}
+
 function groupSlots(slots) {
   const byDay = {};
   for (const slot of slots || []) {
@@ -175,7 +190,7 @@ export async function initBooking() {
     byDay = groupSlots(slotsForModes(relevantModes()));
     selectedSlot = null;
     if (whenInput) whenInput.value = "";
-    if (whenLabel) whenLabel.textContent = "Elegí un horario";
+    if (whenLabel) whenLabel.textContent = "Elige un horario";
     const firstDay = Object.keys(byDay).sort()[0];
     if (firstDay) {
       selectedDate = firstDay;
@@ -230,7 +245,7 @@ export async function initBooking() {
   const setStatus = (text, isError = false) => {
     if (!statusEl) return;
     statusEl.hidden = !text;
-    statusEl.textContent = text || "";
+    statusEl.textContent = chilean(text);
     statusEl.classList.toggle("is-error", Boolean(isError));
   };
 
@@ -350,7 +365,7 @@ export async function initBooking() {
         selectedDate = btn.getAttribute("data-day");
         selectedSlot = null;
         if (whenInput) whenInput.value = "";
-        if (whenLabel) whenLabel.textContent = "Elegí un horario";
+        if (whenLabel) whenLabel.textContent = "Elige un horario";
         renderMonth();
         renderSlots();
       });
@@ -366,10 +381,10 @@ export async function initBooking() {
       const modeLabel = mixed ? "presencial y online" : activeMode === "online" ? "online" : "presencial";
       dayLabel.textContent = selectedDate
         ? `${new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "numeric", month: "long" }).format(parseISODate(selectedDate))} · ${modeLabel}`
-        : `Elegí un día con horas ${modeLabel}`;
+        : `Elige un día con horas ${modeLabel}`;
     }
     if (!selectedDate) {
-      slotsEl.innerHTML = `<p class="booking-hint">Tocá un día del calendario para ver los horarios.</p>`;
+      slotsEl.innerHTML = `<p class="booking-hint">Toca un día del calendario para ver los horarios.</p>`;
       return;
     }
     if (!list.length) {
@@ -475,7 +490,7 @@ export async function initBooking() {
   window.addEventListener("armonivet:hold-released", () => {
     if (payEl) payEl.hidden = true;
     form?.removeAttribute("hidden");
-    setStatus("La hora se liberó porque el pago no se completó. Podés elegir otro horario.", true);
+    setStatus("La hora se liberó porque el pago no se completó. Puedes elegir otro horario.", true);
     loadSlots()
       .then(() => {
         renderMonth();
@@ -489,12 +504,12 @@ export async function initBooking() {
     const fd = new FormData(form);
     const scheduled = String(fd.get("scheduled_at") || selectedSlot?.at || "").trim();
     if (!scheduled) {
-      setStatus("Elegí un día y un horario.", true);
+      setStatus("Elige un día y un horario.", true);
       return;
     }
     const phone = normalizePhone(fd.get("phone"));
     if (phone.length < 8) {
-      setStatus("Escribí un WhatsApp válido. Ej: +56 9 1234 5678", true);
+      setStatus("Escribe un WhatsApp válido. Ej: +56 9 1234 5678", true);
       return;
     }
     const submit = form.querySelector("[type='submit']");
@@ -529,7 +544,7 @@ export async function initBooking() {
     }
     if (submit) submit.disabled = false;
     if (error) {
-      setStatus(error.message || "No se pudo reservar. Probá otra hora.", true);
+      setStatus(error.message || "No se pudo reservar. Prueba otra hora.", true);
       return;
     }
     const amount = Math.round(Number(data?.amount || quoted || 0));
@@ -554,7 +569,7 @@ export async function initBooking() {
       String(data?.message || "").trim() ||
       String(calendarConfig?.confirmation_message || "").trim() ||
       holdNote;
-    const okMsg = `${base.includes("20 minutos") ? base : `${base} ${holdNote}`}${amount >= 1000 ? ` Total: ${formatCLP(amount)}.` : ""}`;
+    const okMsg = chilean(`${base.includes("20 minutos") ? base : `${base} ${holdNote}`}${amount >= 1000 ? ` Total: ${formatCLP(amount)}.` : ""}`);
     setStatus(okMsg);
     if (payMsg) payMsg.textContent = okMsg;
     if (payEl) {
@@ -623,6 +638,6 @@ export async function initBooking() {
     setStatus("Pago recibido. Tu hora quedó confirmada.");
     import("./cart.js").then(({ clearCart }) => clearCart()).catch(() => {});
   } else if (paid === "error") {
-    setStatus("El pago no se completó. Esa hora volvió a quedar libre. Podés elegir otro horario.", true);
+    setStatus("El pago no se completó. Esa hora volvió a quedar libre. Puedes elegir otro horario.", true);
   }
 }
