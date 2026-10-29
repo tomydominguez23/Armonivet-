@@ -133,8 +133,8 @@ function openPayOverlay(amount) {
   setPayError("");
   if (lead) {
     lead.textContent = amount
-      ? `Total a pagar: ${formatCLP(amount)}. Si cerrás sin pagar, la hora se libera.`
-      : "Completá el pago en Armonivet. Si cerrás sin pagar, la hora se libera.";
+      ? `Total a pagar: ${formatCLP(amount)}. Si cierras sin pagar, la hora se libera.`
+      : "Completa el pago en Armonivet. Si cierras sin pagar, la hora se libera.";
   }
   brick.hidden = false;
   brick.innerHTML = "";

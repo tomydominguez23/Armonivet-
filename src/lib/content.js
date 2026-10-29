@@ -94,7 +94,7 @@ function fillZoneSelect(select, zones) {
     select.hasAttribute("data-booking-zone")
       ? `<option value="Online" data-price="50000" data-communes="Cualquier comuna, por videollamada"${current === "Online" ? " selected" : ""}>Online · ${formatCLP(50000)} · Cualquier comuna</option>`
       : "";
-  const placeholder = select.hasAttribute("data-booking-zone") ? `<option value="">Elegí la zona</option>` : "";
+  const placeholder = select.hasAttribute("data-booking-zone") ? `<option value="">Elige la zona</option>` : "";
   select.innerHTML = placeholder + options.join("") + online;
   if (current) select.value = current;
   const card = select.closest("article");
