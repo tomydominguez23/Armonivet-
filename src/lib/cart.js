@@ -109,15 +109,26 @@ export const CATALOG = [
   },
 ];
 
-export const ZONE_PRICE = { "Sector A": 65000, "Sector B": 65000, "Sector C": 70000, Online: 50000 };
-export const CONTROL_ZONE_PRICE = { "Sector A": 50000, "Sector B": 50000, "Sector C": 55000, Online: 38000 };
+export const ZONE_PRICE = {
+  "Sector A": 65000,
+  "Sector B": 65000,
+  "Sector A y B": 65000,
+  "Sector C": 70000,
+  Online: 50000,
+};
+export const CONTROL_ZONE_PRICE = {
+  "Sector A": 50000,
+  "Sector B": 50000,
+  "Sector A y B": 50000,
+  "Sector C": 55000,
+  Online: 38000,
+};
 
 export const ZONES = [
-  { id: "Sector A", communes: "Ñuñoa y Macul" },
   {
-    id: "Sector B",
+    id: "Sector A y B",
     communes:
-      "Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida",
+      "Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida",
   },
   {
     id: "Sector C",
@@ -125,6 +136,37 @@ export const ZONES = [
       "Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba",
   },
 ];
+
+export function mergeSamePriceZones(zones) {
+  const groups = [];
+  for (const zone of zones || []) {
+    const price = Number(zone?.price);
+    const existing = Number.isFinite(price) ? groups.find((group) => Number(group.price) === price) : null;
+    if (!existing) groups.push({ price, parts: [zone] });
+    else existing.parts.push(zone);
+  }
+  return groups.map((group) => {
+    const parts = group.parts;
+    if (parts.length === 1) return parts[0];
+    const letters = parts
+      .map((part) => String(part.name || "").match(/sector\s+([abc])/i)?.[1]?.toUpperCase())
+      .filter(Boolean);
+    const name = letters.length === parts.length ? `Sector ${letters.join(" y ")}` : parts.map((part) => part.name).filter(Boolean).join(" y ");
+    const communes = parts
+      .map((part) => String(part.zones_text || "").replace(/<[^>]+>/g, "").trim().replace(/\.$/, ""))
+      .filter(Boolean)
+      .join(". ");
+    const featured = parts.find((part) => part.featured) || parts[0];
+    return {
+      ...featured,
+      name,
+      badge: name,
+      price: group.price,
+      zones_text: communes,
+      featured: parts.some((part) => part.featured),
+    };
+  });
+}
 
 export function foldText(text) {
   return String(text || "")
@@ -189,7 +231,7 @@ export function applyZoneToCart(service, zone) {
     const price = quoteAmount(item.book || service, zone);
     if (!price || (item.price === price && item.zone === zone)) return item;
     changed = true;
-    const base = String(item.title || service || "Consulta").replace(/\s*·\s*(Sector [ABC]|Online)$/i, "").trim();
+    const base = String(item.title || service || "Consulta").replace(/\s*·\s*(Sector .+|Online)$/i, "").trim();
     return { ...item, price, zone, title: zone ? `${base} · ${zone}` : base };
   });
   if (changed) writeCart(next);

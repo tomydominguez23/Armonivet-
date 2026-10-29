@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { applyMediaCache, collectMediaUrls, writeMediaCache } from "./media-cache.js";
-import { CONTROL_ZONE_PRICE, formatCLP as formatCartCLP, serviceMode } from "./cart.js";
+import { CONTROL_ZONE_PRICE, formatCLP as formatCartCLP, mergeSamePriceZones, serviceMode } from "./cart.js";
 
 function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -236,8 +236,9 @@ export async function hydrateSiteContent() {
     if (desc) desc.textContent = etologiaCopy(service.description, { fallback: slug === "etologia-clinica" });
   });
 
-  if (zones?.length) {
-    document.querySelectorAll("[data-zone-pick], [data-booking-zone]").forEach((select) => fillZoneSelect(select, zones));
+  const publicZones = mergeSamePriceZones(zones);
+  if (publicZones.length) {
+    document.querySelectorAll("[data-zone-pick], [data-booking-zone]").forEach((select) => fillZoneSelect(select, publicZones));
     window.dispatchEvent(new CustomEvent("armonivet:zones"));
   }
 
@@ -284,8 +285,8 @@ export async function hydrateSiteContent() {
 
   // Pricing zones: mapa arriba, sin foto de relleno
   const zonePanels = document.querySelector("[data-zones-grid]") || document.querySelector(".zone-panels");
-  if (zonePanels && zones?.length) {
-    zonePanels.innerHTML = zones
+  if (zonePanels && publicZones.length) {
+    zonePanels.innerHTML = publicZones
       .map((z) => {
         const map = z.map_embed_url
           ? `<iframe title="Mapa ${z.name}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen src="${z.map_embed_url}"></iframe>`

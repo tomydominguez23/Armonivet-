@@ -95,7 +95,7 @@ export async function initBooking() {
   let allSlots = [];
   let calendarConfig = null;
   let activeMode = "presencial";
-  let lastSector = "Sector A";
+  let lastSector = "Sector A y B";
   let cursor = new Date();
   cursor.setDate(1);
   let selectedDate = null;
@@ -168,7 +168,7 @@ export async function initBooking() {
               ? "Online"
               : form.elements.zone.value && form.elements.zone.value !== "Online"
                 ? form.elements.zone.value
-                : "Sector A";
+                : lastSector;
         }
       }
     }
@@ -413,7 +413,7 @@ export async function initBooking() {
   const syncServiceZone = (event) => {
     let service = String(form?.elements?.service?.value || "");
     let zone = String(form?.elements?.zone?.value || "");
-    if (/^Sector [ABC]$/.test(zone)) lastSector = zone;
+    if (zone && zone !== "Online") lastSector = zone;
     const pickedOnline = event?.target === form?.elements?.zone && zone === "Online";
     if (serviceMode(service, "") === "online") {
       zone = "Online";
@@ -452,7 +452,7 @@ export async function initBooking() {
       const item = serviceForMode(modes[0]);
       if (item?.book && form?.elements?.service) form.elements.service.value = item.book;
       if (form?.elements?.zone) {
-        form.elements.zone.value = modes[0] === "online" ? "Online" : item?.zone && item.zone !== "Online" ? item.zone : form.elements.zone.value || "Sector A";
+        form.elements.zone.value = modes[0] === "online" ? "Online" : item?.zone && item.zone !== "Online" ? item.zone : form.elements.zone.value || lastSector;
       }
       setMode(modes[0], { fromService: true });
       updateZoneHelp();
