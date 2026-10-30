@@ -456,7 +456,7 @@ export function initCheckoutUi() {
   window.addEventListener("beforeunload", (e) => {
     if (!intakeLocked) return;
     e.preventDefault();
-    e.returnValue = "Todavía falta enviar el formulario obligatorio.";
+    e.returnValue = "Es obligatorio completar y enviar el formulario antes de comenzar la primera consulta.";
   });
   window.addEventListener("pagehide", () => {
     if (paymentCompleted || redirectingToMp || paymentInFlight) return;
