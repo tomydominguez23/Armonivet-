@@ -50,6 +50,17 @@ export const CATALOG = [
     image: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=900&q=80",
   },
   {
+    id: "dos-pacientes",
+    title: "2 pacientes mismo hogar",
+    book: "2 pacientes mismo hogar",
+    zone: "",
+    price: null,
+    priceLabel: "A confirmar",
+    desc: "Consulta de etología para dos pacientes que viven en el mismo hogar.",
+    image: "https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=900&q=80",
+    tag: "Mismo hogar",
+  },
+  {
     id: "control-online",
     title: "Control online",
     book: "Control remoto",
@@ -208,14 +219,22 @@ export function serviceMode(service, zone) {
 
 export function isFixedPrice(service) {
   const s = foldText(service);
-  return s.includes("pack") || s.includes("entren") || s.includes("tempran") || s.includes("educacion") || s.includes("sitter");
+  return (
+    s.includes("pack") ||
+    s.includes("entren") ||
+    s.includes("tempran") ||
+    s.includes("educacion") ||
+    s.includes("sitter") ||
+    s.includes("paciente") ||
+    s.includes("mismo hogar")
+  );
 }
 
 export function quoteAmount(service, zone) {
   const s = foldText(service);
   const z = zone || "";
   if (s.includes("pack")) return null;
-  if (s.includes("sitter")) return null;
+  if (s.includes("sitter") || s.includes("paciente") || s.includes("mismo hogar")) return null;
   if (s.includes("tempran") || s.includes("educacion") || s.includes("entren")) return 45000;
   if (s.includes("control")) {
     if (s.includes("remot") || s.includes("online") || foldText(z) === "online") return 38000;
@@ -314,11 +333,14 @@ function itemFromTrigger(el) {
   const priceAttr = pickedPrice || el.getAttribute("data-price");
   const hasPrice = priceAttr != null && priceAttr !== "";
   const isControl = id.includes("control") || String(catalog.book || "").toLowerCase().includes("control");
+  const priceOnRequest = !hasPrice && (catalog.price === null || el.hasAttribute("data-price-label"));
   const price = hasPrice
     ? Number(priceAttr)
     : isControl
       ? CONTROL_ZONE_PRICE[zone] ?? catalog.price ?? 50000
-      : ZONE_PRICE[zone] ?? (catalog.price === null ? null : catalog.price ?? 65000);
+      : priceOnRequest
+        ? null
+        : ZONE_PRICE[zone] ?? (catalog.price === null ? null : catalog.price ?? 65000);
   const img = card?.querySelector("img");
   return {
     id,
@@ -347,6 +369,7 @@ function slugFromBook(book) {
   if (value.includes("remota") || value.includes("online")) return "consulta-online";
   if (value.includes("temprano") || value.includes("educacion")) return "entrenamiento-temprano";
   if (value.includes("sitter")) return "sitter";
+  if (value.includes("paciente") || value.includes("mismo hogar")) return "dos-pacientes";
   if (value.includes("entrenamiento") || value.includes("obediencia")) return "entrenamiento";
   return "consulta-presencial";
 }
