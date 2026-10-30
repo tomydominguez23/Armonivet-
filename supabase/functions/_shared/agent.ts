@@ -560,7 +560,7 @@ async function generateGenesisReply(
   settings: Settings,
   opts?: { deliver?: boolean },
 ) {
-  const [{ data: client }, { data: messages }, { data: appts }, { data: payments }] = await Promise.all([
+  const [{ data: client }, { data: messages }, { data: appts }, { data: payments }, { data: intake }] = await Promise.all([
     conversation.client_id
       ? db.from("clients").select("*").eq("id", conversation.client_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -569,21 +569,42 @@ async function generateGenesisReply(
       ? db.from("appointments").select("id,scheduled_at,status,service_title,amount,deposit_paid").eq("client_id", conversation.client_id).order("scheduled_at", { ascending: false }).limit(8)
       : Promise.resolve({ data: [] }),
     db.from("payments").select("id,amount,status,kind,due_at,checkout_url").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(5),
+    conversation.client_id
+      ? db.from("intake_forms").select("raw_answers,created_at").eq("client_id", conversation.client_id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  const filled = (record: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(record).filter(([, value]) => value !== null && value !== undefined && value !== ""));
 
   const instructions = [
     settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
     "Usa herramientas para datos reales. No inventes horas ni precios.",
+    "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({
       client: client
-        ? {
+        ? filled({
             name: client.name,
             phone: client.phone,
+            email: client.email,
             pet_name: client.pet_name,
             pet_type: client.pet_type,
-            reason: client.consultation_reason,
-          }
+            pet_age: client.pet_age,
+            neutered: client.is_neutered,
+            neutered_detail: client.neutered_date,
+            diagnosed_conditions: client.diagnosed_conditions,
+            current_treatment: client.current_treatment,
+            household_members: client.household_members,
+            consultation_reason: client.consultation_reason,
+            behavior_frequency: client.behavior_frequency,
+            previous_ethologist: client.previous_ethologist,
+            attempted_solutions: client.attempted_solutions,
+            last_vet_reason: client.last_vet_reason,
+            routine: client.time_spent_location,
+            extra: client.life_changes,
+          })
         : null,
+      formulario_previo: intake?.raw_answers || null,
       pipeline: conversation.pipeline,
       appointments: appts || [],
       payments: payments || [],

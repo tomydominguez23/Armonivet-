@@ -1425,9 +1425,50 @@ async function loadIntakes() {
   });
 }
 
+const PRECONSULT_LABELS = [
+  ["tutor_name", "Nombre del tutor/a"],
+  ["email", "Correo electrónico"],
+  ["phone", "Teléfono"],
+  ["pet_name", "Nombre del paciente"],
+  ["species", "Especie"],
+  ["patient_profile", "Edad / raza / sexo / peso"],
+  ["neutered", "Esterilizado o castrado"],
+  ["behavior_problem", "Principal dificultad de conducta"],
+  ["behavior_context", "Desde cuándo y en qué situaciones"],
+  ["diagnosed", "Enfermedad, dolor u otras molestias"],
+  ["medications", "Medicamentos actuales"],
+  ["previous_vet", "Atención veterinaria o tratamiento previo"],
+  ["household", "Con quién vive"],
+  ["routine", "Rutina diaria"],
+  ["consultation_reason", "Motivo de la consulta etológica"],
+  ["extra", "Algo más importante"],
+  ["previous_ethologist", "Consultó con otro etólogo o entrenador"],
+  ["previous_work", "Qué trabajaron con otro etólogo o entrenador"],
+];
+
+function formatPreconsultValue(key, value) {
+  if (value == null || value === "") return "";
+  if (key === "species") {
+    if (value === "canino") return "Canino";
+    if (value === "felino") return "Felino";
+  }
+  if (key === "previous_ethologist") {
+    if (value === "si" || value === "sí") return "Sí";
+    if (value === "no") return "No";
+  }
+  return String(value);
+}
+
+function preconsultFieldRows(raw) {
+  return PRECONSULT_LABELS.map(([key, label]) => [label, formatPreconsultValue(key, raw?.[key])]);
+}
+
 function openIntakeModal(row) {
   const raw = row.raw_answers || {};
-  const fields = [
+  const isPreconsult = Boolean(raw.tutor_name || raw.behavior_problem || raw.patient_profile);
+  const fields = isPreconsult
+    ? preconsultFieldRows(raw)
+    : [
     ["Paciente", row.patient_name],
     ["Correo", row.email],
     ["Dirección", row.address],
@@ -1896,6 +1937,22 @@ async function openClientDetailModal(client) {
     /* ignore enrichment errors */
   }
 
+  let preconsultFields = [];
+  try {
+    const { data: forms } = await requireSupabase()
+      .from("intake_forms")
+      .select("raw_answers")
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const raw = forms?.[0]?.raw_answers;
+    if (raw && (raw.tutor_name || raw.behavior_problem || raw.patient_profile)) {
+      preconsultFields = preconsultFieldRows(raw);
+    }
+  } catch {
+    /* la ficha igual muestra los datos del cliente */
+  }
+
   const personalFields = [
     ["Nombre", client.name || "—"],
     ["Tutor", client.tutor_name || "—"],
@@ -1929,6 +1986,30 @@ async function openClientDetailModal(client) {
     ["Frecuencia baño", client.q_bath_frequency],
     ["Notas cuestionario", client.questionnaire_notes],
   ];
+  const clinicalFields = preconsultFields.length
+    ? []
+    : [
+        ["Edad / raza / sexo / peso", client.pet_age],
+        [
+          "Esterilizado",
+          client.is_neutered == null
+            ? client.neutered_date
+            : `${client.is_neutered ? "Sí" : "No"}${client.neutered_date ? ` · ${client.neutered_date}` : ""}`,
+        ],
+        ["Diagnósticos", client.diagnosed_conditions],
+        ["Medicamentos", client.current_treatment],
+        ["Hogar", client.household_members],
+        ["Motivo", client.consultation_reason],
+        ["Desde cuándo y situaciones", client.behavior_frequency],
+        [
+          "Etólogo previo",
+          client.previous_ethologist == null ? null : client.previous_ethologist ? "Sí" : "No",
+        ],
+        ["Qué se trabajó", client.attempted_solutions],
+        ["Atención veterinaria previa", client.last_vet_reason],
+        ["Rutina", client.time_spent_location],
+        ["Otros antecedentes", client.life_changes],
+      ];
   const metaFields = [
     ["Último contacto", formatDate(client.last_contact_at)],
     ["Próximo seguimiento", formatDate(client.next_followup_at)],
@@ -1954,6 +2035,8 @@ async function openClientDetailModal(client) {
       <div class="detail-view">
         ${renderSection("Datos personales", personalFields, { keepEmpty: true })}
         ${renderSection("Mascota", petFields)}
+        ${renderSection("Formulario previo", preconsultFields)}
+        ${renderSection("Antecedentes clínicos", clinicalFields)}
         ${renderSection("Cuestionario", questionnaireFields)}
         ${renderSection("Fechas", metaFields)}
       </div>

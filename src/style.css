@@ -3331,13 +3331,153 @@ body.intake-open {
   font-weight: 800;
 }
 
-.intake-frame {
-  display: block;
+.intake-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.intake-intro,
+.intake-required-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.intake-required-note {
+  font-size: 0.82rem;
+}
+
+.intake-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.intake-fields > label:not(.intake-accept),
+.intake-fields .span {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.intake-fields .span,
+.intake-choice,
+.intake-accept {
+  grid-column: 1 / -1;
+}
+
+.intake-form input,
+.intake-form textarea {
   width: 100%;
-  min-height: min(58vh, 560px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  font-weight: 500;
+  background: #fff;
+}
+
+.intake-form textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.intake-choice {
+  margin: 0;
+  padding: 0;
   border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+}
+
+.intake-choice legend {
+  width: 100%;
+  margin-bottom: 0.1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.intake-choice label,
+.intake-accept {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.intake-form .intake-choice input,
+.intake-form .intake-accept input {
+  width: auto;
+  margin-top: 0.15rem;
+}
+
+.intake-accept a {
+  color: var(--cta);
+}
+
+.intake-error {
+  margin: 0;
+  color: #9b2c2c;
+  font-size: 0.9rem;
+}
+
+.intake-thanks {
+  padding: 0.95rem 1rem;
   border-radius: 16px;
   background: var(--paper);
+}
+
+.intake-thanks h3 {
+  margin: 0 0 0.3rem;
+  color: var(--cta);
+}
+
+.intake-thanks p {
+  margin: 0;
+  color: var(--charcoal);
+}
+
+.intake-ok[hidden],
+.intake-must[hidden],
+.intake-form[hidden],
+.intake-thanks[hidden],
+.intake-error[hidden],
+.intake-fields > [hidden] {
+  display: none !important;
+}
+
+.legal-page {
+  padding: 2.5rem 0 4rem;
+}
+
+.legal-copy {
+  max-width: 46rem;
+}
+
+.legal-copy h1 {
+  margin: 0.2rem 0 1rem;
+}
+
+.legal-copy h2 {
+  margin: 1.6rem 0 0.45rem;
+  font-size: 1.15rem;
+}
+
+.legal-copy p {
+  margin: 0 0 0.85rem;
+  line-height: 1.55;
+  color: var(--charcoal);
+}
+
+@media (max-width: 720px) {
+  .intake-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .intake-wait {
