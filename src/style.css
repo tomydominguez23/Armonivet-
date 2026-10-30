@@ -1583,37 +1583,6 @@ p {
   color: var(--muted);
 }
 
-.control-prices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
-  margin: 1.35rem 0 0;
-}
-
-.control-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1rem 1.1rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.control-card h3 {
-  margin: 0 0 0.2rem;
-  font-size: 1.02rem;
-}
-
-.control-card p {
-  margin: 0;
-  font-size: 0.88rem;
-  color: var(--muted);
-}
-
 .price-extras {
   display: flex;
   flex-wrap: wrap;
@@ -2707,7 +2676,6 @@ html.js .reveal.is-visible {
   .package-strip,
   .plan-cards,
   .pack-cards,
-  .control-prices,
   .mid-banner-panel,
   .promo-spotlight-card {
     grid-template-columns: 1fr 1fr;
@@ -2843,7 +2811,6 @@ html.js .reveal.is-visible {
   .service-cards,
   .plan-cards,
   .pack-cards,
-  .control-prices,
   .mid-banner-panel,
   .promo-spotlight-card,
   .gallery-grid {
