@@ -115,6 +115,42 @@ function fillZoneSelect(select, zones) {
   }
 }
 
+function offerPriceMarkup(service) {
+  if (service?.price_from) {
+    const label = String(service.price_label || "");
+    if (label && !/desde/i.test(label)) return `<strong>${escapeHtml(label)}</strong>`;
+    return `Desde <strong>${formatCartCLP(service.price_from)}</strong>`;
+  }
+  return `<strong>${escapeHtml(service?.price_label || "A confirmar")}</strong>`;
+}
+
+function offerCardMarkup(service) {
+  const copy = publicCopy(service);
+  const target = bookForService(service);
+  const tag = service.tag
+    ? `<span class="offer-tag${/vendido/i.test(service.tag) ? "" : " offer-tag--alt"}">${escapeHtml(service.tag)}</span>`
+    : "";
+  const priceAttr = service.price_from != null && service.price_from !== "" ? ` data-price="${escapeHtml(service.price_from)}"` : "";
+  const labelAttr = !service.price_from ? ` data-price-label="${escapeHtml(service.price_label || "A confirmar")}"` : "";
+  const zoneAttr = target.zone ? ` data-zone="${escapeHtml(target.zone)}"` : "";
+  const img = isSafeImageUrl(service.image_url) ? ` src="${escapeHtml(service.image_url)}"` : "";
+  return `
+    <article class="offer-card reveal is-visible">
+      <figure>
+        <img data-cms-service="${escapeHtml(service.slug)}"${img} alt="${escapeHtml(copy.title)}" />
+        ${tag}
+      </figure>
+      <div class="offer-body">
+        <h3>${escapeHtml(copy.title)}</h3>
+        <p>${escapeHtml(copy.description || "")}</p>
+        <div class="offer-price-row">
+          <span>${offerPriceMarkup(service)}</span>
+          <button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-title="${escapeHtml(copy.title)}"${zoneAttr}${priceAttr}${labelAttr}>Agregar</button>
+        </div>
+      </div>
+    </article>`;
+}
+
 function bookForService(service) {
   const blob = `${service?.title || ""} ${service?.slug || ""}`.toLowerCase();
   if (blob.includes("presencial") || blob.includes("domicilio")) {
@@ -125,6 +161,7 @@ function bookForService(service) {
   }
   if (blob.includes("entren")) return { book: "Entrenamiento", zone: "" };
   if (blob.includes("sitter")) return { book: "Cat y pet sitter / paseos educativos", zone: "" };
+  if (blob.includes("paciente") || blob.includes("mismo hogar")) return { book: "2 pacientes mismo hogar", zone: "" };
   if (blob.includes("control") && (blob.includes("online") || blob.includes("remot"))) {
     return { book: "Control remoto", zone: "Online" };
   }
@@ -209,6 +246,32 @@ export async function hydrateSiteContent() {
       if (title && service.title) title.textContent = service.title;
       if (desc) desc.textContent = etologiaCopy(service.description, { fallback: service.slug === "etologia-clinica" });
     });
+
+    const present = new Set();
+    offerGrid.querySelectorAll("[data-cms-service], [data-add]").forEach((el) => {
+      const value = el.getAttribute("data-cms-service") || el.getAttribute("data-add");
+      if (value) present.add(value);
+    });
+    if (present.has("entrenamiento") || present.has("entrenamiento-basico")) {
+      present.add("entrenamiento");
+      present.add("entrenamiento-basico");
+    }
+    if (present.has("sitter") || present.has("cat-pet-sitter")) {
+      present.add("sitter");
+      present.add("cat-pet-sitter");
+    }
+    if (present.has("etologia-clinica") || present.has("consulta-presencial")) {
+      present.add("etologia-clinica");
+      present.add("consulta-presencial");
+    }
+    const missingOffers = offerServices.filter((service) => {
+      if (!service?.slug || present.has(service.slug)) return false;
+      if (/^(pack|control)-/.test(service.slug) || service.slug === "flores-de-bach") return false;
+      return true;
+    });
+    if (missingOffers.length) {
+      offerGrid.insertAdjacentHTML("beforeend", missingOffers.map((service) => offerCardMarkup(service)).join(""));
+    }
   }
 
   document.querySelectorAll("[data-cms-service]").forEach((img) => {
@@ -251,6 +314,7 @@ export async function hydrateSiteContent() {
     "entrenamiento-temprano",
     "sitter",
     "cat-pet-sitter",
+    "dos-pacientes",
     "pack-inicio-online",
     "pack-continuidad-online",
     "pack-mixto",
