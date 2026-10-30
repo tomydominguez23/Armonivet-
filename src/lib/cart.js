@@ -438,7 +438,7 @@ function suggestCard(item) {
           data-zone="${escapeHtml(item.zone || "")}"
           data-price="${item.price ?? ""}"
           data-title="${escapeHtml(item.title)}"
-        >Agregar</button>
+        >Agendar</button>
       </div>
     </article>`;
 }

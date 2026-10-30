@@ -145,7 +145,7 @@ function offerCardMarkup(service) {
         <p>${escapeHtml(copy.description || "")}</p>
         <div class="offer-price-row">
           <span>${offerPriceMarkup(service)}</span>
-          <button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-title="${escapeHtml(copy.title)}"${zoneAttr}${priceAttr}${labelAttr}>Agregar</button>
+          <button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-title="${escapeHtml(copy.title)}"${zoneAttr}${priceAttr}${labelAttr}>Agendar</button>
         </div>
       </div>
     </article>`;
@@ -366,8 +366,8 @@ export async function hydrateSiteContent() {
           <p class="price-amount">${formatCLP(z.price)}</p>
           <p class="price-control">Control ${formatCLP(CONTROL_ZONE_PRICE[z.name] || 50000)}</p>
           <p class="price-zones">${z.zones_text || ""}</p>
-          <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="${z.name || ""}" data-price="${z.price ?? 65000}" data-title="Consulta presencial · ${z.name || ""}">Agregar consulta</button>
-          <button type="button" class="btn btn-ghost btn-buy--sm" data-add="control-presencial" data-book="Control presencial" data-zone="${z.name || ""}" data-price="${CONTROL_ZONE_PRICE[z.name] || 50000}" data-title="Control presencial · ${z.name || ""}">Agregar control</button>
+          <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="${z.name || ""}" data-price="${z.price ?? 65000}" data-title="Consulta presencial · ${z.name || ""}">Agendar consulta</button>
+          <button type="button" class="btn btn-ghost btn-buy--sm" data-add="control-presencial" data-book="Control presencial" data-zone="${z.name || ""}" data-price="${CONTROL_ZONE_PRICE[z.name] || 50000}" data-title="Control presencial · ${z.name || ""}">Agendar control</button>
         </div>
       </article>`;
       })
