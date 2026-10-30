@@ -135,6 +135,24 @@ export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment
     const apptUpdate: Record<string, unknown> = { deposit_paid: true, status: "abonada" };
     if (amount > 0) apptUpdate.amount = amount;
     await db.from("appointments").update(apptUpdate).eq("id", appointmentId);
+
+    const { data: apptRow } = await db
+      .from("appointments")
+      .select("client_id, notes")
+      .eq("id", appointmentId)
+      .maybeSingle();
+    if (apptRow?.client_id) {
+      const notes = String(apptRow.notes || "");
+      const addressMatch = notes.match(/Direcci[oó]n:\s*([^·\n]+)/i);
+      const address = addressMatch?.[1]?.trim() || "";
+      const clientPatch: Record<string, unknown> = {
+        status: "abonado",
+        last_contact_at: new Date().toISOString(),
+      };
+      if (address) clientPatch.address = address;
+      await db.from("clients").update(clientPatch).eq("id", apptRow.client_id);
+    }
+
     if (amount > 0) await sendPaymentReceipt(db, reference, appointmentId, amount, pay.id);
   } else if (status === "cancelado" && appointmentId) {
     const { data: appt } = await db
