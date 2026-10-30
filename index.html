@@ -114,10 +114,7 @@
       <nav class="cat-nav" aria-label="Categorías">
         <div class="shell cat-nav-inner">
           <a href="#ofertas">Destacados</a>
-          <a href="#servicios">Planes</a>
-          <a href="#consulta-online">Online</a>
-          <a href="#consulta-presencial">Presencial</a>
-          <a href="#entrenamiento">Entrenamiento</a>
+          <a href="#servicios">Packs</a>
           <a href="#valores">Precios</a>
           <a href="#reseñas">Reseñas</a>
           <a href="./about.html">Quiénes somos</a>
@@ -127,10 +124,7 @@
 
       <div class="mobile-nav" id="menu-movil" data-mobile-nav hidden>
         <a href="#ofertas">Destacados</a>
-        <a href="#servicios">Planes</a>
-        <a href="#consulta-online">Online</a>
-        <a href="#consulta-presencial">Presencial</a>
-        <a href="#entrenamiento">Entrenamiento</a>
+        <a href="#servicios">Packs</a>
         <a href="#valores">Precios</a>
         <a href="#agendar">Agenda</a>
         <a href="./about.html">Quiénes somos</a>
@@ -266,7 +260,7 @@
               <p>Atención cercana y profesional</p>
             </div>
           </a>
-          <a class="benefit-link" href="#consulta-online">
+          <a class="benefit-link" href="#ofertas">
             <span class="benefit-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 5h16v11H8l-4 3V5zm2 2v7.2l1.2-.9H18V7H6z"/></svg>
             </span>
@@ -403,14 +397,14 @@
                 <p>Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.</p>
                 <label class="zone-pick">Zona
                   <select data-zone-pick aria-label="Zona y valor">
-                    <option value="Sector A y B" data-price="65000" data-communes="Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida" selected>Sector A y B · $65.000 · Ñuñoa, Macul, Providencia y más</option>
-                    <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                    <option value="Sector A" data-price="65000" data-communes="Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida" selected>Sector A · $65.000 · Ñuñoa, Macul, Providencia y más</option>
+                    <option value="Sector B" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector B · $70.000 · Lo Barnechea, Puente Alto y más</option>
                   </select>
                 </label>
                 <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida</p>
                 <div class="offer-price-row">
                   <span data-offer-price>Desde <strong>$65.000</strong></span>
-                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="Sector A y B" data-price="65000" data-title-base="Consulta presencial" data-title="Consulta presencial · Sector A y B">Agregar</button>
+                  <button type="button" class="btn btn-buy btn-buy--sm" data-add="consulta-presencial" data-book="Consulta presencial" data-zone="Sector A" data-price="65000" data-title-base="Consulta presencial" data-title="Consulta presencial · Sector A">Agregar</button>
                 </div>
               </div>
             </article>
@@ -483,134 +477,12 @@
       <section class="services" id="servicios">
         <div class="shell">
           <div class="section-intro reveal">
-            <p class="eyebrow">Oferta y paquetes</p>
-            <h2>Planes para tu consulta</h2>
-            <p>Elige el formato. El valor presencial depende de tu sector en Santiago.</p>
+            <p class="eyebrow">Packs Armonivet</p>
+            <h2>Packs con ahorro frente al precio suelto</h2>
+            <p>Elige el acompañamiento que mejor se adapta a tu familia. El valor presencial depende de tu sector en Santiago.</p>
           </div>
 
-          <div class="package-carousel reveal" data-package-carousel>
-            <button type="button" class="package-arrow" data-package-prev aria-label="Ver planes anteriores">‹</button>
-            <div class="package-viewport">
-              <div class="package-track" data-package-track>
-                <article class="package-hero" id="consulta-presencial" data-package-hero data-plan-slug="etologia-clinica">
-                  <img
-                    data-cms-service="etologia-clinica"
-                    data-fallback="https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&w=640&q=80"
-                    alt="Consulta de etología clínica en casa"
-                  />
-                  <div>
-                    <h3>Consulta Etología Clínica</h3>
-                    <p>Evaluación diagnóstica, guía de trabajo y plan de modificación conductual por 30 días.</p>
-                    <label class="zone-pick">Zona
-                      <select data-zone-pick data-price-kind="consulta" aria-label="Zona y valor de la consulta presencial">
-                        <option value="Sector A y B" data-price="65000" data-communes="Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida" selected>Sector A y B · $65.000 · Ñuñoa, Macul, Providencia y más</option>
-                        <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
-                      </select>
-                    </label>
-                    <p class="zone-detail" data-zone-detail>$65.000. Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida</p>
-                    <button
-                      type="button"
-                      class="btn btn-buy btn-buy--sm"
-                      data-add="consulta-presencial"
-                      data-book="Consulta presencial"
-                      data-zone="Sector A y B"
-                      data-price="65000"
-                      data-title-base="Consulta presencial"
-                      data-title="Consulta presencial · Sector A y B"
-                    >Agregar</button>
-                  </div>
-                </article>
-
-                <article class="package-hero" id="consulta-online" data-plan-slug="consulta-online">
-                  <img
-                    data-cms-service="consulta-online"
-                    data-fallback="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=640&q=80"
-                    alt="Consulta online de etología"
-                  />
-                  <div>
-                    <h3>Consulta Online Preferente</h3>
-                    <p>Ideal para agresividad, miedo y ansiedad. Mismo seguimiento de 30 días.</p>
-                    <ul class="package-zones">
-                      <li><strong>Valor</strong> $50.000 <span>Pago total para confirmar</span></li>
-                      <li><strong>Formato</strong> Videollamada <span>Desde cualquier comuna</span></li>
-                      <li><strong>Incluye</strong> Plan de trabajo <span>Sujeto a modificar</span></li>
-                    </ul>
-                    <button
-                      type="button"
-                      class="btn btn-buy btn-buy--sm"
-                      data-add="consulta-online"
-                      data-book="Consulta remota"
-                      data-zone="Online"
-                      data-price="50000"
-                    >Agregar</button>
-                  </div>
-                </article>
-
-                <article class="package-hero" id="entrenamiento" data-plan-slug="entrenamiento-basico">
-                  <img
-                    data-cms-service="entrenamiento-basico"
-                    data-fallback="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=640&q=80"
-                    alt="Entrenamiento canino profesional"
-                  />
-                  <div>
-                    <h3>Entrenamiento canino profesional</h3>
-                    <p>Entrenamiento de obediencia básica con refuerzo positivo: sentarse, echarse, acudir al llamado y caminar con correa.</p>
-                    <ul class="package-zones">
-                      <li><strong>Desde</strong> $45.000 <span>Según evaluación</span></li>
-                      <li><strong>Foco</strong> Obediencia básica <span>Sentarse, echarse, llamado y correa</span></li>
-                      <li><strong>Importante</strong> Otro motivo de consulta <span>Debe pasar primero por etología</span></li>
-                    </ul>
-                    <button
-                      type="button"
-                      class="btn btn-buy btn-buy--sm"
-                      data-add="entrenamiento"
-                      data-book="Entrenamiento"
-                      data-price="45000"
-                    >Agregar</button>
-                  </div>
-                </article>
-
-                <article class="package-hero" data-plan-slug="entrenamiento-temprano">
-                  <img
-                    data-cms-service="entrenamiento-temprano"
-                    data-fallback="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=640&q=80"
-                    alt="Educación temprana para cachorros"
-                  />
-                  <div>
-                    <h3>Educación temprana para cachorros</h3>
-                    <p>Orientación sobre eliminación, mordidas, socialización e independencia.</p>
-                    <ul class="package-zones">
-                      <li><strong>Edad</strong> 2 meses a 6 meses <span>Educación temprana</span></li>
-                      <li><strong>Foco</strong> Hábitos higiénicos, mordidas inadecuadas, socialización e independencia</li>
-                      <li><strong>Modalidad</strong> Online <span>Desde cualquier comuna</span></li>
-                    </ul>
-                    <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento-temprano" data-book="Educación temprana para cachorros" data-price="45000">Agregar</button>
-                  </div>
-                </article>
-
-                <article class="package-hero" data-plan-slug="cat-pet-sitter">
-                  <img
-                    data-cms-service="cat-pet-sitter"
-                    data-fallback="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=640&q=80"
-                    alt="Cat y pet sitter, paseos educativos"
-                  />
-                  <div>
-                    <h3>Cat y pet sitter / paseos educativos</h3>
-                    <p>Cuidado y paseos educativos sujetos a disponibilidad.</p>
-                    <ul class="package-zones">
-                      <li><strong>Formato</strong> Sitter o paseo <span>Según tu caso</span></li>
-                      <li><strong>Cupos</strong> Limitados <span>Sujeto a disponibilidad</span></li>
-                      <li><strong>Consulta</strong> Por WhatsApp <span>Para coordinar</span></li>
-                    </ul>
-                    <button type="button" class="btn btn-buy btn-buy--sm" data-add="sitter" data-book="Cat y pet sitter / paseos educativos" data-price-label="Sujeto a disponibilidad">Agregar</button>
-                  </div>
-                </article>
-              </div>
-            </div>
-            <button type="button" class="package-arrow" data-package-next aria-label="Ver siguientes planes">›</button>
-          </div>
-
-          <p class="plans-kicker" id="packs">Packs con ahorro frente al precio suelto</p>
+          <p class="plans-kicker" id="packs" hidden>Packs</p>
           <div class="plan-cards pack-cards">
             <article class="plan-card">
               <p class="plan-badge">Pack</p>
@@ -646,7 +518,7 @@
               <ul>
                 <li>Ahorrás $5.000 vs. comprar suelto</li>
                 <li>Primera a domicilio y control por video</li>
-                <li>Base Sector A y B ($65.000 + $38.000)</li>
+                <li>Base Sector A ($65.000 + $38.000)</li>
               </ul>
               <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-mixto" data-book="Consulta presencial" data-price="98000" data-title="Pack Acompañamiento mixto">Elegir este pack</button>
             </article>
@@ -657,7 +529,7 @@
               <p class="plan-note">1 primera presencial + 2 controles presenciales</p>
               <ul>
                 <li>Ahorrás $10.000 vs. comprar suelto</li>
-                <li>Base Sector A y B ($65.000 + 2 × $50.000)</li>
+                <li>Base Sector A ($65.000 + 2 × $50.000)</li>
                 <li>Todo a domicilio</li>
               </ul>
               <button type="button" class="btn btn-buy btn-buy--sm" data-add="pack-seguimiento-presencial" data-book="Consulta presencial" data-price="155000" data-title="Pack Seguimiento presencial">Elegir este pack</button>
@@ -702,13 +574,13 @@
             <article class="zone-card reveal featured" role="listitem">
               <div class="zone-media">
                 <iframe
-                  title="Google Maps Sector A y B"
+                  title="Google Maps Sector A"
                   loading="lazy"
                   referrerpolicy="no-referrer-when-downgrade"
                   allowfullscreen
                   src="https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=12&output=embed"
                 ></iframe>
-                <span class="zone-badge">Sector A y B</span>
+                <span class="zone-badge">Sector A</span>
               </div>
               <div class="zone-body">
                 <p class="price-sector">Primera consulta</p>
@@ -724,18 +596,18 @@
                     class="btn btn-buy btn-buy--sm"
                     data-add="consulta-presencial"
                     data-book="Consulta presencial"
-                    data-zone="Sector A y B"
+                    data-zone="Sector A"
                     data-price="65000"
-                    data-title="Consulta presencial · Sector A y B"
+                    data-title="Consulta presencial · Sector A"
                   >Agregar consulta</button>
                   <button
                     type="button"
                     class="btn btn-ghost btn-buy--sm"
                     data-add="control-presencial"
                     data-book="Control presencial"
-                    data-zone="Sector A y B"
+                    data-zone="Sector A"
                     data-price="50000"
-                    data-title="Control presencial · Sector A y B"
+                    data-title="Control presencial · Sector A"
                   >Agregar control</button>
               </div>
             </article>
@@ -743,13 +615,13 @@
             <article class="zone-card reveal" role="listitem">
               <div class="zone-media">
                 <iframe
-                  title="Google Maps Sector C · Las Condes y oriente"
+                  title="Google Maps Sector B · Las Condes y oriente"
                   loading="lazy"
                   referrerpolicy="no-referrer-when-downgrade"
                   allowfullscreen
                   src="https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed"
                 ></iframe>
-                <span class="zone-badge">Sector C</span>
+                <span class="zone-badge">Sector B</span>
               </div>
               <div class="zone-body">
                 <p class="price-sector">Primera consulta</p>
@@ -764,18 +636,18 @@
                     class="btn btn-buy btn-buy--sm"
                     data-add="consulta-presencial"
                     data-book="Consulta presencial"
-                    data-zone="Sector C"
+                    data-zone="Sector B"
                     data-price="70000"
-                    data-title="Consulta presencial · Sector C"
+                    data-title="Consulta presencial · Sector B"
                   >Agregar consulta</button>
                   <button
                     type="button"
                     class="btn btn-ghost btn-buy--sm"
                     data-add="control-presencial"
                     data-book="Control presencial"
-                    data-zone="Sector C"
+                    data-zone="Sector B"
                     data-price="55000"
-                    data-title="Control presencial · Sector C"
+                    data-title="Control presencial · Sector B"
                   >Agregar control</button>
               </div>
             </article>
@@ -785,7 +657,7 @@
             <article class="control-card">
               <div>
                 <h3>Control presencial</h3>
-                <p>Sector A y B <strong>$50.000</strong> · Sector C <strong>$55.000</strong></p>
+                <p>Sector A <strong>$50.000</strong> · Sector B <strong>$55.000</strong></p>
               </div>
               <button type="button" class="btn btn-buy btn-buy--sm" data-add="control-presencial" data-book="Control presencial" data-price="50000">Agregar control</button>
             </article>
@@ -1059,14 +931,17 @@
                   <label class="booking-zone">Zona
                     <select name="zone" data-booking-zone>
                       <option value="">Elige la zona</option>
-                      <option value="Sector A y B" data-price="65000" data-communes="Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector A y B · $65.000 · Ñuñoa, Macul, Providencia y más</option>
-                      <option value="Sector C" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector C · $70.000 · Lo Barnechea, Puente Alto y más</option>
+                      <option value="Sector A" data-price="65000" data-communes="Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida">Sector A · $65.000 · Ñuñoa, Macul, Providencia y más</option>
+                      <option value="Sector B" data-price="70000" data-communes="Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba">Sector B · $70.000 · Lo Barnechea, Puente Alto y más</option>
                       <option value="Online" data-price="50000" data-communes="Cualquier comuna, por videollamada">Online · $50.000 · Cualquier comuna</option>
                     </select>
                   </label>
                   <p class="zone-help" data-zone-help>Al elegir la zona ves el valor y las comunas que abarca. Ese valor es el que se cobra.</p>
+                  <label class="booking-address">Dirección
+                    <input name="address" autocomplete="street-address" placeholder="Calle, número, depto (obligatoria si es presencial)" />
+                  </label>
                   <label class="booking-notes">Notas
-                    <input name="notes" autocomplete="off" placeholder="Motivo o comuna (opcional)" />
+                    <input name="notes" autocomplete="off" placeholder="Motivo o detalle (opcional)" />
                   </label>
                 </div>
                 <button class="btn btn-buy" type="submit">Reservar hora</button>

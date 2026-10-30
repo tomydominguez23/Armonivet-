@@ -107,31 +107,21 @@ insert into public.pricing_zones (name, badge, price, zones_text, image_url, map
     'Sector A',
     'Sector A',
     65000,
-    'Ñuñoa y Macul',
+    'Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida.',
     'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80',
-    'https://maps.google.com/maps?q=Ñuñoa,+Santiago,+Chile&hl=es&z=13&output=embed',
-    false,
+    'https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=12&output=embed',
+    true,
     1
   ),
   (
     'Sector B',
-    'Sector B · Popular',
-    65000,
-    'Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida.',
-    'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80',
-    'https://maps.google.com/maps?q=Providencia,+Santiago,+Chile&hl=es&z=13&output=embed',
-    true,
-    2
-  ),
-  (
-    'Sector C',
-    'Sector C',
+    'Sector B',
     70000,
     'Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes / La Reina / Vitacura / Peñalolén, San Bernardo, Puente Alto y Huechuraba.',
     'https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&fit=crop&w=900&q=80',
     'https://maps.google.com/maps?q=Las+Condes,+Santiago,+Chile&hl=es&z=12&output=embed',
     false,
-    3
+    2
   );
 
 -- Extras de precio

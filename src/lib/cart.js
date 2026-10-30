@@ -64,7 +64,7 @@ export const CATALOG = [
     book: "Control presencial",
     zone: "",
     price: 50000,
-    desc: "Control a domicilio. Sector A y B $50.000 · Sector C $55.000.",
+    desc: "Control a domicilio. Sector A $50.000 · Sector B $55.000.",
     image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
   },
   {
@@ -111,31 +111,40 @@ export const CATALOG = [
 
 export const ZONE_PRICE = {
   "Sector A": 65000,
-  "Sector B": 65000,
   "Sector A y B": 65000,
+  "Sector B": 70000,
   "Sector C": 70000,
   Online: 50000,
 };
 export const CONTROL_ZONE_PRICE = {
   "Sector A": 50000,
-  "Sector B": 50000,
   "Sector A y B": 50000,
+  "Sector B": 55000,
   "Sector C": 55000,
   Online: 38000,
 };
 
 export const ZONES = [
   {
-    id: "Sector A y B",
+    id: "Sector A",
     communes:
       "Ñuñoa, Macul, Providencia, Santiago Centro (hasta Santa Lucía), San Joaquín, Vitacura (límite), Las Condes (hasta Padre Hurtado), La Reina (hasta Valenzuela Llano), Peñalolén (hasta Consistorial), San Miguel y La Florida",
   },
   {
-    id: "Sector C",
+    id: "Sector B",
     communes:
       "Santiago Centro (U. de Chile a Los Héroes), Lo Barnechea, La Dehesa, San Carlos de Apoquindo, oriente de Las Condes, La Reina, Vitacura y Peñalolén, San Bernardo, Puente Alto y Huechuraba",
   },
 ];
+
+/** Nombres públicos: A+B → Sector A, antiguo C → Sector B. */
+export function toPublicZoneName(name) {
+  const n = String(name || "").trim();
+  if (!n) return n;
+  if (/^sector\s+a\s*y\s*b$/i.test(n)) return "Sector A";
+  if (/^sector\s+c$/i.test(n)) return "Sector B";
+  return n;
+}
 
 export function mergeSamePriceZones(zones) {
   const groups = [];
@@ -147,11 +156,18 @@ export function mergeSamePriceZones(zones) {
   }
   return groups.map((group) => {
     const parts = group.parts;
-    if (parts.length === 1) return parts[0];
+    if (parts.length === 1) {
+      const alone = parts[0];
+      const name = toPublicZoneName(alone.name);
+      return name === alone.name ? alone : { ...alone, name, badge: name };
+    }
     const letters = parts
       .map((part) => String(part.name || "").match(/sector\s+([abc])/i)?.[1]?.toUpperCase())
       .filter(Boolean);
-    const name = letters.length === parts.length ? `Sector ${letters.join(" y ")}` : parts.map((part) => part.name).filter(Boolean).join(" y ");
+    let name =
+      letters.length === parts.length ? `Sector ${letters.join(" y ")}` : parts.map((part) => part.name).filter(Boolean).join(" y ");
+    name = toPublicZoneName(name);
+    if (letters.includes("A") && letters.includes("B") && !letters.includes("C")) name = "Sector A";
     const communes = parts
       .map((part) => String(part.zones_text || "").replace(/<[^>]+>/g, "").trim().replace(/\.$/, ""))
       .filter(Boolean)

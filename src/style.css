@@ -2111,7 +2111,9 @@ p {
 }
 
 .booking-fields .booking-zone,
-.booking-fields .zone-help {
+.booking-fields .zone-help,
+.booking-fields .booking-address,
+.booking-fields .booking-notes {
   grid-column: 1 / -1;
 }
 

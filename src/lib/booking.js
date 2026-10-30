@@ -110,7 +110,7 @@ export async function initBooking() {
   let allSlots = [];
   let calendarConfig = null;
   let activeMode = "presencial";
-  let lastSector = "Sector A y B";
+  let lastSector = "Sector A";
   let cursor = new Date();
   cursor.setDate(1);
   let selectedDate = null;
@@ -512,6 +512,13 @@ export async function initBooking() {
       setStatus("Escribe un WhatsApp válido. Ej: +56 9 1234 5678", true);
       return;
     }
+    const service = String(fd.get("service") || "Consulta Etología Clínica").trim();
+    const zone = String(fd.get("zone") || "").trim();
+    const address = String(fd.get("address") || "").trim();
+    if (bookingModeFromService(service, zone) === "presencial" && !address) {
+      setStatus("Escribe la dirección de la visita (calle, número, depto).", true);
+      return;
+    }
     const submit = form.querySelector("[type='submit']");
     if (submit) submit.disabled = true;
     setStatus("Reservando…");
@@ -519,9 +526,8 @@ export async function initBooking() {
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim();
     const petName = String(fd.get("pet_name") || "").trim();
-    const service = String(fd.get("service") || "Consulta Etología Clínica").trim();
-    const zone = String(fd.get("zone") || "").trim();
-    const notes = String(fd.get("notes") || "").trim();
+    const notesRaw = String(fd.get("notes") || "").trim();
+    const notes = [address ? `Dirección: ${address}` : "", notesRaw].filter(Boolean).join(" · ") || null;
     applyZoneToCart(service, zone);
     const quoted = Math.round(Number(cartTotal(getCart()) || quoteAmount(service, zone) || 0));
     const payload = {
@@ -533,14 +539,22 @@ export async function initBooking() {
       p_pet_type: String(fd.get("pet_type") || "").trim() || null,
       p_service: service,
       p_zone: zone || null,
-      p_notes: notes || null,
+      p_notes: notes,
+      p_address: address || null,
     };
     let { data, error } = await supabase.rpc("book_public_appointment", {
       ...payload,
       p_amount: quoted >= 1000 ? quoted : null,
     });
-    if (error && /p_amount|schema cache|PGRST202|could not find the function/i.test(error.message || "")) {
-      ({ data, error } = await supabase.rpc("book_public_appointment", payload));
+    if (error && /p_address|p_amount|schema cache|PGRST202|could not find the function/i.test(error.message || "")) {
+      const { p_address: _omit, ...withoutAddress } = payload;
+      ({ data, error } = await supabase.rpc("book_public_appointment", {
+        ...withoutAddress,
+        ...(quoted >= 1000 ? { p_amount: quoted } : {}),
+      }));
+      if (error && /p_amount|schema cache|PGRST202|could not find the function/i.test(error.message || "")) {
+        ({ data, error } = await supabase.rpc("book_public_appointment", withoutAddress));
+      }
     }
     if (submit) submit.disabled = false;
     if (error) {

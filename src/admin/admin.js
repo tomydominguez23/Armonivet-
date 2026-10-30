@@ -897,8 +897,8 @@ async function loadAppointments() {
   body.innerHTML = rows
     .map(
       (a) => `<tr>
-      <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small></td>
-      <td>${escapeHtml(a.service_title || "—")}<br><small>${escapeHtml(a.pet_name || "")}</small></td>
+      <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small>${a.notes ? `<br><small>${escapeHtml(String(a.notes).slice(0, 80))}</small>` : ""}</td>
+      <td>${escapeHtml(a.service_title || "—")}<br><small>${escapeHtml([a.zone, a.pet_name].filter(Boolean).join(" · ") || "")}</small></td>
       <td>${formatDate(a.scheduled_at)}</td>
       <td>${escapeHtml(a.channel_slug || "—")}</td>
       <td><span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span></td>
@@ -1476,8 +1476,12 @@ function openAppointmentModal(row) {
       </div>
       <label>Servicio <input name="service_title" value="${escapeAttr(row?.service_title || "")}" /></label>
       <div class="form-row">
-        <label>Fecha/hora <input name="scheduled_at" type="datetime-local" value="${toLocalInput(row?.scheduled_at)}" /></label>
+        <label>Zona <input name="zone" value="${escapeAttr(row?.zone || "")}" placeholder="Sector A / Sector B / Online" /></label>
         <label>Canal <input name="channel_slug" value="${escapeAttr(row?.channel_slug || "directo")}" /></label>
+      </div>
+      <div class="form-row">
+        <label>Fecha/hora <input name="scheduled_at" type="datetime-local" value="${toLocalInput(row?.scheduled_at)}" /></label>
+        <label>Monto <input name="amount" type="number" value="${row?.amount ?? 40000}" /></label>
       </div>
       <div class="form-row">
         <label>Estado
@@ -1495,10 +1499,9 @@ function openAppointmentModal(row) {
               .join("")}
           </select>
         </label>
-        <label>Monto <input name="amount" type="number" value="${row?.amount ?? 40000}" /></label>
+        <label class="checkbox-inline"><input type="checkbox" name="deposit_paid" ${row?.deposit_paid ? "checked" : ""} /> Abono pagado</label>
       </div>
-      <label><input type="checkbox" name="deposit_paid" ${row?.deposit_paid ? "checked" : ""} /> Abono pagado</label>
-      <label>Notas <textarea name="notes" rows="3">${escapeHtml(row?.notes || "")}</textarea></label>
+      <label>Notas / dirección <textarea name="notes" rows="3" placeholder="Dirección y comentarios">${escapeHtml(row?.notes || "")}</textarea></label>
     `,
     onSave: async (fd) => {
       const payload = {
@@ -1508,6 +1511,7 @@ function openAppointmentModal(row) {
         pet_name: String(fd.get("pet_name") || "").trim() || null,
         pet_type: String(fd.get("pet_type") || "").trim() || null,
         service_title: String(fd.get("service_title") || "").trim() || null,
+        zone: String(fd.get("zone") || "").trim() || null,
         scheduled_at: fd.get("scheduled_at") ? new Date(String(fd.get("scheduled_at"))).toISOString() : null,
         channel_slug: String(fd.get("channel_slug") || "").trim() || null,
         status: String(fd.get("status") || "agendada"),
@@ -1762,7 +1766,7 @@ async function loadClients() {
   body.querySelectorAll("[data-view-client]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const client = data.find((x) => x.id === btn.dataset.viewClient);
-      if (client) openClientDetailModal(client);
+      if (client) openClientDetailModal(client).catch(() => {});
     });
   });
   body.querySelectorAll("[data-followup-client]").forEach((btn) => {
@@ -1866,15 +1870,43 @@ $("[data-open-client]")?.addEventListener("click", () => {
   });
 });
 
-function openClientDetailModal(client) {
+async function openClientDetailModal(client) {
+  let address = client.address || "";
+  let zone = "";
+  let lastService = "";
+  let appointmentNotes = "";
+  try {
+    const { data: appts } = await requireSupabase()
+      .from("appointments")
+      .select("zone, notes, service_title, scheduled_at")
+      .eq("client_id", client.id)
+      .order("scheduled_at", { ascending: false })
+      .limit(5);
+    for (const appt of appts || []) {
+      if (!zone && appt.zone) zone = appt.zone;
+      if (!lastService && appt.service_title) lastService = appt.service_title;
+      const notes = String(appt.notes || "");
+      if (!appointmentNotes && notes) appointmentNotes = notes;
+      if (!address) {
+        const match = notes.match(/Direcci[oó]n:\s*([^·\n]+)/i);
+        if (match?.[1]) address = match[1].trim();
+      }
+    }
+  } catch {
+    /* ignore enrichment errors */
+  }
+
   const personalFields = [
-    ["Nombre", client.name],
-    ["Tutor", client.tutor_name],
-    ["Email", client.email],
-    ["Teléfono", client.phone],
-    ["Dirección", client.address],
-    ["Comuna", client.comuna],
-    ["Estado", client.status],
+    ["Nombre", client.name || "—"],
+    ["Tutor", client.tutor_name || "—"],
+    ["Email", client.email || "—"],
+    ["Teléfono", client.phone || "—"],
+    ["Dirección", address || "—"],
+    ["Comuna", client.comuna || "—"],
+    ["Zona", zone || "—"],
+    ["Último servicio", lastService || "—"],
+    ["Estado", client.status || "—"],
+    ["Notas cita", appointmentNotes || client.notes || "—"],
   ];
   const petFields = [
     ["Nombre mascota", client.pet_name],
@@ -1904,12 +1936,12 @@ function openClientDetailModal(client) {
     ["Actualizado", formatDate(client.updated_at)],
   ];
 
-  const renderSection = (title, fields) => {
+  const renderSection = (title, fields, { keepEmpty = false } = {}) => {
     const rows = fields
-      .filter(([, v]) => v != null && v !== "" && v !== "—")
+      .filter(([, v]) => keepEmpty || (v != null && v !== "" && v !== "—"))
       .map(
         ([label, value]) =>
-          `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(String(value))}</span></div>`
+          `<div class="detail-row"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(String(value ?? "—"))}</span></div>`
       )
       .join("");
     if (!rows) return "";
@@ -1920,7 +1952,7 @@ function openClientDetailModal(client) {
     title: `Ficha: ${escapeHtml(client.name || client.pet_name || "Cliente")}`,
     fields: `
       <div class="detail-view">
-        ${renderSection("Datos personales", personalFields)}
+        ${renderSection("Datos personales", personalFields, { keepEmpty: true })}
         ${renderSection("Mascota", petFields)}
         ${renderSection("Cuestionario", questionnaireFields)}
         ${renderSection("Fechas", metaFields)}
