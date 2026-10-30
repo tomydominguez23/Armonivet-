@@ -470,7 +470,42 @@ function closeModal() {
   const overlay = document.querySelector("[data-cart-overlay]");
   if (!overlay) return;
   overlay.hidden = true;
-  document.body.classList.remove("cart-open");
+  if (document.querySelector("[data-control-overlay]")?.hidden !== false) {
+    document.body.classList.remove("cart-open");
+  }
+}
+
+let pendingControlBtn = null;
+
+function isControlAdd(el) {
+  const id = String(el?.getAttribute("data-add") || "");
+  const book = foldText(el?.getAttribute("data-book") || "");
+  return id.startsWith("control") || book.includes("control");
+}
+
+function closeControlNotice() {
+  const overlay = document.querySelector("[data-control-overlay]");
+  if (!overlay) return;
+  overlay.hidden = true;
+  pendingControlBtn = null;
+  if (document.querySelector("[data-cart-overlay]")?.hidden !== false) {
+    document.body.classList.remove("cart-open");
+  }
+}
+
+function openControlNotice(trigger) {
+  const overlay = document.querySelector("[data-control-overlay]");
+  if (!overlay) return;
+  pendingControlBtn = trigger;
+  const id = String(trigger?.getAttribute("data-add") || "");
+  const book = foldText(trigger?.getAttribute("data-book") || "");
+  const kind = id.includes("online") || book.includes("online") || book.includes("remot") ? "online" : "presencial";
+  overlay.querySelectorAll("[data-control-kind]").forEach((article) => {
+    article.classList.toggle("is-selected", article.getAttribute("data-control-kind") === kind);
+  });
+  overlay.hidden = false;
+  document.body.classList.add("cart-open");
+  overlay.querySelector(".control-notice-dialog")?.focus();
 }
 
 function openModal({ mode = "added", item = null } = {}) {
@@ -536,15 +571,36 @@ export function initCart() {
   });
 
   document.addEventListener("click", (e) => {
-    const card = e.target.closest(".plan-card, .package-hero, .offer-card, .promo-spotlight-card");
+    const card = e.target.closest(".plan-card, .package-hero, .offer-card, .promo-spotlight-card, .control-book-card");
     if (card && !e.target.closest("a, select, summary, input, textarea, button, label")) {
       const addBtn = card.querySelector("[data-add]");
       if (addBtn) addBtn.click();
       return;
     }
+    if (e.target.closest("[data-control-confirm]")) {
+      e.preventDefault();
+      const trigger = pendingControlBtn;
+      closeControlNotice();
+      if (!trigger) return;
+      const item = itemFromTrigger(trigger);
+      if (!item) return;
+      addToCart(item);
+      applyFirstItemToForm();
+      openModal({ mode: "added", item });
+      return;
+    }
+    if (e.target.closest("[data-control-close]")) {
+      e.preventDefault();
+      closeControlNotice();
+      return;
+    }
     const addBtn = e.target.closest("[data-add]");
     if (addBtn) {
       e.preventDefault();
+      if (isControlAdd(addBtn)) {
+        openControlNotice(addBtn);
+        return;
+      }
       const item = itemFromTrigger(addBtn);
       if (!item) return;
       addToCart(item);
@@ -578,10 +634,17 @@ export function initCart() {
       if (overlay && !overlay.hidden) openModal({ mode: overlay.querySelector("[data-cart-list]")?.hidden === false ? "cart" : "added" });
     }
     if (e.target.matches("[data-cart-overlay]")) closeModal();
+    if (e.target.matches("[data-control-overlay]")) closeControlNotice();
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeModal();
+    if (e.key !== "Escape") return;
+    const control = document.querySelector("[data-control-overlay]");
+    if (control && !control.hidden) {
+      closeControlNotice();
+      return;
+    }
+    closeModal();
   });
 
   window.addEventListener("armonivet:cart", () => {

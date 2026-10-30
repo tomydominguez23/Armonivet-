@@ -217,6 +217,65 @@ if (packageCarousel && packageTrack) {
   window.addEventListener("resize", renderPackageCarousel);
 }
 
+/* Servicios de portada: 3 tarjetas en escritorio, el resto con las flechas */
+const offerCarousel = document.querySelector("[data-offer-carousel]");
+const offerTrack = document.querySelector("[data-offers-grid]");
+const offerPrev = document.querySelector("[data-offer-prev]");
+const offerNext = document.querySelector("[data-offer-next]");
+const offerCards = () => Array.from(offerTrack?.querySelectorAll(":scope > .offer-card") || []);
+let offerIndex = 0;
+
+const offerPerView = () => {
+  if (window.matchMedia("(max-width: 720px)").matches) return 1;
+  if (window.matchMedia("(max-width: 980px)").matches) return 2;
+  return 3;
+};
+
+const renderOfferCarousel = () => {
+  if (!offerTrack) return;
+  const cards = offerCards();
+  const perView = Math.min(offerPerView(), Math.max(cards.length, 1));
+  const maxIndex = Math.max(0, cards.length - perView);
+  offerIndex = Math.min(Math.max(0, offerIndex), maxIndex);
+  const card = cards[0];
+  const gap = parseFloat(getComputedStyle(offerTrack).columnGap || getComputedStyle(offerTrack).gap) || 16;
+  const step = card ? card.getBoundingClientRect().width + gap : 0;
+  offerTrack.style.transform = offerIndex && step ? `translateX(${-offerIndex * step}px)` : "";
+  if (offerPrev) offerPrev.disabled = offerIndex <= 0;
+  if (offerNext) offerNext.disabled = offerIndex >= maxIndex;
+};
+
+offerPrev?.addEventListener("click", () => {
+  offerIndex -= 1;
+  renderOfferCarousel();
+});
+
+offerNext?.addEventListener("click", () => {
+  offerIndex += 1;
+  renderOfferCarousel();
+});
+
+if (offerCarousel && offerTrack) {
+  renderOfferCarousel();
+  window.addEventListener("resize", renderOfferCarousel);
+  offerTrack.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.target.closest("a, button, select, input, textarea, label")) return;
+    offerTrack.dataset.dragX = String(event.clientX);
+  });
+  document.addEventListener("pointerup", (event) => {
+    if (!offerTrack.dataset.dragX) return;
+    const start = Number(offerTrack.dataset.dragX);
+    delete offerTrack.dataset.dragX;
+    if (!Number.isFinite(start)) return;
+    const delta = event.clientX - start;
+    if (Math.abs(delta) < 48) return;
+    offerIndex += delta < 0 ? 1 : -1;
+    renderOfferCarousel();
+  });
+  window.addEventListener("load", renderOfferCarousel);
+}
+
 /* Reel inside phone: reveal Instagram embed when ready */
 const phoneFrame = document.querySelector(".phone-frame");
 const reelLaunch = document.querySelector("[data-reel-launch]");
@@ -250,6 +309,7 @@ import("./lib/analytics.js")
       hydrateSiteContent().then(() => {
         bindConversionTracking();
         renderPackageCarousel();
+        renderOfferCarousel();
       })
     );
   })
