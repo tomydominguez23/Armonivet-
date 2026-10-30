@@ -118,6 +118,7 @@
           <a href="#valores">Precios</a>
           <a href="#reseñas">Reseñas</a>
           <a href="./about.html">Quiénes somos</a>
+          <a href="./terminos.html">Términos</a>
           <a href="#agendar">Agenda</a>
         </div>
       </nav>
@@ -128,6 +129,7 @@
         <a href="#valores">Precios</a>
         <a href="#agendar">Agenda</a>
         <a href="./about.html">Quiénes somos</a>
+        <a href="./terminos.html">Términos</a>
         <button type="button" data-cart-open>Carrito</button>
         <a href="#reseñas">Reseñas</a>
         <a href="#medios">Medios</a>
@@ -756,23 +758,6 @@
             </article>
           </div>
 
-          <div class="control-prices reveal">
-            <article class="control-card">
-              <div>
-                <h3>Control presencial</h3>
-                <p>Sector A <strong>$50.000</strong> · Sector B <strong>$55.000</strong></p>
-              </div>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="control-presencial" data-book="Control presencial" data-price="50000">Agendar control</button>
-            </article>
-            <article class="control-card">
-              <div>
-                <h3>Control online</h3>
-                <p>Videollamada <strong>$38.000</strong></p>
-              </div>
-              <button type="button" class="btn btn-buy btn-buy--sm" data-add="control-online" data-book="Control remoto" data-zone="Online" data-price="38000">Agendar control</button>
-            </article>
-          </div>
-
           <div class="price-extras reveal" data-price-extras>
             <p><strong>Domingos y festivos:</strong> +$10.000 por consulta</p>
           </div>
@@ -1079,17 +1064,12 @@
                 </ol>
                 <div class="booking-pay-actions">
                   <button type="button" class="btn btn-buy" data-pay-now>Pagar ahora</button>
-                  <a
-                    class="btn btn-ghost"
-                    href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Abrir formulario</a
-                  >
+                  <button type="button" class="btn btn-ghost" data-open-intake>Abrir formulario</button>
                 </div>
                 <div class="booking-pay-policy">
                   <p><strong>Cancelaciones:</strong> hasta 48 h antes puedes reagendar 1 vez sin perder el valor pagado. Menos de 48 h se pierde el valor.</p>
                   <p><strong>El día de la consulta:</strong> paciente con arnés y correa. Snacks disponibles.</p>
+                  <p>Al reservar aceptas los <a href="./terminos.html">términos y condiciones</a>.</p>
                 </div>
               </div>
             </div>
@@ -1127,12 +1107,80 @@
           </div>
         </div>
         <p class="intake-must"><strong>Importante:</strong> Es obligatorio completar y enviar este formulario antes de comenzar la primera consulta de etología clínica. Así podré revisar tu caso previamente y aprovechar mejor el tiempo de consulta. ¡Gracias por tu colaboración!</p>
-        <iframe
-          class="intake-frame"
-          data-intake-frame
-          title="Formulario previo a la consulta"
-          src="about:blank"
-        ></iframe>
+        <form class="intake-form" data-intake-form>
+          <p class="intake-intro">¡Gracias por agendar tu consulta con Armonivet! 🐾 Para preparar la evaluación de tu compañero, te pedimos completar este breve formulario con algunos antecedentes sobre su salud, comportamiento y entorno. Tus respuestas nos ayudarán a comprender mejor su situación y aprovechar al máximo nuestra consulta. ¡Nos vemos pronto!</p>
+          <p class="intake-required-note">* Indica que la pregunta es obligatoria</p>
+          <div class="intake-fields">
+            <label>Nombre del tutor/a *
+              <input name="tutor_name" required autocomplete="name" />
+            </label>
+            <label>Correo electrónico *
+              <input name="email" type="email" required autocomplete="email" />
+            </label>
+            <label>Teléfono *
+              <input name="phone" type="tel" required autocomplete="tel" />
+            </label>
+            <label>Nombre del paciente *
+              <input name="pet_name" required autocomplete="off" />
+            </label>
+            <fieldset class="intake-choice">
+              <legend>Especie *</legend>
+              <label><input type="radio" name="species" value="canino" required /> Canino</label>
+              <label><input type="radio" name="species" value="felino" /> Felino</label>
+            </fieldset>
+            <label class="span">Edad / raza / sexo / peso *
+              <input name="patient_profile" required placeholder="Ej: 3 años, mestizo, hembra, 12 kg" />
+            </label>
+            <label class="span">¿Está esterilizado o castrado? ¿Y cuándo fue realizada la cirugía? *
+              <textarea name="neutered" required rows="2"></textarea>
+            </label>
+            <label class="span">¿Cuál es la principal dificultad de conducta que presenta tu compañero? *
+              <textarea name="behavior_problem" required rows="3"></textarea>
+            </label>
+            <label class="span">¿Desde cuándo ocurre y en qué situaciones suele manifestarse? *
+              <textarea name="behavior_context" required rows="3"></textarea>
+            </label>
+            <label class="span">¿Tiene alguna enfermedad diagnosticada o presenta dolor u otras molestias físicas? *
+              <textarea name="diagnosed" required rows="2"></textarea>
+            </label>
+            <label class="span">¿Toma medicamentos actualmente? Indica cuáles. *
+              <textarea name="medications" required rows="2"></textarea>
+            </label>
+            <label class="span">¿Ha recibido atención veterinaria o tratamiento previo por este problema? ¿Cuál? *
+              <textarea name="previous_vet" required rows="2"></textarea>
+            </label>
+            <label class="span">¿Con quién vive? (adultos, niños u otros animales). *
+              <textarea name="household" required rows="2"></textarea>
+            </label>
+            <label class="span">¿Cómo es su rutina diaria? (paseos, actividad, descanso y tiempo que permanece solo/a). *
+              <textarea name="routine" required rows="3"></textarea>
+            </label>
+            <label class="span">¿Cuál es el motivo de la consulta etológica? *
+              <textarea name="consultation_reason" required rows="3"></textarea>
+            </label>
+            <label class="span">¿Hay algo más que consideres importante que conozcamos antes de la consulta? *
+              <textarea name="extra" required rows="2"></textarea>
+            </label>
+            <fieldset class="intake-choice">
+              <legend>¿Ha consultado antes con otro etólogo o entrenador? *</legend>
+              <label><input type="radio" name="previous_ethologist" value="si" required /> Sí</label>
+              <label><input type="radio" name="previous_ethologist" value="no" /> No</label>
+            </fieldset>
+            <label class="span" data-previous-work hidden>¿Qué han trabajado con otro etólogo/entrenador? *
+              <textarea name="previous_work" rows="3"></textarea>
+            </label>
+            <label class="intake-accept">
+              <input type="checkbox" name="accept_terms" required />
+              <span>Acepto los <a href="./terminos.html" target="_blank" rel="noopener noreferrer">términos y condiciones</a> de Armonivet. *</span>
+            </label>
+          </div>
+          <p class="intake-error" data-intake-error hidden></p>
+          <button class="btn btn-buy" type="submit">Enviar formulario</button>
+        </form>
+        <div class="intake-thanks" data-intake-thanks hidden>
+          <h3>Formulario enviado</h3>
+          <p data-intake-thanks-text>Guardamos los antecedentes en la ficha de tu compañero.</p>
+        </div>
         <p class="intake-wait" data-intake-wait>Cuando el envío quede registrado, podrás continuar.</p>
         <div class="cart-dialog-actions" data-intake-actions hidden>
           <button type="button" class="btn btn-buy" data-intake-done>Listo, gracias</button>
@@ -1187,12 +1235,8 @@
         <div>
           <p class="footer-label">Comprar / Agendar</p>
           <a href="#agendar">Agenda</a>
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSc4AlHaQq3HRlGzBbTLffJDYGjSMW3_UpL2BD2-gdSRW_q6uQ/viewform"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Formulario previo</a
-          >
+          <a href="#formulario">Formulario previo</a>
+          <a href="./terminos.html">Términos y condiciones</a>
         </div>
         <div>
           <p class="footer-label">Redes</p>

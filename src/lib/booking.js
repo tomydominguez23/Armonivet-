@@ -526,6 +526,7 @@ export async function initBooking() {
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim();
     const petName = String(fd.get("pet_name") || "").trim();
+    const petType = String(fd.get("pet_type") || "").trim();
     const notesRaw = String(fd.get("notes") || "").trim();
     const notes = [address ? `Dirección: ${address}` : "", notesRaw].filter(Boolean).join(" · ") || null;
     applyZoneToCart(service, zone);
@@ -569,6 +570,7 @@ export async function initBooking() {
       email,
       title: service,
       pet: petName,
+      petType,
       when: scheduled,
       amount,
     });
@@ -605,6 +607,7 @@ export async function initBooking() {
         when: scheduled,
         phone,
         pet: petName,
+        petType,
       });
       if (payNow) payNow.disabled = false;
       if (pay.redirected || pay.brick) return;

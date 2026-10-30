@@ -115,9 +115,9 @@ export function bindConversionTracking() {
     });
   });
 
-  document.querySelectorAll('a[href*="docs.google.com/forms"]').forEach((el) => {
+  document.querySelectorAll('a[href="#formulario"], a[href$="#formulario"], [data-open-intake]').forEach((el) => {
     el.addEventListener("click", () => {
-      trackEvent("click_formulario", "Formulario previo", { href: el.href });
+      trackEvent("click_formulario", "Formulario previo", { href: el.getAttribute("href") || "#formulario" });
     });
   });
 
