@@ -41,6 +41,7 @@ section[id],
 #entrenamiento,
 #flores,
 #packs,
+#controles,
 #agendar {
   scroll-margin-top: 6.5rem;
 }
@@ -739,13 +740,33 @@ p {
   margin-bottom: 0.15rem;
 }
 
-.offer-grid {
+.offer-carousel {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.offer-viewport {
+  overflow: hidden;
+  min-width: 0;
+  padding: 0.35rem 0.15rem 0.7rem;
+  margin: -0.35rem -0.15rem -0.7rem;
+}
+
+.offer-grid {
+  display: flex;
+  width: 100%;
   gap: 1rem;
+  transition: transform 0.4s var(--ease);
+  will-change: transform;
 }
 
 .offer-card {
+  flex: 0 0 calc((100% - 2rem) / 3);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: 16px;
   overflow: hidden;
@@ -787,6 +808,9 @@ p {
 }
 
 .offer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: 0.95rem 1rem 1.05rem;
 }
 
@@ -806,7 +830,81 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  margin-top: auto;
   font-size: 0.9rem;
+}
+
+.section-lead {
+  margin: 0.35rem 0 0;
+  max-width: 42rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.control-booking {
+  padding: 0.25rem 0 2.75rem;
+  background: var(--paper);
+}
+
+.control-book-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.control-book-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 100%;
+  padding: 1.15rem 1.15rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.control-book-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.12rem;
+}
+
+.control-book-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.control-notice-dialog {
+  width: min(560px, 100%);
+}
+
+.control-notice-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.control-notice-list article {
+  padding: 0.95rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.control-notice-list article.is-selected {
+  border-color: var(--cta);
+  background: rgba(31, 138, 110, 0.08);
+}
+
+.control-notice-list h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+}
+
+.control-notice-list p {
+  margin: 0;
+  color: var(--ink);
 }
 
 .mid-banner {
@@ -2605,7 +2703,6 @@ html.js .reveal.is-visible {
   .media-layout,
   .footer-grid,
   .benefits-grid,
-  .offer-grid,
   .service-cards,
   .package-strip,
   .plan-cards,
@@ -2618,6 +2715,10 @@ html.js .reveal.is-visible {
 
   .gallery-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .offer-card {
+    flex-basis: calc((100% - 1rem) / 2);
   }
 
   .service-card {
@@ -2732,7 +2833,6 @@ html.js .reveal.is-visible {
     flex: 0 0 auto;
   }
 
-  .offer-grid,
   .benefits-grid,
   .about-grid,
   .price-panels,
@@ -2785,9 +2885,18 @@ html.js .reveal.is-visible {
     grid-template-columns: 1fr 1fr;
   }
 
-  .package-carousel {
-    grid-template-columns: 36px 1fr 36px;
+  .package-carousel,
+  .offer-carousel {
+    grid-template-columns: 36px minmax(0, 1fr) 36px;
     gap: 0.25rem;
+  }
+
+  .offer-card {
+    flex-basis: 100%;
+  }
+
+  .control-book-grid {
+    grid-template-columns: 1fr;
   }
 
   .package-hero {

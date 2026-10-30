@@ -364,6 +364,9 @@
             >
           </div>
 
+          <div class="offer-carousel" data-offer-carousel>
+            <button class="package-arrow" type="button" data-offer-prev aria-label="Servicios anteriores">‹</button>
+            <div class="offer-viewport">
           <div class="offer-grid" data-offers-grid>
             <article class="offer-card reveal">
               <figure>
@@ -444,6 +447,66 @@
                   <span>Desde <strong>$45.000</strong></span>
                   <button type="button" class="btn btn-buy btn-buy--sm" data-add="entrenamiento" data-book="Entrenamiento" data-price="45000">Agregar</button>
                 </div>
+              </div>
+            </article>
+          </div>
+            </div>
+            <button class="package-arrow" type="button" data-offer-next aria-label="Servicios siguientes">›</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-booking" id="controles">
+        <div class="shell">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Seguimiento</p>
+              <h2>Agendar controles</h2>
+              <p class="section-lead">El control revisa avances después de la primera consulta diagnóstica de etología clínica.</p>
+            </div>
+          </div>
+          <div class="control-book-grid">
+            <article class="control-book-card">
+              <div>
+                <h3>Control presencial</h3>
+                <p>Seguimiento a domicilio. El valor depende del sector en Santiago.</p>
+                <label class="zone-pick">Zona
+                  <select data-zone-pick data-price-kind="control" aria-label="Zona del control presencial">
+                    <option value="Sector A" data-price="50000" selected>Sector A · $50.000</option>
+                    <option value="Sector B" data-price="55000">Sector B · $55.000</option>
+                  </select>
+                </label>
+              </div>
+              <div class="offer-price-row">
+                <span data-offer-price><strong>$50.000</strong></span>
+                <button
+                  type="button"
+                  class="btn btn-buy btn-buy--sm"
+                  data-add="control-presencial"
+                  data-book="Control presencial"
+                  data-zone="Sector A"
+                  data-price="50000"
+                  data-title-base="Control presencial"
+                  data-title="Control presencial · Sector A"
+                >Agendar</button>
+              </div>
+            </article>
+            <article class="control-book-card">
+              <div>
+                <h3>Control online</h3>
+                <p>Seguimiento por videollamada, desde cualquier comuna.</p>
+              </div>
+              <div class="offer-price-row">
+                <span><strong>$38.000</strong></span>
+                <button
+                  type="button"
+                  class="btn btn-buy btn-buy--sm"
+                  data-add="control-online"
+                  data-book="Control remoto"
+                  data-zone="Online"
+                  data-price="38000"
+                  data-title="Control online"
+                >Agendar</button>
               </div>
             </article>
           </div>
@@ -1033,6 +1096,27 @@
         <p class="intake-wait" data-intake-wait>Completa y envía el formulario. Cuando Google confirme el envío, vas a poder continuar.</p>
         <div class="cart-dialog-actions" data-intake-actions hidden>
           <button type="button" class="btn btn-buy" data-intake-done>Listo, gracias</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cart-overlay" data-control-overlay hidden>
+      <div class="cart-dialog control-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="control-notice-title" tabindex="-1">
+        <button type="button" class="cart-dialog-close" data-control-close aria-label="Cerrar">×</button>
+        <p class="cart-dialog-kicker" id="control-notice-title">Agendar control</p>
+        <div class="control-notice-list">
+          <article data-control-kind="presencial">
+            <h3>Control presencial</h3>
+            <p>Disponible solo para quienes ya realizaron su primera consulta diagnóstica de etología clínica.</p>
+          </article>
+          <article data-control-kind="online">
+            <h3>Control online</h3>
+            <p>Disponible solo para quienes ya realizaron su primera consulta diagnóstica de etología clínica.</p>
+          </article>
+        </div>
+        <div class="cart-dialog-actions">
+          <button type="button" class="btn btn-ghost" data-control-close>Cerrar</button>
+          <button type="button" class="btn btn-buy" data-control-confirm>Ya realicé mi primera consulta</button>
         </div>
       </div>
     </div>
