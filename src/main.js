@@ -231,6 +231,16 @@ const offerPerView = () => {
   return 3;
 };
 
+const OFFER_AUTOPLAY_MS = 10000;
+let offerTimer = 0;
+let offerHovering = false;
+
+const offerMaxIndex = () => {
+  const cards = offerCards();
+  const perView = Math.min(offerPerView(), Math.max(cards.length, 1));
+  return Math.max(0, cards.length - perView);
+};
+
 const renderOfferCarousel = () => {
   if (!offerTrack) return;
   const cards = offerCards();
@@ -245,23 +255,71 @@ const renderOfferCarousel = () => {
   if (offerNext) offerNext.disabled = offerIndex >= maxIndex;
 };
 
+const stopOfferAutoplay = () => {
+  window.clearInterval(offerTimer);
+  offerTimer = 0;
+};
+
+const startOfferAutoplay = () => {
+  stopOfferAutoplay();
+  if (!offerCarousel || !offerTrack) return;
+  if (offerHovering || document.hidden) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (offerMaxIndex() <= 0) return;
+  offerTimer = window.setInterval(() => {
+    const maxIndex = offerMaxIndex();
+    if (maxIndex <= 0 || document.hidden) return;
+    const wrap = offerIndex >= maxIndex;
+    if (wrap) {
+      offerIndex = 0;
+      offerTrack.style.transition = "none";
+    } else {
+      offerIndex += 1;
+    }
+    renderOfferCarousel();
+    if (wrap) {
+      offerTrack.getBoundingClientRect();
+      offerTrack.style.transition = "";
+    }
+  }, OFFER_AUTOPLAY_MS);
+};
+
 offerPrev?.addEventListener("click", () => {
   offerIndex -= 1;
   renderOfferCarousel();
+  startOfferAutoplay();
 });
 
 offerNext?.addEventListener("click", () => {
   offerIndex += 1;
   renderOfferCarousel();
+  startOfferAutoplay();
 });
 
 if (offerCarousel && offerTrack) {
   renderOfferCarousel();
-  window.addEventListener("resize", renderOfferCarousel);
+  startOfferAutoplay();
+  window.addEventListener("resize", () => {
+    renderOfferCarousel();
+    startOfferAutoplay();
+  });
+  offerCarousel.addEventListener("mouseenter", () => {
+    offerHovering = true;
+    stopOfferAutoplay();
+  });
+  offerCarousel.addEventListener("mouseleave", () => {
+    offerHovering = false;
+    startOfferAutoplay();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopOfferAutoplay();
+    else startOfferAutoplay();
+  });
   offerTrack.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     if (event.target.closest("a, button, select, input, textarea, label")) return;
     offerTrack.dataset.dragX = String(event.clientX);
+    stopOfferAutoplay();
   });
   document.addEventListener("pointerup", (event) => {
     if (!offerTrack.dataset.dragX) return;
@@ -269,11 +327,16 @@ if (offerCarousel && offerTrack) {
     delete offerTrack.dataset.dragX;
     if (!Number.isFinite(start)) return;
     const delta = event.clientX - start;
-    if (Math.abs(delta) < 48) return;
-    offerIndex += delta < 0 ? 1 : -1;
-    renderOfferCarousel();
+    if (Math.abs(delta) >= 48) {
+      offerIndex += delta < 0 ? 1 : -1;
+      renderOfferCarousel();
+    }
+    startOfferAutoplay();
   });
-  window.addEventListener("load", renderOfferCarousel);
+  window.addEventListener("load", () => {
+    renderOfferCarousel();
+    startOfferAutoplay();
+  });
 }
 
 /* Reel inside phone: reveal Instagram embed when ready */
@@ -310,6 +373,7 @@ import("./lib/analytics.js")
         bindConversionTracking();
         renderPackageCarousel();
         renderOfferCarousel();
+        startOfferAutoplay();
       })
     );
   })
