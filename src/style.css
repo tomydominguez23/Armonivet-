@@ -3165,8 +3165,14 @@ body.intake-open {
   font-size: 0.9rem;
 }
 
-.pay-dialog-error[hidden] {
+.pay-dialog-error[hidden],
+.pay-fallback[hidden] {
   display: none;
+}
+
+.pay-fallback {
+  display: inline-flex;
+  margin-top: 0.85rem;
 }
 
 .intake-overlay {

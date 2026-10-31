@@ -103,6 +103,25 @@ function setPayError(message) {
   error.textContent = message || "";
 }
 
+function cleanEmail(value) {
+  const email = String(value || "").trim().replace(/\s+/g, "");
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+async function functionErrorMessage(error, data) {
+  if (data?.error) return String(data.error);
+  const context = error?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const body = await context.clone().json();
+      if (body?.error) return String(body.error);
+    } catch {
+      /* el mensaje genérico de la función alcanza */
+    }
+  }
+  return error?.message || "";
+}
+
 export function closePayOverlay({ release = true } = {}) {
   if (paymentInFlight) {
     setPayError("El pago sigue en proceso. Esperá el resultado antes de cerrar.");
@@ -123,7 +142,7 @@ export function closePayOverlay({ release = true } = {}) {
   if (release && !paymentCompleted) abandonHold();
 }
 
-function openPayOverlay(amount) {
+function openPayOverlay(amount, checkoutUrl) {
   const { overlay, lead, brick, status } = overlayEls();
   if (!overlay || !brick) return false;
   setPayError("");
@@ -131,6 +150,11 @@ function openPayOverlay(amount) {
     lead.textContent = amount
       ? `Total a pagar: ${formatCLP(amount)}. Si cierras sin pagar, la hora se libera.`
       : "Completa el pago en Armonivet. Si cierras sin pagar, la hora se libera.";
+  }
+  const external = overlay.querySelector("[data-pay-external]");
+  if (external) {
+    external.hidden = !checkoutUrl;
+    if (checkoutUrl) external.href = checkoutUrl;
   }
   brick.hidden = false;
   brick.innerHTML = "";
@@ -169,7 +193,7 @@ async function mountPaymentBrick(session) {
     initialization: {
       amount: Number(session.amount),
       preferenceId: session.preference_id,
-      payer: session.email ? { email: session.email } : undefined,
+      payer: cleanEmail(session.email) ? { email: cleanEmail(session.email) } : undefined,
     },
     customization: {
       paymentMethods: {
@@ -205,7 +229,7 @@ async function mountPaymentBrick(session) {
             .then(async ({ data, error }) => {
               paymentInFlight = false;
               if (error || data?.error) {
-                setPayError(data?.error || error.message || "No se pudo cobrar.");
+                setPayError((await functionErrorMessage(error, data)) || "No se pudo cobrar. Puedes intentar con otra tarjeta.");
                 reject();
                 return;
               }
@@ -221,9 +245,8 @@ async function mountPaymentBrick(session) {
                 return;
               }
               if (data?.status === "rejected" || data?.status === "cancelled" || data?.status === "refunded") {
-                setPayError("El pago no se aprobó. La hora volvió a quedar libre.");
-                await abandonHold();
-                resolve();
+                setPayError("El banco no aprobó el pago. La hora sigue reservada: prueba con otra tarjeta o usa el botón de Mercado Pago.");
+                reject();
                 return;
               }
               if (data?.payment_id && data.status && data.status !== "pending" && data.status !== "in_process") {
@@ -266,11 +289,12 @@ export async function startCheckout({ appointmentId, name, email, title, amount,
     return { ok: false, error: "El pago online se activa con Supabase configurado." };
   }
 
+  const payerEmail = cleanEmail(email);
   const { data, error } = await supabase.functions.invoke("create-checkout", {
     body: {
       appointment_id: appointmentId || null,
       name: name || "",
-      email: email || "",
+      email: payerEmail,
       title: title || "",
       items: items.map((item) => ({
         id: item.id,
@@ -283,15 +307,12 @@ export async function startCheckout({ appointmentId, name, email, title, amount,
     },
   });
 
-  if (error) {
-    return { ok: false, error: error.message || "No se pudo crear el pago." };
-  }
-  if (data?.error) {
-    return { ok: false, error: data.error };
+  if (error || data?.error) {
+    return { ok: false, error: (await functionErrorMessage(error, data)) || "No se pudo crear el pago." };
   }
 
   if (data?.mode === "bricks" && data.public_key && data.preference_id) {
-    if (!openPayOverlay(data.amount || total)) {
+    if (!openPayOverlay(data.amount || total, data.checkout_url)) {
       if (data.checkout_url) {
         redirectingToMp = true;
         window.location.href = data.checkout_url;
@@ -305,7 +326,7 @@ export async function startCheckout({ appointmentId, name, email, title, amount,
         preference_id: data.preference_id,
         payment_id: data.payment_id,
         amount: data.amount || total,
-        email: data.email || email || "",
+        email: cleanEmail(data.email || email),
         name: data.name || name || "",
         title: title || "",
         when: when || "",
@@ -630,6 +651,10 @@ export function initCheckoutUi() {
   });
 
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-pay-external]")) {
+      redirectingToMp = true;
+      return;
+    }
     if (e.target.closest("[data-pay-close]")) {
       e.preventDefault();
       closePayOverlay();
@@ -681,6 +706,8 @@ export function initCheckoutUi() {
   });
   window.addEventListener("pagehide", () => {
     if (paymentCompleted || redirectingToMp || paymentInFlight) return;
+    const payOpen = document.querySelector("[data-pay-overlay]");
+    if (payOpen && !payOpen.hidden) return;
     const hold = readHold();
     if (!hold?.appointmentId || hold.paid) return;
     try {
