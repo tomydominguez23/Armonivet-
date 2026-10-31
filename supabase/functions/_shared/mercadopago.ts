@@ -154,23 +154,9 @@ export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment
     }
 
     if (amount > 0) await sendPaymentReceipt(db, reference, appointmentId, amount, pay.id);
-  } else if (status === "cancelado" && appointmentId) {
-    const { data: appt } = await db
-      .from("appointments")
-      .select("status, notes, deposit_paid")
-      .eq("id", appointmentId)
-      .maybeSingle();
-    if (appt && appt.status === "pendiente_pago" && appt.deposit_paid !== true) {
-      const notes = [appt.notes, "Pago rechazado o cancelado. La hora volvió a quedar libre."]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-      await db
-        .from("appointments")
-        .update({ status: "cancelada", notes })
-        .eq("id", appointmentId)
-        .eq("status", "pendiente_pago");
-    }
   }
+  // Un pago rechazado no cancela la hora. El cliente puede intentar con otra
+  // tarjeta mientras la reserva sigue en pendiente_pago. A los 20 minutos,
+  // expire_unpaid_holds libera el horario si nadie pagó.
   return { updated: true, status, amount };
 }

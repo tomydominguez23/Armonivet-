@@ -10,26 +10,34 @@ function cors() {
 
 type CartItem = { title?: string; amount?: number; id?: string };
 
+function cleanEmail(value: unknown) {
+  const email = String(value || "").trim().replace(/\s+/g, "");
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors() });
   try {
     if (req.method !== "POST") return json({ error: "method" }, 405);
     const body = await req.json();
     const itemsIn: CartItem[] = Array.isArray(body.items) ? body.items : [];
-    const lines = itemsIn
+    let lines = itemsIn
       .map((row) => ({
         title: String(row.title || "Consulta Armonivet").slice(0, 120),
         amount: Math.round(Number(row.amount || 0)),
         id: String(row.id || ""),
       }))
       .filter((row) => row.amount > 0);
-    const amount = Math.round(
-      Number(body.amount || lines.reduce((sum, row) => sum + row.amount, 0)),
-    );
+    const lineSum = lines.reduce((sum, row) => sum + row.amount, 0);
+    const requested = Math.round(Number(body.amount || 0));
+    const amount = requested > 0 ? requested : lineSum;
     if (amount <= 0) return json({ error: "El carrito no tiene un monto para cobrar." }, 400);
-    if (!lines.length) {
-      lines.push({ title: String(body.title || "Consulta Armonivet").slice(0, 120), amount, id: "consulta" });
+    // Mercado Pago rechaza el formulario si el total no coincide con los ítems.
+    // Si el carrito no suma el valor de la reserva, se cobra un solo ítem por ese valor.
+    if (!lines.length || lineSum !== amount) {
+      lines = [{ title: String(body.title || "Consulta Armonivet").slice(0, 120), amount, id: "consulta" }];
     }
+    const email = cleanEmail(body.email);
 
     const db = serviceClient();
     const { data: settingsRow } = await db.from("site_settings").select("value").eq("key", "genesis").maybeSingle();
@@ -45,7 +53,7 @@ Deno.serve(async (req) => {
         provider: "mercadopago",
         currency: "CLP",
         items: itemsIn,
-        notes: [body.name, body.email].filter(Boolean).join(" · ") || null,
+        notes: [body.name, email].filter(Boolean).join(" · ") || null,
       })
       .select("*")
       .single();
@@ -73,7 +81,7 @@ Deno.serve(async (req) => {
           })),
           payer: {
             name: String(body.name || "").slice(0, 80) || undefined,
-            email: String(body.email || "").trim() || undefined,
+            email: email || undefined,
           },
           back_urls: {
             success: `${origin}/?pago=ok#agendar`,
@@ -88,7 +96,10 @@ Deno.serve(async (req) => {
       });
       const pref = await preference.json();
       if (!preference.ok) {
-        throw new Error(pref?.message || "Mercado Pago rechazó el cobro");
+        const cause = Array.isArray(pref?.cause)
+          ? pref.cause.map((item: { description?: string; code?: string }) => item?.description || item?.code).filter(Boolean).join(". ")
+          : "";
+        throw new Error(cause || pref?.message || "Mercado Pago rechazó el cobro");
       }
       const checkoutUrl = pref.init_point || pref.sandbox_init_point;
       await db
@@ -103,7 +114,7 @@ Deno.serve(async (req) => {
         preference_id: pref.id,
         public_key: publicKey || null,
         checkout_url: checkoutUrl,
-        email: String(body.email || "").trim(),
+        email,
         name: String(body.name || "").trim(),
         provider: "mercadopago",
         mode: publicKey ? "bricks" : "redirect",

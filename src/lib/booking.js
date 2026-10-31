@@ -522,7 +522,7 @@ export async function initBooking() {
     const submit = form.querySelector("[type='submit']");
     if (submit) submit.disabled = true;
     setStatus("Reservando…");
-    const { rememberHold, abandonHold } = await import("./checkout.js");
+    const { rememberHold } = await import("./checkout.js");
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim();
     const petName = String(fd.get("pet_name") || "").trim();
@@ -612,13 +612,14 @@ export async function initBooking() {
       if (payNow) payNow.disabled = false;
       if (pay.redirected || pay.brick) return;
       if (!pay.ok) {
-        await abandonHold();
-        setStatus(`${pay.error || "No se pudo iniciar el pago."} La hora volvió a quedar libre.`, true);
+        setStatus(`${pay.error || "No se pudo iniciar el pago."} La hora sigue reservada: puedes intentar otra vez.`, true);
         return;
       }
       setStatus(pay.message || "Pago registrado. Te confirmamos cuando se acredite.");
     };
-    payNow?.addEventListener("click", runPay, { once: true });
+    if (payNow) payNow.onclick = () => {
+      runPay().catch((err) => setStatus(err?.message || "No se pudo iniciar el pago.", true));
+    };
     import("./analytics.js")
       .then(({ trackEvent }) => trackEvent("reserva_web", "Agenda propia", { scheduled_at: scheduled }))
       .catch(() => {});

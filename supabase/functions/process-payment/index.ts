@@ -48,24 +48,30 @@ Deno.serve(async (req) => {
       ? payer.identification
       : {}) as Record<string, unknown>;
 
+    const email = String(payer.email || body.email || "").trim().replace(/\s+/g, "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json({ error: "Escribe un correo válido para continuar el pago. La hora sigue reservada." }, 400);
+    }
+    const issuerRaw = formData.issuer_id;
+    const issuerNum = Number(issuerRaw);
+    const issuerId =
+      issuerRaw == null || issuerRaw === "" || !Number.isFinite(issuerNum) || issuerNum === 0
+        ? undefined
+        : issuerNum;
+
     const payload = {
       transaction_amount: Number(row.amount),
       token: cardToken,
       description: "Armonivet",
       installments: Number(formData.installments || 1),
       payment_method_id: String(formData.payment_method_id || ""),
-      issuer_id:
-        formData.issuer_id == null || formData.issuer_id === ""
-          ? undefined
-          : Number.isFinite(Number(formData.issuer_id))
-            ? Number(formData.issuer_id)
-            : String(formData.issuer_id),
+      issuer_id: issuerId,
       capture: true,
       external_reference: row.id,
       notification_url: webhookUrl() || undefined,
       statement_descriptor: "ARMONIVET",
       payer: {
-        email: String(payer.email || body.email || "").trim(),
+        email,
         first_name: String(payer.first_name || body.name || "").slice(0, 80) || undefined,
         identification:
           identification.number
@@ -89,7 +95,10 @@ Deno.serve(async (req) => {
     });
     const pay = await res.json();
     if (!res.ok) {
-      throw new Error(pay?.message || pay?.error || "Mercado Pago rechazó el pago");
+      const cause = Array.isArray(pay?.cause)
+        ? pay.cause.map((item: { description?: string; code?: string }) => item?.description || item?.code).filter(Boolean).join(". ")
+        : "";
+      throw new Error(cause || pay?.message || pay?.error || "Mercado Pago rechazó el pago");
     }
 
     await applyMercadoPagoPayment(db, pay);
