@@ -639,6 +639,28 @@ th {
   justify-content: flex-end;
 }
 
+.when-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 15rem;
+}
+
+.when-editor input[type="datetime-local"] {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.4rem 0.55rem;
+  background: #fff;
+  color: inherit;
+  min-width: 12.5rem;
+}
+
+.when-editor .btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+}
+
 .media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

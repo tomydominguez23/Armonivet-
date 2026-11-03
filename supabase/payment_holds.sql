@@ -42,24 +42,33 @@ alter table public.payments
 -- El resto (bloqueo de hora, vencimiento y reserva) sigue en calendar_settings.sql
 -- y se repite abajo para que este script alcance por sí solo.
 
--- Una reserva de la web bloquea la hora solo mientras el pago está en curso.
+-- Si el equipo mueve la cita a mano, esa hora queda tomada aunque
+-- el pago web de 20 minutos ya haya vencido.
+alter table public.appointments
+  add column if not exists slot_locked_at timestamptz;
+
+-- Una reserva de la web bloquea la hora solo mientras el pago está en curso,
+-- salvo que el equipo la haya movido (slot_locked_at).
 create or replace function public.appointment_blocks_calendar(p public.appointments)
 returns boolean
 language sql
 stable
 as $$
   select p.status is distinct from 'cancelada'
-    and not (
-      p.deposit_paid is not true
-      and p.created_at < now() - interval '20 minutes'
-      and (
-        p.status = 'pendiente_pago'
-        or (p.status = 'agendada' and coalesce(p.channel_slug, '') = 'web')
-      )
-      and not exists (
-        select 1 from public.payments pay
-        where pay.appointment_id = p.id
-          and pay.status = 'pagado'
+    and (
+      p.slot_locked_at is not null
+      or not (
+        p.deposit_paid is not true
+        and p.created_at < now() - interval '20 minutes'
+        and (
+          p.status = 'pendiente_pago'
+          or (p.status = 'agendada' and coalesce(p.channel_slug, '') = 'web')
+        )
+        and not exists (
+          select 1 from public.payments pay
+          where pay.appointment_id = p.id
+            and pay.status = 'pagado'
+        )
       )
     );
 $$;

@@ -433,7 +433,13 @@ async function executeTool(
       const taken = await ensureSlotFree(db, nextAt, id);
       if (taken) return taken;
       const { data: prev } = await db.from("appointments").select("*").eq("id", id).maybeSingle();
-      const { error } = await db.from("appointments").update({ scheduled_at: nextAt }).eq("id", id);
+      let { error } = await db
+        .from("appointments")
+        .update({ scheduled_at: nextAt, slot_locked_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error && /slot_locked_at/i.test(error.message || "")) {
+        ({ error } = await db.from("appointments").update({ scheduled_at: nextAt }).eq("id", id));
+      }
       if (error) throw error;
       return { from: prev?.scheduled_at, to: nextAt, motivo: args.motivo };
     });
