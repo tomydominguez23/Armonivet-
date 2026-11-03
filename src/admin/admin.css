@@ -1736,6 +1736,146 @@ th {
   padding-left: 1.1rem;
 }
 
+.admin-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-cal-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.appt-cal .appt-day {
+  min-height: 92px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fbfc;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.appt-cal .appt-day.is-today {
+  background: #f3fbf8;
+}
+
+.appt-cal .appt-day.is-today .appt-day-num {
+  color: var(--cta);
+}
+
+.appt-cal .appt-day.is-selected {
+  border-color: var(--cta);
+  box-shadow: 0 0 0 2px rgba(31, 138, 110, 0.18);
+  background: #fff;
+}
+
+.appt-cal .appt-day-num {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  padding: 0.1rem 0.2rem;
+  cursor: pointer;
+}
+
+.appt-cal .appt-day-slots {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.appt-cal .appt-chip,
+.appt-cal .appt-more {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  border-radius: 7px;
+  background: #e7f7f1;
+  color: #0f6b52;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.12rem 0.28rem;
+}
+
+.appt-cal .appt-chip {
+  cursor: pointer;
+}
+
+.appt-cal .appt-chip:hover {
+  background: #d4f0e4;
+}
+
+.appt-cal .appt-more {
+  background: transparent;
+  color: var(--muted);
+  padding-left: 0.28rem;
+}
+
+.appt-day-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.appt-day-card {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  row-gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.appt-day-card:hover {
+  border-color: var(--cta);
+}
+
+.appt-day-card strong {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 1rem;
+}
+
+.appt-day-card small {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .appt-cal .appt-chip-name {
+    display: none;
+  }
+
+  .appt-cal .appt-chip,
+  .appt-cal .appt-more {
+    white-space: normal;
+    text-overflow: unset;
+    font-size: 0.62rem;
+    line-height: 1.15;
+    padding: 0.08rem 0.12rem;
+  }
+
+  .appt-cal .appt-day {
+    min-height: 64px;
+    padding: 0.15rem;
+  }
+}
+
 .workdays {
   border: 1px solid var(--line);
   border-radius: 12px;
