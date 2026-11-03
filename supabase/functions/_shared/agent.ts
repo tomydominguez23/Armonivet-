@@ -586,6 +586,7 @@ async function generateGenesisReply(
   const instructions = [
     settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
     "Usa herramientas para datos reales. No inventes horas ni precios.",
+    "El link de Google Meet de una consulta online se envía solo por WhatsApp cuando el pago queda acreditado. No inventes un link ni lo pidas por el chat.",
     "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({
       client: client

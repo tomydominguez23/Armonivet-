@@ -585,7 +585,13 @@ export async function initBooking() {
       String(data?.message || "").trim() ||
       String(calendarConfig?.confirmation_message || "").trim() ||
       holdNote;
-    const okMsg = chilean(`${base.includes("20 minutos") ? base : `${base} ${holdNote}`}${amount >= 1000 ? ` Total: ${formatCLP(amount)}.` : ""}`);
+    const meetNote =
+      bookingModeFromService(service, zone) === "online"
+        ? " Cuando el pago se acredite, te enviamos por WhatsApp el link de la videollamada."
+        : "";
+    const okMsg = chilean(
+      `${base.includes("20 minutos") ? base : `${base} ${holdNote}`}${amount >= 1000 ? ` Total: ${formatCLP(amount)}.` : ""}${meetNote}`,
+    );
     setStatus(okMsg);
     if (payMsg) payMsg.textContent = okMsg;
     if (payEl) {

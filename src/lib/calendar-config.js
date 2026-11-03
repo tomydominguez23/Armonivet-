@@ -19,6 +19,21 @@ export const TIMEZONES = [
 export const DEFAULT_CONFIRMATION =
   "Hora reservada. Para confirmar, paga el valor total de la consulta.";
 
+export function normalizeMeetUrl(raw) {
+  let value = String(raw || "").trim();
+  if (!value) return "";
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "meet.google.com") return "";
+    const path = url.pathname.replace(/\/+$/, "");
+    if (!/^\/(?:lookup\/)?[a-z0-9-]{5,80}$/i.test(path)) return "";
+    return `https://meet.google.com${path}`;
+  } catch {
+    return "";
+  }
+}
+
 const DOW_KEYS = ["0", "1", "2", "3", "4", "5", "6"];
 
 export function emptyWeekly() {

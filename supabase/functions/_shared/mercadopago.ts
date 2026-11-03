@@ -57,6 +57,26 @@ function formatChile(iso: string) {
   }).format(date);
 }
 
+function normalizeMeetUrl(raw: unknown) {
+  let value = String(raw || "").trim();
+  if (!value) return "";
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "meet.google.com") return "";
+    const path = url.pathname.replace(/\/+$/, "");
+    if (!/^\/(?:lookup\/)?[a-z0-9-]{5,80}$/i.test(path)) return "";
+    return `https://meet.google.com${path}`;
+  } catch {
+    return "";
+  }
+}
+
+function isOnlineVisit(appt: { service_title?: string | null; zone?: string | null }) {
+  const blob = `${appt?.service_title || ""} ${appt?.zone || ""}`.toLowerCase();
+  return blob.includes("online") || blob.includes("remot");
+}
+
 function chargedAmount(pay: MpPayment, fallback: unknown) {
   const fromMp = Number(pay.transaction_amount);
   if (Number.isFinite(fromMp) && fromMp > 0) return Math.round(fromMp);
@@ -82,11 +102,18 @@ async function sendPaymentReceipt(
 
     const { data: appt } = await db
       .from("appointments")
-      .select("client_name, client_phone, pet_name, service_title, scheduled_at")
+      .select("client_name, client_phone, pet_name, service_title, zone, scheduled_at")
       .eq("id", appointmentId)
       .maybeSingle();
     const phone = String(appt?.client_phone || "").trim();
     if (!phone) return;
+
+    let meetUrl = "";
+    if (appt && isOnlineVisit(appt)) {
+      const { data: room } = await db.from("site_settings").select("value").eq("key", "online_room").maybeSingle();
+      const stored = room?.value && typeof room.value === "object" ? (room.value as { url?: unknown }).url : "";
+      meetUrl = normalizeMeetUrl(stored);
+    }
 
     const when = appt?.scheduled_at ? formatChile(String(appt.scheduled_at)) : "";
     const who = String(appt?.client_name || "").trim();
@@ -97,6 +124,8 @@ async function sendPaymentReceipt(
       appt?.pet_name ? `Paciente: ${appt.pet_name}` : "",
       when ? `Hora: ${when} (hora de Chile)` : "",
       mpId != null ? `Mercado Pago: ${mpId}` : "",
+      meetUrl ? "Tu consulta es online. Entrá a esta sala de Google Meet a la hora acordada:" : "",
+      meetUrl,
       "Tu hora quedó confirmada. Guardá este mensaje como comprobante.",
     ].filter(Boolean);
 
