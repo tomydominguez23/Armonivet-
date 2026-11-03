@@ -100,6 +100,146 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatWhenShort(value) {
+  if (!value) return "sin hora";
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
+}
+
+function minuteKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return String(Math.floor(date.getTime() / 60000));
+}
+
+function whenEditorCell(appointment) {
+  const value = toLocalInput(appointment.scheduled_at);
+  const cancelled = appointment.status === "cancelada";
+  return `<div class="when-editor">
+    <input type="datetime-local" data-appt-when="${appointment.id}" data-original="${escapeAttr(value)}" value="${escapeAttr(value)}" ${cancelled ? "disabled" : ""} aria-label="Nueva hora para ${escapeAttr(appointment.client_name || "la cita")}" />
+    ${cancelled ? "" : `<button type="button" class="btn btn-primary" data-save-when="${appointment.id}" hidden>Guardar hora</button>`}
+  </div>`;
+}
+
+function showScheduleNote(selector, text, isError = false) {
+  const el = $(selector);
+  if (!el) return;
+  el.hidden = !text;
+  el.textContent = text || "";
+  el.classList.toggle("form-error", Boolean(isError));
+  el.classList.toggle("form-ok", !isError);
+}
+
+async function assertMinuteFree(row, iso) {
+  const when = new Date(iso);
+  const from = new Date(when.getTime() - 6 * 60 * 60 * 1000).toISOString();
+  const to = new Date(when.getTime() + 6 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await requireSupabase()
+    .from("appointments")
+    .select("id,client_name,scheduled_at,status")
+    .gte("scheduled_at", from)
+    .lte("scheduled_at", to)
+    .neq("id", row.id)
+    .neq("status", "cancelada");
+  if (error || !data) return;
+  const target = minuteKey(iso);
+  const hit = data.find((item) => minuteKey(item.scheduled_at) === target);
+  if (hit) {
+    throw new Error(`Esa hora ya la tiene ${hit.client_name || "otro cliente"}. Elegí otro horario.`);
+  }
+}
+
+async function rescheduleAppointment(row, iso) {
+  if (!row?.id) throw new Error("No encontramos la cita");
+  if (!iso) throw new Error("Elegí una fecha y hora");
+  if (row.status === "cancelada") {
+    throw new Error("Esta cita está cancelada. Creá una nueva si hay que reagendarla.");
+  }
+  const client = requireSupabase();
+  const { error } = await client.rpc("reschedule_appointment", {
+    p_id: row.id,
+    p_scheduled_at: iso,
+  });
+  if (!error) return;
+  const msg = String(error.message || "No se pudo cambiar la hora");
+  if (!/could not find the function|PGRST202|schema cache|reschedule_appointment/i.test(msg)) {
+    throw new Error(msg.replace(/^.*ERROR:\s*/i, ""));
+  }
+  await assertMinuteFree(row, iso);
+  const locked = { scheduled_at: iso, slot_locked_at: new Date().toISOString() };
+  let update = await client.from("appointments").update(locked).eq("id", row.id);
+  if (update.error && /slot_locked_at/i.test(update.error.message || "")) {
+    update = await client.from("appointments").update({ scheduled_at: iso }).eq("id", row.id);
+  }
+  if (update.error) throw new Error(update.error.message);
+}
+
+function bindWhenEditors(root, rows, reload, noteSelector) {
+  root.querySelectorAll("[data-appt-when]").forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) return;
+    const id = input.dataset.apptWhen;
+    const save = root.querySelector(`[data-save-when="${CSS.escape(id || "")}"]`);
+    const sync = () => {
+      if (save instanceof HTMLButtonElement) save.hidden = input.value === input.dataset.original;
+    };
+    input.addEventListener("input", sync);
+    input.addEventListener("change", sync);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        save?.dispatchEvent(new Event("click"));
+      }
+    });
+    save?.addEventListener("click", async () => {
+      const row = rows.find((item) => item.id === id);
+      if (!row || !(save instanceof HTMLButtonElement)) return;
+      if (!input.value || input.value === input.dataset.original) {
+        save.hidden = true;
+        return;
+      }
+      const iso = new Date(input.value).toISOString();
+      if (Number.isNaN(new Date(iso).getTime())) {
+        showScheduleNote(noteSelector, "Esa fecha no es válida.", true);
+        return;
+      }
+      const previous = formatWhenShort(row.scheduled_at);
+      const next = formatWhenShort(iso);
+      const ok = confirm(
+        `¿Cambiar la cita de ${row.client_name || "este cliente"} de ${previous} a ${next}?\n\nLa hora anterior queda libre y la nueva se bloquea en el calendario de la web.`,
+      );
+      if (!ok) {
+        input.value = input.dataset.original || "";
+        save.hidden = true;
+        return;
+      }
+      save.disabled = true;
+      input.disabled = true;
+      try {
+        await rescheduleAppointment(row, iso);
+        showScheduleNote(
+          noteSelector,
+          `Listo. La cita de ${row.client_name || "este cliente"} pasó a ${next}. Esa hora quedó bloqueada y ${previous} quedó libre.`,
+        );
+        await reload();
+      } catch (err) {
+        input.disabled = false;
+        save.disabled = false;
+        input.value = input.dataset.original || "";
+        save.hidden = true;
+        const message = err?.message || "No se pudo cambiar la hora";
+        showScheduleNote(noteSelector, message, true);
+        alert(message);
+      }
+    });
+  });
+}
+
 function edgeErrorMessage(error, data, fallback) {
   const raw = String(data?.error || data?.message || error?.message || fallback || "Error");
   if (/no credits remaining|insufficient_quota|exceeded your current quota/i.test(raw)) {
@@ -158,13 +298,25 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+function cellText(cell) {
+  const input = cell.querySelector("input, select, textarea");
+  if (input instanceof HTMLInputElement && input.type === "datetime-local" && input.value) {
+    return input.value.replace("T", " ");
+  }
+  return cell.innerText.replace(/\s+/g, " ").trim();
+}
+
+function rowSearchText(tr) {
+  return [...tr.children].map((cell) => cellText(cell)).join(" ").toLowerCase();
+}
+
 function tableToRows(table) {
   const rows = [];
   table.querySelectorAll("tr").forEach((tr) => {
     if (tr.hidden) return;
     const cells = [...tr.children].filter((c) => !c.classList.contains("entity-actions"));
     if (!cells.length) return;
-    const values = cells.map((c) => c.innerText.replace(/\s+/g, " ").trim());
+    const values = cells.map((c) => cellText(c));
     if (values.every((v) => !v || v === "—")) return;
     rows.push(values);
   });
@@ -188,7 +340,7 @@ function enhanceTable(fromEl) {
     input.addEventListener("input", () => {
       const q = input.value.trim().toLowerCase();
       table.tBodies[0]?.querySelectorAll("tr").forEach((tr) => {
-        tr.hidden = Boolean(q) && !tr.innerText.toLowerCase().includes(q);
+        tr.hidden = Boolean(q) && !rowSearchText(tr).includes(q);
       });
     });
     tools.querySelector("[data-table-export]").addEventListener("click", () => {
@@ -886,10 +1038,15 @@ async function loadAppointments() {
     .limit(100);
   const body = $("[data-appointments-body]");
   if (error) {
-    body.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
+    if (body) body.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
     return;
   }
-  const rows = await overlayPaidAmounts(data || []);
+  renderAppointmentRows(await overlayPaidAmounts(data || []));
+}
+
+function renderAppointmentRows(rows) {
+  const body = $("[data-appointments-body]");
+  if (!body) return;
   if (!rows.length) {
     body.innerHTML = `<tr><td colspan="7" class="empty">No hay citas. Crea la primera.</td></tr>`;
     return;
@@ -899,7 +1056,7 @@ async function loadAppointments() {
       (a) => `<tr>
       <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small>${a.notes ? `<br><small>${escapeHtml(String(a.notes).slice(0, 80))}</small>` : ""}</td>
       <td>${escapeHtml(a.service_title || "—")}<br><small>${escapeHtml([a.zone, a.pet_name].filter(Boolean).join(" · ") || "")}</small></td>
-      <td>${formatDate(a.scheduled_at)}</td>
+      <td>${whenEditorCell(a)}</td>
       <td>${escapeHtml(a.channel_slug || "—")}</td>
       <td><span class="badge ${a.status}">${escapeHtml(statusLabel(a.status))}</span></td>
       <td>${formatCLP(a.amount)}</td>
@@ -912,6 +1069,7 @@ async function loadAppointments() {
     .join("");
   enhanceTable(body);
 
+  bindWhenEditors(body, rows, () => loadAppointments(), "[data-appointments-note]");
   body.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
     btn.addEventListener("click", () => openAppointmentModal(rows.find((x) => x.id === btn.dataset.editAppointment)));
   });
@@ -978,7 +1136,7 @@ async function loadAgenda() {
       ? today
           .map(
             (a) => `<tr>
-        <td>${formatTime(a.scheduled_at)}</td>
+        <td>${whenEditorCell(a)}</td>
         <td><strong>${escapeHtml(a.client_name)}</strong><br><small>${escapeHtml(a.client_phone || a.client_email || "")}</small></td>
         <td>${escapeHtml(a.pet_name || "—")}</td>
         <td>${escapeHtml(a.service_title || "Consulta")}</td>
@@ -989,6 +1147,7 @@ async function loadAgenda() {
           )
           .join("")
       : `<tr><td colspan="7" class="empty">No hay citas para hoy.</td></tr>`;
+    bindWhenEditors(todayBody, rows, () => loadAgenda(), "[data-agenda-note]");
     bindAppointmentRowActions(todayBody, rows);
     enhanceTable(todayBody);
   }
@@ -999,7 +1158,7 @@ async function loadAgenda() {
       ? upcoming
           .map(
             (a) => `<tr>
-        <td>${formatDay(a.scheduled_at)} ${formatTime(a.scheduled_at)}</td>
+        <td>${whenEditorCell(a)}</td>
         <td><strong>${escapeHtml(a.client_name)}</strong></td>
         <td>${escapeHtml(a.pet_name || "—")}</td>
         <td>${escapeHtml(a.service_title || "Consulta")}</td>
@@ -1010,6 +1169,7 @@ async function loadAgenda() {
           )
           .join("")
       : `<tr><td colspan="7" class="empty">Sin citas en los próximos 14 días.</td></tr>`;
+    bindWhenEditors(weekBody, rows, () => loadAgenda(), "[data-agenda-note]");
     bindAppointmentRowActions(weekBody, rows);
     enhanceTable(weekBody);
   }
@@ -1521,7 +1681,9 @@ function openAppointmentModal(row) {
         <label>Canal <input name="channel_slug" value="${escapeAttr(row?.channel_slug || "directo")}" /></label>
       </div>
       <div class="form-row">
-        <label>Fecha/hora <input name="scheduled_at" type="datetime-local" value="${toLocalInput(row?.scheduled_at)}" /></label>
+        <label>Fecha/hora <input name="scheduled_at" type="datetime-local" value="${toLocalInput(row?.scheduled_at)}" />
+          <small class="hint">Si cambiás la hora, la anterior se libera y la nueva queda tomada en el calendario.</small>
+        </label>
         <label>Monto <input name="amount" type="number" value="${row?.amount ?? 40000}" /></label>
       </div>
       <div class="form-row">
@@ -1560,12 +1722,27 @@ function openAppointmentModal(row) {
         deposit_paid: fd.get("deposit_paid") === "on",
         notes: String(fd.get("notes") || "").trim() || null,
       };
+      const scheduled = fd.get("scheduled_at") ? new Date(String(fd.get("scheduled_at"))).toISOString() : null;
+      if (scheduled && Number.isNaN(new Date(scheduled).getTime())) {
+        throw new Error("Esa fecha no es válida.");
+      }
       if (row?.id) {
+        if (minuteKey(row.scheduled_at) !== minuteKey(scheduled)) {
+          if (!scheduled) throw new Error("La cita necesita una fecha y hora.");
+          await rescheduleAppointment(row, scheduled);
+        }
         await requireSupabase().from("appointments").update(payload).eq("id", row.id);
       } else {
-        await requireSupabase().from("appointments").insert(payload);
+        await requireSupabase().from("appointments").insert({ ...payload, scheduled_at: scheduled });
       }
-      await loadAppointments();
+      if (minuteKey(row?.scheduled_at) !== minuteKey(scheduled) && row?.id) {
+        showScheduleNote(
+          state.section === "agenda" ? "[data-agenda-note]" : "[data-appointments-note]",
+          `Listo. La cita de ${payload.client_name || "este cliente"} pasó a ${formatWhenShort(scheduled)}. Esa hora quedó bloqueada y la anterior quedó libre.`,
+        );
+      }
+      if (state.section === "agenda") await loadAgenda();
+      else await loadAppointments();
     },
   });
 }

@@ -207,12 +207,13 @@
             <!-- Agenda -->
             <section class="panel" data-panel="agenda">
               <div class="panel-toolbar">
-                <p>Citas de hoy, esta semana y pendientes de abono o asistencia.</p>
+                <p>Citas de hoy y de los próximos días. Para mover una hora, cambiala en la tabla y tocá Guardar hora: la anterior queda libre y la nueva se bloquea en la web.</p>
                 <div class="btn-row">
                   <button type="button" class="btn btn-ghost" data-goto="calendar">Configurar disponibilidad</button>
                   <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
                 </div>
               </div>
+              <p class="form-ok" data-agenda-note hidden></p>
               <div class="alert-cards" data-agenda-alerts></div>
               <article class="card admin-cal" data-admin-cal>
                 <div class="admin-cal-head">
@@ -393,9 +394,10 @@
             <!-- Citas -->
             <section class="panel" data-panel="appointments">
               <div class="panel-toolbar">
-                <p>Registra citas agendadas, abonos y asistencia para medir conversión real.</p>
+                <p>Para cambiar una hora (por ejemplo de 15:00 a 15:30), editala en la columna Fecha y tocá Guardar hora. La anterior queda libre y la nueva se bloquea sola en el calendario de la web, así nadie más la puede tomar.</p>
                 <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
               </div>
+              <p class="form-ok" data-appointments-note hidden></p>
               <div class="table-wrap" data-export-name="citas">
                 <table>
                   <thead>
