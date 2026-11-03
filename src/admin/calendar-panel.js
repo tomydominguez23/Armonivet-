@@ -5,6 +5,7 @@ import {
   joinNotice,
   minutesToTime,
   normalizeCalendar,
+  normalizeMeetUrl,
   previewUpcoming,
   splitNotice,
   timeToMinutes,
@@ -51,6 +52,7 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
   let mode = "presencial";
   let isNew = false;
   let bound = false;
+  let meetUrl = "";
 
   const $ = (sel, root) => query(sel, root);
   const $$ = (sel, root) => queryAll(sel, root);
@@ -175,6 +177,14 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
             <input data-cal-field="location" maxlength="120" value="${escapeAttr(entry.location || "")}" placeholder="Consultorio, videollamada, WhatsApp…" />
           </label>
         </div>
+        ${
+          mode === "online"
+            ? `<label>Link de Google Meet
+          <input data-meet-url type="text" inputmode="url" maxlength="200" value="${escapeAttr(meetUrl)}" placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off" />
+        </label>
+        <p class="hint">Sala fija para todas las consultas online. No aparece en la página. Cuando el pago se acredita, Génesis manda este link por WhatsApp.</p>`
+            : ""
+        }
         <label>Duración
           <input type="number" min="5" max="480" step="5" data-cal-field="duration_minutes" value="${escapeAttr(entry.duration_minutes)}" />
         </label>
@@ -275,6 +285,11 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
 
     if (target.matches("[data-cal-field='name']") || target.matches("[data-cal-field='location']")) {
       entry[target.dataset.calField] = target.value;
+      return;
+    }
+
+    if (target.matches("[data-meet-url]")) {
+      meetUrl = target.value;
       return;
     }
 
@@ -409,6 +424,14 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
       showError(problem);
       return;
     }
+    const meetInput = $("[data-meet-url]");
+    if (meetInput) meetUrl = meetInput.value;
+    const roomUrl = normalizeMeetUrl(meetUrl);
+    if (String(meetUrl || "").trim() && !roomUrl) {
+      showError("El link tiene que ser una sala de Google Meet. Ejemplo: https://meet.google.com/abc-defg-hij");
+      return;
+    }
+    meetUrl = roomUrl;
     const value = normalizeCalendar(draft);
     draft = value;
     if (isPreview()) {
@@ -422,6 +445,11 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
       const client = requireSupabase();
       const { error } = await client.from("site_settings").upsert({ key: "calendar", value });
       if (error) throw error;
+      const { error: roomError } = await client.from("site_settings").upsert({
+        key: "online_room",
+        value: { url: meetUrl },
+      });
+      if (roomError) throw roomError;
       const { data: prevRow, error: readError } = await client
         .from("site_settings")
         .select("value")
@@ -465,12 +493,16 @@ export function createCalendarPanel({ query, queryAll, requireSupabase, isPrevie
     }
     try {
       const client = requireSupabase();
-      const [{ data: saved, error: savedError }, { data: genesis, error: genesisError }] = await Promise.all([
-        client.from("site_settings").select("value").eq("key", "calendar").maybeSingle(),
-        client.from("site_settings").select("value").eq("key", "genesis").maybeSingle(),
-      ]);
+      const [{ data: saved, error: savedError }, { data: genesis, error: genesisError }, { data: room, error: roomError }] =
+        await Promise.all([
+          client.from("site_settings").select("value").eq("key", "calendar").maybeSingle(),
+          client.from("site_settings").select("value").eq("key", "genesis").maybeSingle(),
+          client.from("site_settings").select("value").eq("key", "online_room").maybeSingle(),
+        ]);
       if (savedError) throw savedError;
       if (genesisError) throw genesisError;
+      if (roomError) throw roomError;
+      meetUrl = normalizeMeetUrl(room?.value?.url || "");
       isNew = !saved?.value;
       draft = normalizeCalendar(saved?.value, genesis?.value || {});
       if (draft[mode]?.enabled === false) mode = draft.online.enabled === false ? "presencial" : "online";

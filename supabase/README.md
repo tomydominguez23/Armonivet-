@@ -12,6 +12,7 @@ Ejecuta estos SQL en el **SQL Editor** de tu proyecto Supabase, en este orden:
 8. `prices_services.sql` — precios 2026, servicios nuevos y pago total (sin abono). Si ya corriste `booking.sql`, volvé a correrlo para el mensaje de reserva.
 9. `checkout.sql` — columnas extra de pagos para el carrito y Mercado Pago.
 10. `reschedule_appointment.sql` — mover una cita desde el panel: libera la hora anterior y bloquea la nueva en la web. Correrlo después de `payment_holds.sql`.
+11. `online_room.sql` — deja privado el link de Meet que Génesis manda por WhatsApp al acreditarse una consulta online.
 
 La vinculación de WhatsApp + GPT está documentada en `GENESIS.md`. El webhook vive en Edge Functions; el dashboard solo lee Supabase.
 
