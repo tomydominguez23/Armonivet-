@@ -1,8 +1,10 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { cartTotal, clearCart, formatCLP, getCart } from "./cart.js";
+import { formatReceiptWhen, mergeReceipt, paymentIdFromLocation, receiptNeedsServer } from "./receipt.js";
 
 const INTAKE_KEY = "armonivet.intakePending.v1";
 const HOLD_KEY = "armonivet.hold.v1";
+const RECEIPT_KEY = "armonivet.receipt.v1";
 
 let intakeLocked = false;
 let paymentCompleted = false;
@@ -19,26 +21,42 @@ function readHold() {
   }
 }
 
-export function rememberHold(hold) {
-  paymentCompleted = false;
-  const next = { ...(hold || {}), paid: false };
+function readReceipt() {
   try {
-    sessionStorage.setItem(HOLD_KEY, JSON.stringify(next));
+    const raw = localStorage.getItem(RECEIPT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readBookingContext() {
+  return { ...(readReceipt() || {}), ...(readHold() || {}) };
+}
+
+function saveBooking(next) {
+  const payload = JSON.stringify(next || {});
+  try {
+    sessionStorage.setItem(HOLD_KEY, payload);
+  } catch {
+    /* la sesión se pierde al volver de Mercado Pago en varios celulares */
+  }
+  try {
+    localStorage.setItem(RECEIPT_KEY, payload);
   } catch {
     /* ignore */
   }
   return next;
 }
 
+export function rememberHold(hold) {
+  paymentCompleted = false;
+  return saveBooking({ ...(hold || {}), paid: false });
+}
+
 export function markHoldPaid(extra = {}) {
   paymentCompleted = true;
-  const next = { ...(readHold() || {}), ...(extra || {}), paid: true };
-  try {
-    sessionStorage.setItem(HOLD_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-  return next;
+  return saveBooking({ ...(extra || {}), paid: true });
 }
 
 function releaseHoldKeepalive(appointmentId) {
@@ -311,6 +329,13 @@ export async function startCheckout({ appointmentId, name, email, title, amount,
     return { ok: false, error: (await functionErrorMessage(error, data)) || "No se pudo crear el pago." };
   }
 
+  activeSession = {
+    ...activeSession,
+    paymentId: data?.payment_id || activeSession.paymentId || "",
+    amount: data?.amount || total || activeSession.amount || 0,
+  };
+  saveBooking({ ...(readBookingContext() || {}), ...activeSession, paid: false });
+
   if (data?.mode === "bricks" && data.public_key && data.preference_id) {
     if (!openPayOverlay(data.amount || total, data.checkout_url)) {
       if (data.checkout_url) {
@@ -381,33 +406,38 @@ function hashIsFormulario() {
   return String(window.location.hash || "").replace(/^#/, "") === "formulario";
 }
 
-function formatWhen(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("es-CL", {
-    timeZone: "America/Santiago",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
 function fillReceipt(receipt) {
   const { receipt: box } = intakeEls();
   if (!box) return;
   const service = String(receipt?.title || receipt?.service || "").trim();
-  const when = receipt?.when ? formatWhen(receipt.when) : "";
+  const when = receipt?.when ? formatReceiptWhen(receipt.when) : "";
   const amount = Number(receipt?.amount || 0);
-  const has = Boolean(service || when || amount > 0);
-  box.hidden = !has;
-  const serviceEl = box.querySelector("[data-receipt-service]");
-  const whenEl = box.querySelector("[data-receipt-when]");
-  const amountEl = box.querySelector("[data-receipt-amount]");
-  if (serviceEl) serviceEl.textContent = service || "Consulta";
-  if (whenEl) whenEl.textContent = when || "—";
-  if (amountEl) amountEl.textContent = amount > 0 ? formatCLP(amount) : "—";
+  const rows = [
+    ["service", service],
+    ["when", when],
+    ["amount", amount > 0 ? formatCLP(amount) : ""],
+  ];
+  let visible = 0;
+  for (const [key, text] of rows) {
+    const el = box.querySelector(`[data-receipt-${key}]`);
+    const row = el?.closest("[data-receipt-row]");
+    const value = String(text || "").trim();
+    if (el) el.textContent = value;
+    if (row) row.hidden = !value;
+    if (value) visible += 1;
+  }
+  box.hidden = visible === 0;
+}
+
+function returnPaymentId() {
+  return paymentIdFromLocation(window.location.search, window.location.hash);
+}
+
+async function loadServerReceipt(paymentId) {
+  if (!paymentId || !supabase) return null;
+  const { data, error } = await supabase.rpc("booking_receipt", { p_payment_id: paymentId });
+  if (error || !data?.ok) return null;
+  return data;
 }
 
 function markIntakeSent() {
@@ -422,8 +452,15 @@ function markIntakeSent() {
   if (actions) actions.hidden = false;
   if (closeBtn) closeBtn.hidden = false;
   const params = new URLSearchParams(window.location.search);
-  if (params.get("pago")) {
+  if (params.get("pago") || params.get("pago_id") || params.get("external_reference")) {
     params.delete("pago");
+    params.delete("pago_id");
+    params.delete("external_reference");
+    params.delete("collection_id");
+    params.delete("collection_status");
+    params.delete("payment_id");
+    params.delete("status");
+    params.delete("preference_id");
     const query = params.toString();
     history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}#agendar`);
   }
@@ -440,7 +477,7 @@ function revealIntakeForm() {
 }
 
 function prefillIntake() {
-  const hold = readHold() || {};
+  const hold = readBookingContext();
   const { form } = intakeEls();
   if (!form) return;
   const write = (name, value) => {
@@ -521,7 +558,7 @@ function readAnswers(form) {
 }
 
 function appointmentIdFromHold() {
-  const raw = String(readHold()?.appointmentId || "");
+  const raw = String(readBookingContext().appointmentId || "");
   return /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
 }
 
@@ -620,19 +657,40 @@ export function openIntakeForm() {
   applyIntakeChrome({ locked: false, paid: false });
 }
 
+function presentPaidIntake(details) {
+  markHoldPaid(details);
+  fillReceipt(details);
+  prefillIntake();
+}
+
+async function finishPaidReceipt(stored, incoming, urlPaymentId) {
+  let server = null;
+  if (receiptNeedsServer(stored, incoming, urlPaymentId)) {
+    const paymentId = urlPaymentId || stored?.paymentId || incoming?.paymentId || "";
+    server = await loadServerReceipt(paymentId);
+  }
+  const full = mergeReceipt(stored, incoming, server, urlPaymentId);
+  if (full.title || full.when || full.amount > 0) presentPaidIntake(full);
+}
+
 export function showPaidIntake(receipt) {
   if (!document.querySelector("[data-intake-overlay]")) return;
-  const details = markHoldPaid(receipt || {});
+  const urlPaymentId = returnPaymentId();
+  const stored = readBookingContext();
+  const incoming = receipt || {};
+  const conflicts = Boolean(urlPaymentId && stored.paymentId && urlPaymentId !== stored.paymentId);
+  paymentCompleted = true;
   closePayOverlay({ release: false });
-  fillReceipt(details);
   revealIntakeForm();
-  prefillIntake();
+  if (!conflicts) presentPaidIntake(mergeReceipt(stored, incoming, null, urlPaymentId));
+  else fillReceipt(null);
   try {
     localStorage.setItem(INTAKE_KEY, "1");
   } catch {
     /* ignore */
   }
   applyIntakeChrome({ locked: true, paid: true });
+  finishPaidReceipt(stored, incoming, urlPaymentId).catch(() => {});
 }
 
 function openFormularioHash() {
