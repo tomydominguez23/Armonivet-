@@ -9,6 +9,14 @@ function amountOf(value) {
   return amount > 0 ? amount : 0;
 }
 
+export function isControlVisit(source) {
+  const title = clean(source?.title || source?.service)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return title.includes("control");
+}
+
 export function hasReceiptDetails(source) {
   if (!source) return false;
   return Boolean(clean(source.title || source.service) && source.when && amountOf(source.amount) > 0);
