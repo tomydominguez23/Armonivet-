@@ -1035,7 +1035,7 @@ async function loadAppointments() {
     .from("appointments")
     .select("*")
     .order("scheduled_at", { ascending: false })
-    .limit(100);
+    .limit(300);
   const body = $("[data-appointments-body]");
   if (error) {
     if (body) body.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
@@ -1045,6 +1045,7 @@ async function loadAppointments() {
 }
 
 function renderAppointmentRows(rows) {
+  renderAppointmentsCalendar(rows);
   const body = $("[data-appointments-body]");
   if (!body) return;
   if (!rows.length) {
@@ -1086,6 +1087,165 @@ function renderAppointmentRows(rows) {
 $$("[data-open-appointment]").forEach((btn) => {
   btn.addEventListener("click", () => openAppointmentModal(null));
 });
+
+let apptCalYear = 0;
+let apptCalMonth = 0;
+let apptCalSelected = "";
+let apptCalRows = [];
+let apptCalBound = false;
+
+function chileTodayKey() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function formatChileClock(iso) {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+}
+
+function shiftApptMonth(delta) {
+  const cursor = new Date(Date.UTC(apptCalYear, apptCalMonth - 1 + delta, 1));
+  apptCalYear = cursor.getUTCFullYear();
+  apptCalMonth = cursor.getUTCMonth() + 1;
+  apptCalSelected = "";
+  renderAppointmentsCalendar(apptCalRows);
+}
+
+function renderAppointmentsCalendar(rows) {
+  const root = $("[data-appt-cal]");
+  const grid = $("[data-appt-cal-grid]");
+  if (!root || !grid) return;
+  apptCalRows = rows || [];
+  if (!apptCalYear) {
+    const todayKey = chileTodayKey();
+    const [year, month] = todayKey.split("-").map(Number);
+    apptCalYear = year;
+    apptCalMonth = month;
+    apptCalSelected = todayKey;
+  }
+  if (!apptCalBound) {
+    apptCalBound = true;
+    $("[data-appt-cal-prev]")?.addEventListener("click", () => shiftApptMonth(-1));
+    $("[data-appt-cal-next]")?.addEventListener("click", () => shiftApptMonth(1));
+  }
+
+  const byDay = new Map();
+  for (const appointment of apptCalRows) {
+    if (!appointment.scheduled_at || appointment.status === "cancelada") continue;
+    const key = chileDateKey(appointment.scheduled_at);
+    if (!key.startsWith(`${apptCalYear}-${String(apptCalMonth).padStart(2, "0")}`)) continue;
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key).push(appointment);
+  }
+  for (const list of byDay.values()) {
+    list.sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
+  }
+
+  const monthLabel = $("[data-appt-cal-month]");
+  if (monthLabel) {
+    monthLabel.textContent = new Intl.DateTimeFormat("es-CL", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(apptCalYear, apptCalMonth - 1, 1)));
+  }
+
+  const todayKey = chileTodayKey();
+  const startPad = (new Date(Date.UTC(apptCalYear, apptCalMonth - 1, 1)).getUTCDay() + 6) % 7;
+  const daysInMonth = new Date(Date.UTC(apptCalYear, apptCalMonth, 0)).getUTCDate();
+  const cells = WEEKDAYS_ES.map((name) => `<span class="booking-dow">${name}</span>`);
+  for (let i = 0; i < startPad; i += 1) cells.push(`<span class="booking-day is-empty"></span>`);
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const key = `${apptCalYear}-${String(apptCalMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const list = byDay.get(key) || [];
+    const chips = list
+      .slice(0, 2)
+      .map((appointment) => {
+        const time = formatChileClock(appointment.scheduled_at);
+        const name = String(appointment.client_name || "Cita").trim();
+        return `<button type="button" class="appt-chip" data-edit-appointment="${appointment.id}" aria-label="Editar cita de ${escapeAttr(name)} a las ${escapeAttr(time)}"><span>${escapeHtml(time)}</span> <span class="appt-chip-name">${escapeHtml(name.split(" ")[0])}</span></button>`;
+      })
+      .join("");
+    const extra = list.length > 2 ? `<span class="appt-more">+${list.length - 2}</span>` : "";
+    const classes = [
+      "appt-day",
+      key === todayKey ? "is-today" : "",
+      key === apptCalSelected ? "is-selected" : "",
+      list.length ? "has-appts" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    cells.push(
+      `<div class="${classes}">
+        <button type="button" class="appt-day-num" data-appt-day="${key}">${day}</button>
+        <div class="appt-day-slots">${chips}${extra}</div>
+      </div>`,
+    );
+  }
+  grid.innerHTML = cells.join("");
+  grid.querySelectorAll("[data-appt-day]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      apptCalSelected = btn.getAttribute("data-appt-day") || "";
+      renderAppointmentsCalendar(apptCalRows);
+    });
+  });
+  grid.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = apptCalRows.find((item) => item.id === btn.dataset.editAppointment);
+      if (!row) return;
+      apptCalSelected = chileDateKey(row.scheduled_at);
+      renderAppointmentsCalendar(apptCalRows);
+      openAppointmentModal(row);
+    });
+  });
+
+  const panel = $("[data-appt-cal-day]");
+  const label = $("[data-appt-cal-day-label]");
+  const listEl = $("[data-appt-cal-day-list]");
+  if (!panel || !listEl) return;
+  if (!apptCalSelected) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  const headingDate = new Date(`${apptCalSelected}T12:00:00`);
+  if (label) {
+    label.textContent = new Intl.DateTimeFormat("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(headingDate);
+  }
+  const dayAppts = byDay.get(apptCalSelected) || [];
+  listEl.innerHTML = dayAppts.length
+    ? dayAppts
+        .map((appointment) => {
+          const time = formatChileClock(appointment.scheduled_at);
+          return `<button type="button" class="appt-day-card" data-edit-appointment="${appointment.id}">
+            <strong>${escapeHtml(time)}</strong>
+            <span>${escapeHtml(appointment.client_name || "Sin nombre")}</span>
+            <small>${escapeHtml(appointment.service_title || "Consulta")} · ${escapeHtml(statusLabel(appointment.status))}</small>
+          </button>`;
+        })
+        .join("")
+    : `<p class="empty">No hay citas agendadas este día.</p>`;
+  listEl.querySelectorAll("[data-edit-appointment]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = apptCalRows.find((item) => item.id === btn.dataset.editAppointment);
+      if (row) openAppointmentModal(row);
+    });
+  });
+}
 
 function appointmentRowActions(a) {
   return `<td class="entity-actions">

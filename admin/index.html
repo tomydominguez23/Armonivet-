@@ -394,10 +394,24 @@
             <!-- Citas -->
             <section class="panel" data-panel="appointments">
               <div class="panel-toolbar">
-                <p>Para cambiar una hora (por ejemplo de 15:00 a 15:30), editala en la columna Fecha y tocá Guardar hora. La anterior queda libre y la nueva se bloquea sola en el calendario de la web, así nadie más la puede tomar.</p>
+                <p>El calendario muestra la hora de cada cita. Tocá una para editar los datos del cliente. En la tabla de abajo también podés mover la hora: al guardarla, la anterior queda libre y la nueva se bloquea en la web.</p>
                 <button type="button" class="btn btn-primary" data-open-appointment>Nueva cita</button>
               </div>
               <p class="form-ok" data-appointments-note hidden></p>
+              <article class="card admin-cal appt-cal" data-appt-cal>
+                <div class="admin-cal-head">
+                  <button type="button" class="btn btn-ghost" data-appt-cal-prev aria-label="Mes anterior">‹</button>
+                  <h3 data-appt-cal-month>Calendario</h3>
+                  <button type="button" class="btn btn-ghost" data-appt-cal-next aria-label="Mes siguiente">›</button>
+                </div>
+                <p class="hint">Cada recuadro es un día. La hora y el nombre son la cita: al presionarla editás al cliente.</p>
+                <div class="admin-cal-grid" data-appt-cal-grid></div>
+                <div class="admin-cal-day" data-appt-cal-day hidden>
+                  <h4 data-appt-cal-day-label></h4>
+                  <div class="appt-day-list" data-appt-cal-day-list></div>
+                </div>
+              </article>
+              <h3 class="subhead">Listado</h3>
               <div class="table-wrap" data-export-name="citas">
                 <table>
                   <thead>
