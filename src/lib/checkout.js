@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { cartTotal, clearCart, formatCLP, getCart } from "./cart.js";
-import { formatReceiptWhen, mergeReceipt, paymentIdFromLocation, receiptNeedsServer } from "./receipt.js";
+import { formatReceiptWhen, isControlVisit, mergeReceipt, paymentIdFromLocation, receiptNeedsServer } from "./receipt.js";
 
 const INTAKE_KEY = "armonivet.intakePending.v1";
 const HOLD_KEY = "armonivet.hold.v1";
@@ -391,6 +391,7 @@ function intakeEls() {
     actions: overlay?.querySelector("[data-intake-actions]"),
     closeBtn: overlay?.querySelector("[data-intake-close]"),
     receipt: overlay?.querySelector("[data-receipt]"),
+    controlNote: overlay?.querySelector("[data-intake-control-note]"),
   };
 }
 
@@ -663,6 +664,55 @@ function presentPaidIntake(details) {
   prefillIntake();
 }
 
+function rememberIntakeRequired() {
+  try {
+    localStorage.setItem(INTAKE_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearIntakeRequired() {
+  try {
+    localStorage.removeItem(INTAKE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function presentControlPaid(details) {
+  markHoldPaid(details);
+  fillReceipt(details);
+  intakeLocked = false;
+  clearIntakeRequired();
+  const { overlay, form, thanks, must, wait, closeBtn, actions, kicker, ok, controlNote, error } = intakeEls();
+  if (form) form.hidden = true;
+  if (thanks) thanks.hidden = true;
+  if (must) must.hidden = true;
+  if (wait) wait.hidden = true;
+  if (error) error.hidden = true;
+  if (ok) ok.hidden = false;
+  if (controlNote) controlNote.hidden = false;
+  if (closeBtn) closeBtn.hidden = false;
+  if (actions) actions.hidden = false;
+  if (kicker) kicker.textContent = "Pago aprobado";
+  if (overlay) overlay.hidden = false;
+  document.body.classList.add("intake-open");
+}
+
+function applyPaidVisit(details) {
+  const { controlNote } = intakeEls();
+  if (isControlVisit(details)) {
+    presentControlPaid(details);
+    return;
+  }
+  if (controlNote) controlNote.hidden = true;
+  presentPaidIntake(details);
+  revealIntakeForm();
+  rememberIntakeRequired();
+  applyIntakeChrome({ locked: true, paid: true });
+}
+
 async function finishPaidReceipt(stored, incoming, urlPaymentId) {
   let server = null;
   if (receiptNeedsServer(stored, incoming, urlPaymentId)) {
@@ -670,7 +720,7 @@ async function finishPaidReceipt(stored, incoming, urlPaymentId) {
     server = await loadServerReceipt(paymentId);
   }
   const full = mergeReceipt(stored, incoming, server, urlPaymentId);
-  if (full.title || full.when || full.amount > 0) presentPaidIntake(full);
+  if (isControlVisit(full) || full.title || full.when || full.amount > 0) applyPaidVisit(full);
 }
 
 export function showPaidIntake(receipt) {
@@ -681,15 +731,17 @@ export function showPaidIntake(receipt) {
   const conflicts = Boolean(urlPaymentId && stored.paymentId && urlPaymentId !== stored.paymentId);
   paymentCompleted = true;
   closePayOverlay({ release: false });
-  revealIntakeForm();
-  if (!conflicts) presentPaidIntake(mergeReceipt(stored, incoming, null, urlPaymentId));
-  else fillReceipt(null);
-  try {
-    localStorage.setItem(INTAKE_KEY, "1");
-  } catch {
-    /* ignore */
+  const preview = conflicts ? null : mergeReceipt(stored, incoming, null, urlPaymentId);
+  if (preview && (isControlVisit(preview) || preview.title || preview.when || preview.amount > 0)) {
+    applyPaidVisit(preview);
+  } else {
+    const { controlNote } = intakeEls();
+    if (controlNote) controlNote.hidden = true;
+    fillReceipt(null);
+    revealIntakeForm();
+    rememberIntakeRequired();
+    applyIntakeChrome({ locked: true, paid: true });
   }
-  applyIntakeChrome({ locked: true, paid: true });
   finishPaidReceipt(stored, incoming, urlPaymentId).catch(() => {});
 }
 
