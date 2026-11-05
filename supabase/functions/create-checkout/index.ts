@@ -84,9 +84,9 @@ Deno.serve(async (req) => {
             email: email || undefined,
           },
           back_urls: {
-            success: `${origin}/?pago=ok#agendar`,
-            failure: `${origin}/?pago=error#agendar`,
-            pending: `${origin}/?pago=pendiente#agendar`,
+            success: `${origin}/?pago=ok&pago_id=${payment.id}#agendar`,
+            failure: `${origin}/?pago=error&pago_id=${payment.id}#agendar`,
+            pending: `${origin}/?pago=pendiente&pago_id=${payment.id}#agendar`,
           },
           auto_return: "approved",
           notification_url: notify || undefined,

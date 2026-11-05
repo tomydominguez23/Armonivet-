@@ -3209,7 +3209,8 @@ body.intake-open {
   border-top: 1px solid rgba(28, 31, 35, 0.08);
 }
 
-.pay-receipt[hidden] {
+.pay-receipt[hidden],
+.pay-receipt div[hidden] {
   display: none;
 }
 
