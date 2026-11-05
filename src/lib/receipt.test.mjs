@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatReceiptWhen, mergeReceipt, paymentIdFromLocation, receiptNeedsServer } from "./receipt.js";
+import { formatReceiptWhen, isControlVisit, mergeReceipt, paymentIdFromLocation, receiptNeedsServer } from "./receipt.js";
 
 const payA = "11111111-1111-4111-8111-111111111111";
 const payB = "22222222-2222-4222-8222-222222222222";
@@ -76,5 +76,12 @@ const partial = mergeReceipt(
 assert.equal(partial.when, local.when);
 assert.equal(partial.amount, 65000);
 assert.equal(partial.name, "María");
+
+assert.equal(isControlVisit({ title: "Control presencial" }), true);
+assert.equal(isControlVisit({ title: "Control remoto" }), true);
+assert.equal(isControlVisit({ service: "Control online" }), true);
+assert.equal(isControlVisit({ title: "Consulta presencial" }), false);
+assert.equal(isControlVisit({ title: "Consulta remota" }), false);
+assert.equal(isControlVisit({ title: "Pack Continuidad online" }), false);
 
 console.log("receipt ok");
