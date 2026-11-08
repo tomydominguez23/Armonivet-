@@ -159,6 +159,18 @@ export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment
 
   await db.from("payments").update(paymentUpdate).eq("id", reference);
 
+  if (status === "pagado" || status === "cancelado") {
+    const nextStatus = status === "pagado" ? "usado" : "liberado";
+    const { error: couponError } = await db
+      .from("coupon_redemptions")
+      .update({ status: nextStatus })
+      .eq("payment_id", reference)
+      .eq("status", "reservado");
+    if (couponError && !/coupon_redemptions|schema cache/i.test(couponError.message || "")) {
+      console.warn("[coupon]", couponError.message);
+    }
+  }
+
   const appointmentId = current?.appointment_id ? String(current.appointment_id) : "";
   if (approved && appointmentId) {
     const apptUpdate: Record<string, unknown> = { deposit_paid: true, status: "abonada" };

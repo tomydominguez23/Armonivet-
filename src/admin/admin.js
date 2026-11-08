@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, requireSupabase, supabase } from "../lib/supabase.js";
+import { normalizeCouponCode, reviewPitch, uniqueReviewCode } from "../lib/coupon.js";
 import { createCalendarPanel } from "./calendar-panel.js";
 import { getSession, loginHref } from "./session.js";
 
@@ -17,6 +18,7 @@ const titles = {
   channels: ["Canales", "Atribución de publicidad y UTM"],
   services: ["Servicios", "Contenido y precios de la web"],
   pricing: ["Precios", "Zonas de domicilio y extras"],
+  coupons: ["Cupones", "Descuentos para reseñas y controles"],
   media: ["Imágenes", "Galería visual de la web: hero, servicios y zonas"],
   settings: ["Ajustes", "Enlaces y datos del negocio"],
 };
@@ -515,6 +517,7 @@ async function loadSection(section) {
   if (section === "channels") return loadChannels();
   if (section === "services") return loadServices();
   if (section === "pricing") return loadPricing();
+  if (section === "coupons") return loadCoupons();
   if (section === "media") return loadMedia();
   if (section === "settings") return loadSettings();
 }
@@ -2898,6 +2901,227 @@ function openExtraModal(row) {
     },
   });
 }
+
+/* -------------------- Coupons -------------------- */
+function couponMissing(error) {
+  return /coupons|schema cache|PGRST205|Could not find the table/i.test(error?.message || error?.details || "");
+}
+
+function setCouponStatus(message, isError = false) {
+  const el = $("[data-coupon-status]");
+  if (!el) return;
+  el.hidden = !message;
+  el.textContent = message || "";
+  el.className = isError ? "form-error" : "form-ok";
+}
+
+function couponOffer(row) {
+  if (row?.pitch) return row.pitch;
+  return reviewPitch({
+    code: row?.code || "RESENA",
+    percent: row?.percent,
+    amountOff: row?.amount_off,
+    appliesTo: row?.applies_to || "control",
+  });
+}
+
+function couponPayload(fd, fallbackCode) {
+  const code = normalizeCouponCode(fd.get("code") || fallbackCode || "");
+  if (!/^[A-Z0-9-]{3,24}$/.test(code)) {
+    throw new Error("El código usa letras y números, de 3 a 24 caracteres.");
+  }
+  const percentRaw = String(fd.get("percent") || "").trim();
+  const amountRaw = String(fd.get("amount_off") || "").trim();
+  const percent = percentRaw === "" ? null : Number(percentRaw);
+  const amountOff = amountRaw === "" ? null : Number(amountRaw);
+  if (percent != null && (!Number.isInteger(percent) || percent < 1 || percent > 90)) {
+    throw new Error("El porcentaje va de 1 a 90.");
+  }
+  if (percent == null && !(amountOff >= 1000)) {
+    throw new Error("Indica un porcentaje o un descuento de al menos $1.000.");
+  }
+  const maxRaw = String(fd.get("max_uses") || "").trim();
+  const maxUses = maxRaw === "" ? null : Number(maxRaw);
+  if (maxUses != null && (!Number.isInteger(maxUses) || maxUses < 1)) {
+    throw new Error("Los usos máximos son un número entero, o se dejan vacíos.");
+  }
+  return {
+    code,
+    label: String(fd.get("label") || "").trim() || "Descuento",
+    percent: percent == null ? null : percent,
+    amount_off: percent == null ? amountOff : null,
+    applies_to: fd.get("applies_to") === "all" ? "all" : "control",
+    max_uses: maxUses,
+    expires_on: String(fd.get("expires_on") || "").trim() || null,
+    review_url: String(fd.get("review_url") || "").trim() || null,
+    pitch: String(fd.get("pitch") || "").trim() || null,
+    active: fd.get("active") === "on",
+  };
+}
+
+async function loadCoupons() {
+  const root = $("[data-coupons-list]");
+  if (!root) return;
+  const client = requireSupabase();
+  const [{ data: coupons, error }, { data: redemptions, error: usesError }] = await Promise.all([
+    client.from("coupons").select("*").order("created_at", { ascending: false }),
+    client.from("coupon_redemptions").select("coupon_id,status").eq("status", "usado"),
+  ]);
+  if (error || usesError) {
+    const err = error || usesError;
+    root.innerHTML = `<p class="empty">${escapeHtml(couponMissing(err) ? "Falta ejecutar supabase/coupons.sql en el SQL Editor." : err.message)}</p>`;
+    return;
+  }
+  const used = new Map();
+  for (const row of redemptions || []) used.set(row.coupon_id, (used.get(row.coupon_id) || 0) + 1);
+  root.innerHTML = (coupons || [])
+    .map((row) => {
+      const count = used.get(row.id) || 0;
+      const limit = row.max_uses == null ? "sin límite" : `${count} de ${row.max_uses}`;
+      const off = row.percent ? `${row.percent}%` : formatCLP(row.amount_off);
+      const scope = row.applies_to === "all" ? "cualquier hora" : "solo controles";
+      const stateLabel = row.active ? "Activo" : "Pausado";
+      return `<article class="entity-card">
+        <div style="width:88px;height:72px;border-radius:10px;background:#e8f2f6;display:grid;place-items:center;font-weight:800;color:#2f6f84">${escapeHtml(off)}</div>
+        <div>
+          <h4>${escapeHtml(row.code)} · ${escapeHtml(row.label)}</h4>
+          <p>${escapeHtml(scope)} · ${escapeHtml(limit)} · ${escapeHtml(stateLabel)}</p>
+          <p>${escapeHtml(couponOffer(row))}</p>
+        </div>
+        <div class="entity-actions">
+          <button class="btn btn-ghost" data-copy-coupon="${row.id}">Copiar mensaje</button>
+          <button class="btn btn-ghost" data-edit-coupon="${row.id}">Editar</button>
+          <button class="btn btn-ghost" data-toggle-coupon="${row.id}">${row.active ? "Pausar" : "Activar"}</button>
+        </div>
+      </article>`;
+    })
+    .join("") || `<p class="empty">Todavía no hay cupones.</p>`;
+
+  const byId = new Map((coupons || []).map((row) => [row.id, row]));
+  root.querySelectorAll("[data-copy-coupon]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = byId.get(btn.dataset.copyCoupon);
+      const text = [couponOffer(row), row?.review_url].filter(Boolean).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        setCouponStatus("Mensaje copiado. Pégalo en WhatsApp.");
+      } catch {
+        setCouponStatus(text, true);
+      }
+    });
+  });
+  root.querySelectorAll("[data-edit-coupon]").forEach((btn) => {
+    btn.addEventListener("click", () => openCouponModal(byId.get(btn.dataset.editCoupon)));
+  });
+  root.querySelectorAll("[data-toggle-coupon]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const row = byId.get(btn.dataset.toggleCoupon);
+      const { error: updateError } = await requireSupabase().from("coupons").update({ active: !row.active }).eq("id", row.id);
+      if (updateError) {
+        setCouponStatus(updateError.message, true);
+        return;
+      }
+      await loadCoupons();
+    });
+  });
+}
+
+function openCouponModal(row) {
+  const expires = String(row?.expires_on || "").slice(0, 10);
+  openModal({
+    title: row ? "Editar cupón" : "Nuevo cupón",
+    fields: `
+      <label>Código <input name="code" required maxlength="24" value="${escapeAttr(row?.code || "")}" placeholder="RESENA" /></label>
+      <label>Nombre <input name="label" required value="${escapeAttr(row?.label || "Reseña en Google")}" /></label>
+      <div class="form-row">
+        <label>Porcentaje <input type="number" name="percent" min="1" max="90" value="${row?.percent ?? (row ? "" : 5)}" /></label>
+        <label>O monto fijo <input type="number" name="amount_off" min="1000" value="${row?.amount_off ?? ""}" placeholder="vacío si hay %" /></label>
+      </div>
+      <label>Aplica a
+        <select name="applies_to">
+          <option value="control" ${row?.applies_to !== "all" ? "selected" : ""}>Solo el siguiente control</option>
+          <option value="all" ${row?.applies_to === "all" ? "selected" : ""}>Cualquier hora</option>
+        </select>
+      </label>
+      <div class="form-row">
+        <label>Usos máximos <input type="number" name="max_uses" min="1" value="${row?.max_uses ?? ""}" placeholder="vacío = sin límite" /></label>
+        <label>Vence <input type="date" name="expires_on" value="${escapeAttr(expires)}" /></label>
+      </div>
+      <label>Link de la reseña en Google <input name="review_url" value="${escapeAttr(row?.review_url || "")}" placeholder="https://..." /></label>
+      <label>Mensaje para el cliente <textarea name="pitch" rows="4">${escapeHtml(couponOffer(row))}</textarea></label>
+      <label><input type="checkbox" name="active" ${row?.active !== false ? "checked" : ""} /> Activo</label>
+    `,
+    onSave: async (fd) => {
+      const payload = couponPayload(fd, row?.code);
+      const client = requireSupabase();
+      const { error } = row?.id
+        ? await client.from("coupons").update(payload).eq("id", row.id)
+        : await client.from("coupons").insert(payload);
+      if (error) {
+        if (/duplicate|unique/i.test(error.message || "")) throw new Error("Ya existe un cupón con ese código.");
+        if (couponMissing(error)) throw new Error("Falta ejecutar supabase/coupons.sql en el SQL Editor.");
+        throw new Error(error.message);
+      }
+      await loadCoupons();
+    },
+  });
+}
+
+$("[data-open-coupon]")?.addEventListener("click", () => openCouponModal(null));
+$("[data-coupon-review]")?.addEventListener("click", async () => {
+  try {
+    const client = requireSupabase();
+    const { data, error } = await client.from("coupons").select("*").eq("code", "RESENA").maybeSingle();
+    if (error) throw error;
+    if (data) {
+      openCouponModal(data);
+      return;
+    }
+    const pitch = reviewPitch({ code: "RESENA", percent: 5 });
+    const { error: insertError } = await client.from("coupons").insert({
+      code: "RESENA",
+      label: "Reseña en Google",
+      percent: 5,
+      amount_off: null,
+      applies_to: "control",
+      max_uses: null,
+      pitch,
+      active: true,
+    });
+    if (insertError) throw insertError;
+    setCouponStatus("Listo el cupón RESENA, con 5% en el siguiente control.");
+    await loadCoupons();
+  } catch (err) {
+    setCouponStatus(couponMissing(err) ? "Falta ejecutar supabase/coupons.sql en el SQL Editor." : err.message, true);
+  }
+});
+$("[data-coupon-unique]")?.addEventListener("click", async () => {
+  try {
+    const client = requireSupabase();
+    const code = uniqueReviewCode();
+    const pitch = reviewPitch({ code, percent: 5 });
+    const { error } = await client.from("coupons").insert({
+      code,
+      label: "Reseña en Google",
+      percent: 5,
+      amount_off: null,
+      applies_to: "control",
+      max_uses: 1,
+      pitch,
+      active: true,
+    });
+    if (error) throw error;
+    try {
+      await navigator.clipboard.writeText(pitch);
+      setCouponStatus(`Código ${code} creado y mensaje copiado. Sirve una sola vez.`);
+    } catch {
+      setCouponStatus(`Código ${code} creado. Copia el mensaje desde la tarjeta.`);
+    }
+    await loadCoupons();
+  } catch (err) {
+    setCouponStatus(couponMissing(err) ? "Falta ejecutar supabase/coupons.sql en el SQL Editor." : err.message, true);
+  }
+});
 
 /* -------------------- Media -------------------- */
 const MEDIA_GROUPS = [

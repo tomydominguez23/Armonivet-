@@ -71,6 +71,7 @@ Después de guardar los secretos, **Actions → Deploy servidor → Run workflow
    - `supabase/seed.sql` — servicios, precios, canales e imágenes iniciales
    - `supabase/rpc_stats.sql` — función de métricas del dashboard
    - `supabase/booking_receipt.sql` — comprobante (servicio, día, hora y monto) al volver del pago
+   - `supabase/coupons.sql` — cupones de descuento, incluido el 5% por reseña en Google
 3. En **Authentication → Users → Add user**, crea el admin (email + password).
 4. Copia **Project URL** y **anon public key** a tu `.env`:
    - `VITE_SUPABASE_URL`

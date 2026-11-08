@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { applyZoneToCart, cartTotal, formatCLP, getCart, quoteAmount, serviceMode } from "./cart.js";
+import { normalizeCouponCode } from "./coupon.js";
 
 const TZ = "America/Santiago";
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -600,9 +601,74 @@ export async function initBooking() {
       payEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     const payNow = root.querySelector("[data-pay-now]");
+    const couponInput = root.querySelector("[data-coupon-code]");
+    const couponStatus = root.querySelector("[data-coupon-status]");
+    if (couponInput) couponInput.value = "";
+    if (couponStatus) {
+      couponStatus.hidden = true;
+      couponStatus.textContent = "";
+      couponStatus.classList.remove("is-error");
+    }
+    const showCoupon = (message, isError) => {
+      if (!couponStatus) return;
+      couponStatus.hidden = !message;
+      couponStatus.textContent = message || "";
+      couponStatus.classList.toggle("is-error", Boolean(isError));
+    };
+    const quoteCoupon = async (code) => {
+      const clean = normalizeCouponCode(code);
+      if (!clean || !supabase) return null;
+      const { data: quote, error: quoteError } = await supabase.rpc("quote_coupon", {
+        p_code: clean,
+        p_service: service,
+        p_amount: amount,
+      });
+      if (quoteError) {
+        const missing = /quote_coupon|schema cache|PGRST202/i.test(quoteError.message || "");
+        return {
+          ok: false,
+          error: missing ? "Falta activar los cupones en Supabase." : quoteError.message,
+        };
+      }
+      return quote;
+    };
+    const applyTypedCoupon = async () => {
+      const clean = normalizeCouponCode(couponInput?.value || "");
+      if (!clean) {
+        showCoupon("", false);
+        if (payMsg) payMsg.textContent = okMsg;
+        return null;
+      }
+      const quote = await quoteCoupon(clean);
+      if (!quote?.ok) {
+        showCoupon(quote?.error || "Ese cupón no aplica.", true);
+        return null;
+      }
+      const saved = formatCLP(quote.discount);
+      showCoupon(`${quote.label || quote.code}: ${saved} de descuento. Pagas ${formatCLP(quote.amount)}.`, false);
+      if (payMsg && amount >= 1000) {
+        payMsg.textContent = okMsg.replace(
+          `Total: ${formatCLP(amount)}.`,
+          `Total con ${quote.code}: ${formatCLP(quote.amount)}.`,
+        );
+      }
+      return quote;
+    };
+    const applyBtn = root.querySelector("[data-coupon-apply]");
+    if (applyBtn) {
+      applyBtn.onclick = () => {
+        applyTypedCoupon().catch((err) => showCoupon(err?.message || "No se pudo aplicar el cupón.", true));
+      };
+    }
     const runPay = async () => {
       if (payNow) payNow.disabled = true;
       setStatus("Abriendo el pago…");
+      const quote = await applyTypedCoupon();
+      if (normalizeCouponCode(couponInput?.value || "") && !quote?.ok) {
+        if (payNow) payNow.disabled = false;
+        setStatus(quote?.error || "Ese cupón no aplica.", true);
+        return;
+      }
       const { startCheckout } = await import("./checkout.js");
       const pay = await startCheckout({
         appointmentId: data?.appointment_id,
@@ -614,6 +680,7 @@ export async function initBooking() {
         phone,
         pet: petName,
         petType,
+        couponCode: quote?.code || "",
       });
       if (payNow) payNow.disabled = false;
       if (pay.redirected || pay.brick) return;
