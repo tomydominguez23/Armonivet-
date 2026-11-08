@@ -44,6 +44,7 @@
             <button type="button" class="nav-item" data-nav="channels">Canales</button>
             <button type="button" class="nav-item" data-nav="services">Servicios</button>
             <button type="button" class="nav-item" data-nav="pricing">Precios</button>
+            <button type="button" class="nav-item" data-nav="coupons">Cupones</button>
             <button type="button" class="nav-item" data-nav="media">Imágenes</button>
             <button type="button" class="nav-item" data-nav="settings">Ajustes</button>
           </nav>
@@ -546,6 +547,20 @@
               <div class="cards-list" data-zones-list></div>
               <h3 class="subhead">Extras</h3>
               <div class="cards-list" data-extras-list></div>
+            </section>
+
+            <!-- Cupones -->
+            <section class="panel" data-panel="coupons">
+              <div class="panel-toolbar">
+                <p>Si alguien deja una reseña positiva en Google, le envías un código. El de reseña parte en 5% y solo descuenta el siguiente control. También puedes generar un código de un solo uso para un cliente.</p>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-primary" data-open-coupon>Nuevo cupón</button>
+                  <button type="button" class="btn btn-ghost" data-coupon-review>Cupón de reseña 5%</button>
+                  <button type="button" class="btn btn-ghost" data-coupon-unique>Generar código para un cliente</button>
+                </div>
+              </div>
+              <p class="form-ok" data-coupon-status hidden></p>
+              <div class="cards-list" data-coupons-list></div>
             </section>
 
             <!-- Imágenes -->

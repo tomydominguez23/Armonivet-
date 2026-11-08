@@ -286,7 +286,7 @@ async function mountPaymentBrick(session) {
   });
 }
 
-export async function startCheckout({ appointmentId, name, email, title, amount, when, phone, pet, petType } = {}) {
+export async function startCheckout({ appointmentId, name, email, title, amount, when, phone, pet, petType, couponCode } = {}) {
   const items = getCart();
   const total = amount || cartTotal(items);
   activeSession = {
@@ -322,6 +322,7 @@ export async function startCheckout({ appointmentId, name, email, title, amount,
         book: item.book || "",
       })),
       amount: total,
+      coupon_code: couponCode || "",
     },
   });
 

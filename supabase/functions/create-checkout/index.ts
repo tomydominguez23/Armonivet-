@@ -38,8 +38,30 @@ Deno.serve(async (req) => {
       lines = [{ title: String(body.title || "Consulta Armonivet").slice(0, 120), amount, id: "consulta" }];
     }
     const email = cleanEmail(body.email);
+    const couponCode = String(body.coupon_code || "").trim();
 
     const db = serviceClient();
+    let charge = amount;
+    let couponLabel = "";
+    if (couponCode) {
+      const { data: quote, error: quoteErr } = await db.rpc("quote_coupon", {
+        p_code: couponCode,
+        p_service: String(body.title || ""),
+        p_amount: amount,
+      });
+      if (quoteErr) {
+        const missing = /quote_coupon|schema cache|PGRST202/i.test(quoteErr.message || "");
+        return json({
+          error: missing
+            ? "Falta activar los cupones en Supabase. Ejecuta supabase/coupons.sql."
+            : quoteErr.message,
+        }, 400);
+      }
+      if (!quote?.ok) return json({ error: quote?.error || "Ese cupón no aplica." }, 400);
+      charge = Math.round(Number(quote.amount));
+      couponLabel = String(quote.label || quote.code || couponCode);
+      lines = [{ title: String(body.title || "Consulta Armonivet").slice(0, 120), amount: charge, id: "consulta" }];
+    }
     const { data: settingsRow } = await db.from("site_settings").select("value").eq("key", "genesis").maybeSingle();
     const settings = (settingsRow?.value || {}) as { payment_url?: string };
 
@@ -47,17 +69,36 @@ Deno.serve(async (req) => {
       .from("payments")
       .insert({
         appointment_id: body.appointment_id || null,
-        amount,
+        amount: charge,
         kind: "saldo",
         status: "pendiente",
         provider: "mercadopago",
         currency: "CLP",
         items: itemsIn,
-        notes: [body.name, email].filter(Boolean).join(" · ") || null,
+        notes: [body.name, email, couponLabel ? `Cupón ${couponLabel}` : ""].filter(Boolean).join(" · ") || null,
       })
       .select("*")
       .single();
     if (payErr || !payment) throw new Error(payErr?.message || "No se pudo crear el pago");
+
+    if (couponCode) {
+      const { data: reserved, error: reserveErr } = await db.rpc("reserve_coupon", {
+        p_code: couponCode,
+        p_service: String(body.title || ""),
+        p_amount: amount,
+        p_payment_id: payment.id,
+      });
+      if (reserveErr || !reserved?.ok) {
+        await db.from("payments").update({ status: "cancelado" }).eq("id", payment.id);
+        return json({ error: reserved?.error || reserveErr?.message || "No se pudo reservar el cupón." }, 400);
+      }
+      charge = Math.round(Number(reserved.amount || charge));
+      lines = [{ title: String(body.title || "Consulta Armonivet").slice(0, 120), amount: charge, id: "consulta" }];
+      await db.from("payments").update({ amount: charge }).eq("id", payment.id);
+      if (body.appointment_id) {
+        await db.from("appointments").update({ amount: charge }).eq("id", body.appointment_id);
+      }
+    }
 
     const token = mpToken();
     const publicKey = mpPublicKey();
@@ -110,7 +151,7 @@ Deno.serve(async (req) => {
       return json({
         ok: true,
         payment_id: payment.id,
-        amount,
+        amount: charge,
         preference_id: pref.id,
         public_key: publicKey || null,
         checkout_url: checkoutUrl,
