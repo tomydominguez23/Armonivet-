@@ -70,6 +70,19 @@ export function bookingModeFromService(service, zone) {
   return serviceMode(service, zone);
 }
 
+export function modeFromLocation(search = "", hash = "") {
+  const hashBody = String(hash || "").replace(/^#/, "");
+  const cut = hashBody.indexOf("?");
+  const hashQuery = cut >= 0 ? hashBody.slice(cut + 1) : "";
+  const params = [new URLSearchParams(search), new URLSearchParams(hashQuery)];
+  for (const source of params) {
+    const value = String(source.get("modo") || source.get("mode") || "").toLowerCase();
+    if (value.startsWith("online") || value.startsWith("remot")) return "online";
+    if (value.startsWith("presencial") || value.startsWith("domic")) return "presencial";
+  }
+  return "";
+}
+
 function applyBookTarget(form, el) {
   if (!form || !el) return;
   const service = el.getAttribute("data-book");
@@ -701,6 +714,8 @@ export async function initBooking() {
   if (calendarOffline) {
     updateZoneHelp();
     syncModeUi();
+    const requestedMode = modeFromLocation(window.location.search, window.location.hash);
+    if (requestedMode) setMode(requestedMode);
     return;
   }
 
@@ -722,6 +737,8 @@ export async function initBooking() {
   }
   renderMonth();
   renderSlots();
+  const requestedMode = modeFromLocation(window.location.search, window.location.hash);
+  if (requestedMode) setMode(requestedMode);
 
   const paid = new URLSearchParams(window.location.search).get("pago") || (window.location.hash.includes("pago=") ? window.location.hash.split("pago=")[1] : "");
   if (paid === "ok") {

@@ -30,7 +30,7 @@ function scrollToId(id) {
 }
 
 function hashTarget(hash) {
-  const raw = String(hash || "").replace(/^#/, "");
+  const raw = String(hash || "").replace(/^#/, "").split("?")[0].split("&")[0];
   if (!raw || raw.includes("=")) return "";
   try {
     return decodeURIComponent(raw);

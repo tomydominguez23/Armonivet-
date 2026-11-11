@@ -216,7 +216,7 @@ type SlotRow = { at?: string; date?: string; time?: string; label?: string; mode
 
 const AGENDA_RULE = [
   "Agenda en vivo: si la persona quiere una hora, un control, cambiar el día o pregunta si hay disponibilidad, llama consultar_disponibilidad en ese mismo turno, antes de responder.",
-  "Usa modalidad online, presencial o todas, según lo que dijo.",
+  "Si el caso prioriza online, llama consultar_disponibilidad con modalidad online aunque hayan pedido presencial. Si no, usa la modalidad que pidieron.",
   "Ofrece exactamente 2 horarios copiados de slots, con su label, en hora de Chile. Esos horarios ya están libres.",
   "No inventes otros ni ofrezcas una hora que no venga en slots.",
   "No pidas nombre ni teléfono antes de mostrar esas 2 opciones.",
@@ -225,12 +225,13 @@ const AGENDA_RULE = [
 ].join(" ");
 
 const FUNNEL_RULE = [
-  "Cierre en la web: asesora y después redirige a https://armonivet.com/#agendar para que la persona elija la hora y pague ahí.",
-  "En cada respuesta que hable de precio u hora, recuerda que la reserva se confirma pagando en esa página. No des un link de pago distinto ni digas que la hora ya quedó tomada por WhatsApp.",
+  "Cierre en la web: asesora y después redirige al calendario que corresponde. Online: https://armonivet.com/#agendar?modo=online. Presencial: https://armonivet.com/#agendar?modo=presencial.",
+  "No mandes el link sin modo. En cada respuesta de precio u hora, recuerda que la reserva se confirma pagando en ese link. No digas que la hora ya quedó tomada por WhatsApp.",
   "En el primer mensaje donde des valores, pregunta también el motivo de consulta si todavía no lo dijo.",
-  "Si la atención es presencial y no sabes la comuna, no enumeres los sectores ni todas las comunas. Pregunta de qué comuna es.",
-  "Cuando diga la comuna, llama listar_servicios y responde solo el sector cuyo zones_text la incluye, con su valor. Si no está en ninguno, dilo y ofrece la consulta online.",
-  "Si pide explícitamente qué comunas cubre un sector, ahí sí puedes nombrarlas, en una frase corta.",
+  "Prioriza online como primera y única opción del primer mensaje cuando haya miedo o agresividad con personas desconocidas, la mascota se lleve mal con extraños, ansiedad por separación o no pueda quedar sola, miedo o fobia a la pirotecnia, introducción entre gatos, agresividad en gatos, cualquier consulta de gatos, o perros grandes que tiren de la correa o se suban encima de las personas.",
+  "En esos casos ofrece dos horarios online y el link online. No ofrezcas presencial en ese mensaje.",
+  "Solo ofrece presencial si, después de la opción online, la persona la pide explícitamente. Ahí pregunta la comuna, cotiza solo ese sector y manda el link presencial.",
+  "Si pide presencial y el caso no está en esa lista, pregunta la comuna sin enumerar sectores ni comunas. Cuando la diga, llama listar_servicios y responde solo el sector cuyo zones_text la incluye. Si pide qué comunas cubre un sector, nómbralas en una frase corta.",
 ].join(" ");
 
 function plainReply(text: string) {
