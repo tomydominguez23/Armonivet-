@@ -51,6 +51,8 @@ Deno.serve(async (req) => {
     for (const msg of inbound) {
       const up = await upsertInbound(db, {
         phone: msg.from,
+        aliasPhone: msg.aliasPhone,
+        chatId: msg.chatId,
         name: msg.name,
         text: msg.text,
         waMessageId: msg.id,

@@ -22,7 +22,35 @@ export function toWazendChatId(phone: string) {
 export function phoneFromChatId(raw: string) {
   const value = String(raw || "");
   const beforeAt = value.includes("@") ? value.split("@")[0] : value;
-  return beforeAt.replace(/\D/g, "");
+  return beforeAt.split(":")[0].replace(/\D/g, "");
+}
+
+function phoneFromUserJid(raw: string) {
+  const value = String(raw || "");
+  if (!value || value.includes("@lid")) return "";
+  const digits = phoneFromChatId(value);
+  if (digits.length < 8 || digits.length > 15) return "";
+  return digits;
+}
+
+export function resolveWazendSender(inner: Record<string, unknown>) {
+  const fromRaw = String(inner.from || inner.chatId || "");
+  const info = ((inner._data as { Info?: Record<string, unknown> } | undefined)?.Info) || {};
+  const altPhone = phoneFromUserJid(String(info.SenderAlt || ""));
+  const fromIsLid = fromRaw.includes("@lid");
+  const phone = altPhone || (fromIsLid ? "" : phoneFromUserJid(fromRaw));
+  const lid = fromIsLid ? phoneFromChatId(fromRaw) : "";
+  const chatId = fromIsLid ? fromRaw : phone ? `${phone}@c.us` : fromRaw;
+  return { phone: phone || lid, chatId, lid: phone && lid && phone !== lid ? lid : "" };
+}
+
+export function wazendDestination(conversation: { wa_phone?: string; metadata?: unknown } | null | undefined) {
+  const metadata = conversation?.metadata;
+  const chatId = metadata && typeof metadata === "object"
+    ? String((metadata as { wazend_chat_id?: string }).wazend_chat_id || "")
+    : "";
+  if (chatId.includes("@")) return chatId;
+  return String(conversation?.wa_phone || "");
 }
 
 async function hmacHex(algo: "SHA-256" | "SHA-512", secret: string, body: string) {
@@ -63,6 +91,8 @@ export async function verifyWazendHmac(rawBody: string, header: string | null, s
 export function extractInbound(payload: Record<string, unknown>) {
   const messages: Array<{
     from: string;
+    aliasPhone?: string;
+    chatId?: string;
     name: string;
     id: string;
     type: string;
@@ -105,6 +135,8 @@ function wazendEvents(payload: Record<string, unknown>) {
 export function extractWazendInbound(payload: Record<string, unknown>) {
   const messages: Array<{
     from: string;
+    aliasPhone?: string;
+    chatId?: string;
     name: string;
     id: string;
     type: string;
@@ -121,7 +153,8 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
     if (!fromRaw || fromRaw.includes("@g.us") || fromRaw.includes("@broadcast") || fromRaw.includes("@newsletter")) {
       continue;
     }
-    const phone = phoneFromChatId(fromRaw);
+    const sender = resolveWazendSender(inner);
+    const phone = sender.phone;
     if (!phone) continue;
     const body = String(inner.body || inner.caption || inner.text || "").trim();
     const hasMedia = Boolean(inner.hasMedia);
@@ -135,6 +168,8 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
     );
     messages.push({
       from: phone,
+      aliasPhone: sender.lid,
+      chatId: sender.chatId,
       name: pushName,
       id: String(inner.id || event.id || ""),
       type,
@@ -163,10 +198,11 @@ async function sendViaWazend(to: string, body: string) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    const exception = data.exception && typeof data.exception === "object" ? data.exception.message : "";
     return {
       ok: false,
       skipped: false,
-      error: data.message || data.error || res.statusText,
+      error: exception || data.message || data.error || res.statusText,
       provider: "wazend",
       data,
     };
