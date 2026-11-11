@@ -191,7 +191,17 @@ async function logAction(
   });
 }
 
-type SlotRow = { at?: string; date?: string; time?: string; label?: string };
+type SlotRow = { at?: string; date?: string; time?: string; label?: string; mode?: string };
+
+const AGENDA_RULE = [
+  "Agenda en vivo: si la persona quiere una hora, un control, cambiar el día o pregunta si hay disponibilidad, llama consultar_disponibilidad en ese mismo turno, antes de responder.",
+  "Usa modalidad online, presencial o todas, según lo que dijo.",
+  "Ofrece exactamente 2 horarios copiados de slots, con su label, en hora de Chile. Esos horarios ya están libres.",
+  "No inventes otros ni ofrezcas una hora que no venga en slots.",
+  "No pidas nombre, teléfono ni datos de la mascota antes de mostrar esas 2 opciones.",
+  "Si slots está vacío, di que no hay horas en ese período y no propongas ninguna.",
+  "Crea la cita solo cuando elija una de las horas ofrecidas.",
+].join(" ");
 
 async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string | null) {
   const payload: { p_days: number; p_mode?: string | null } = { p_days: days };
@@ -208,7 +218,31 @@ async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string |
     deposit?: number;
     hours?: string[];
     slots?: SlotRow[];
+    duration_online?: number;
+    duration_presencial?: number;
   };
+}
+
+function slotStart(slot: SlotRow) {
+  const at = slot.at ? new Date(slot.at).getTime() : NaN;
+  return Number.isFinite(at) ? at : NaN;
+}
+
+function suggestOpenSlots(slots: SlotRow[], durationMin: number) {
+  const duration = Number.isFinite(durationMin) && durationMin > 0 ? durationMin : 60;
+  const sorted = slots
+    .filter((slot) => Number.isFinite(slotStart(slot)))
+    .sort((a, b) => slotStart(a) - slotStart(b));
+  const picked: SlotRow[] = [];
+  let lastEnd = 0;
+  for (const slot of sorted) {
+    const start = slotStart(slot);
+    if (start < lastEnd) continue;
+    picked.push(slot);
+    lastEnd = start + duration * 60_000;
+    if (picked.length === 2) break;
+  }
+  return picked;
 }
 
 function slotMatches(slots: SlotRow[] | undefined, iso: string) {
@@ -333,16 +367,22 @@ async function executeTool(
           : null;
       const avail = await loadAvailableSlots(db, days, mode);
       const slots = (avail.slots || []).slice(0, 16);
+      const duration = mode === "presencial"
+        ? Number(avail.duration_presencial || 60)
+        : Number(avail.duration_online || 60);
+      const offer = suggestOpenSlots(slots, duration);
       return {
         timezone: avail.timezone || ctx.settings.timezone || "America/Santiago",
         deposit: avail.deposit ?? ctx.settings.deposit_amount ?? 20000,
         modalidad: mode || "todas",
+        duration_minutes: duration,
         hours: avail.hours || ctx.settings.slot_hours || ["10:00", "12:00", "15:00", "17:30"],
-        count: slots.length,
+        count: (avail.slots || []).length,
         slots,
-        hint: slots.length
-          ? "Ofrece 2 opciones concretas con fecha y hora de Chile, del tipo de consulta (online o presencial). No inventes horarios."
-          : "No hay horas libres en este período. Ofrece otra semana o escala a humano.",
+        offer,
+        hint: offer.length
+          ? "Ofrece exactamente estas opciones de offer, copiando label, fecha y hora de Chile. No inventes otros horarios ni pidas datos personales antes."
+          : "No hay horas libres en este período. Dilo y no propongas ninguna hora.",
       };
     });
   }
@@ -586,6 +626,7 @@ async function generateGenesisReply(
   const instructions = [
     settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
     "Usa herramientas para datos reales. No inventes horas ni precios.",
+    AGENDA_RULE,
     "El link de Google Meet de una consulta online se envía solo por WhatsApp cuando el pago queda acreditado. No inventes un link ni lo pidas por el chat.",
     "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({

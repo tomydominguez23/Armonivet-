@@ -72,7 +72,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "consultar_disponibilidad",
-    description: "Devuelve horarios libres reales de la agenda Armonivet (misma que la web). Timezone Chile. Online y presencial tienen horas distintas. Ofrece 2 opciones concretas; no inventes horas.",
+    description: "Lee la agenda en vivo de Armonivet, la misma de la web. Llamala en el mismo turno en que la persona pida una hora, un control, un cambio de día o pregunte si hay disponibilidad, antes de responder. Devuelve solo horarios libres. Ofrece exactamente 2 de esa lista, en hora de Chile, y no inventes otros.",
     parameters: {
       type: "object",
       properties: {
