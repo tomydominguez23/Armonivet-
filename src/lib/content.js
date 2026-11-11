@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { applyMediaCache, collectMediaUrls, writeMediaCache } from "./media-cache.js";
-import { CONTROL_ZONE_PRICE, formatCLP as formatCartCLP, mergeSamePriceZones, serviceMode } from "./cart.js";
+import { CONTROL_ZONE_PRICE, formatCLP as formatCartCLP, isSitterService, mergeSamePriceZones, SITTER_WHATSAPP_URL, serviceMode } from "./cart.js";
 
 function formatCLP(n) {
   if (n == null || Number.isNaN(Number(n))) return "";
@@ -134,6 +134,9 @@ function offerCardMarkup(service) {
   const labelAttr = !service.price_from ? ` data-price-label="${escapeHtml(service.price_label || "A confirmar")}"` : "";
   const zoneAttr = target.zone ? ` data-zone="${escapeHtml(target.zone)}"` : "";
   const img = isSafeImageUrl(service.image_url) ? ` src="${escapeHtml(service.image_url)}"` : "";
+  const action = isSitterService(service.slug) || isSitterService(copy.title)
+    ? `<a class="btn btn-buy btn-buy--sm" href="${escapeHtml(SITTER_WHATSAPP_URL)}" target="_blank" rel="noopener noreferrer">Consultar</a>`
+    : `<button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-title="${escapeHtml(copy.title)}"${zoneAttr}${priceAttr}${labelAttr}>Agendar</button>`;
   return `
     <article class="offer-card reveal is-visible">
       <figure>
@@ -145,7 +148,7 @@ function offerCardMarkup(service) {
         <p>${escapeHtml(copy.description || "")}</p>
         <div class="offer-price-row">
           <span>${offerPriceMarkup(service)}</span>
-          <button type="button" class="btn btn-buy btn-buy--sm" data-add="${escapeHtml(service.slug)}" data-book="${escapeHtml(target.book)}" data-title="${escapeHtml(copy.title)}"${zoneAttr}${priceAttr}${labelAttr}>Agendar</button>
+          ${action}
         </div>
       </div>
     </article>`;
