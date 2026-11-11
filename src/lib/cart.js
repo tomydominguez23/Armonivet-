@@ -1,4 +1,23 @@
 const STORAGE_KEY = "armonivet.cart.v1";
+export const SITTER_WHATSAPP_URL =
+  "https://wa.me/56932919490?text=" +
+  encodeURIComponent("Hola, quiero consultar por cat y pet sitter / paseos educativos.");
+
+export function isSitterService(value) {
+  return /sitter/i.test(String(value || ""));
+}
+
+function openSitterWhatsapp() {
+  window.open(SITTER_WHATSAPP_URL, "_blank", "noopener");
+}
+
+function isSitterCard(card) {
+  if (!card) return false;
+  const slug = card.querySelector("[data-cms-service]")?.getAttribute("data-cms-service") || "";
+  const added = card.querySelector("[data-add]")?.getAttribute("data-add") || "";
+  const title = card.querySelector("h3")?.textContent || "";
+  return isSitterService(slug) || isSitterService(added) || isSitterService(title);
+}
 
 export const CATALOG = [
   {
@@ -430,7 +449,10 @@ function suggestCard(item) {
         <h4>${escapeHtml(item.title)}</h4>
         <p>${priceText}</p>
         <p class="cart-suggest-mode">${serviceMode(item.book, item.zone) === "online" ? "Horario online" : "Horario presencial"}</p>
-        <button
+        ${
+          isSitterService(item.id) || isSitterService(item.book)
+            ? `<a class="btn btn-buy btn-buy--sm" href="${escapeHtml(SITTER_WHATSAPP_URL)}" target="_blank" rel="noopener noreferrer">Consultar</a>`
+            : `<button
           type="button"
           class="btn btn-buy btn-buy--sm"
           data-add="${escapeHtml(item.id)}"
@@ -438,7 +460,8 @@ function suggestCard(item) {
           data-zone="${escapeHtml(item.zone || "")}"
           data-price="${item.price ?? ""}"
           data-title="${escapeHtml(item.title)}"
-        >Agendar</button>
+        >Agendar</button>`
+        }
       </div>
     </article>`;
 }
@@ -595,6 +618,13 @@ export function initCart() {
 
   document.addEventListener("click", (e) => {
     const card = e.target.closest(".plan-card, .package-hero, .offer-card, .promo-spotlight-card, .control-book-card");
+    if (isSitterCard(card)) {
+      if (!e.target.closest("a")) {
+        e.preventDefault();
+        openSitterWhatsapp();
+      }
+      return;
+    }
     if (card && !e.target.closest("a, select, summary, input, textarea, button, label")) {
       const addBtn = card.querySelector("[data-add]");
       if (addBtn) addBtn.click();
@@ -620,6 +650,10 @@ export function initCart() {
     const addBtn = e.target.closest("[data-add]");
     if (addBtn) {
       e.preventDefault();
+      if (isSitterService(addBtn.getAttribute("data-add")) || isSitterService(addBtn.getAttribute("data-book")) || isSitterService(addBtn.getAttribute("data-title"))) {
+        openSitterWhatsapp();
+        return;
+      }
       if (isControlAdd(addBtn)) {
         openControlNotice(addBtn);
         return;
