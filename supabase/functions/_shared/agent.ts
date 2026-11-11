@@ -203,6 +203,16 @@ const AGENDA_RULE = [
   "Crea la cita solo cuando elija una de las horas ofrecidas.",
 ].join(" ");
 
+function plainReply(text: string) {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/\*\*/g, "")
+    .trim();
+}
+
 async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string | null) {
   const payload: { p_days: number; p_mode?: string | null } = { p_days: days };
   if (mode) payload.p_mode = mode;
@@ -627,6 +637,7 @@ async function generateGenesisReply(
     settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
     "Usa herramientas para datos reales. No inventes horas ni precios.",
     AGENDA_RULE,
+    "Escribe como un WhatsApp, en texto plano. No uses asteriscos, negritas, markdown ni símbolos para destacar palabras.",
     "El link de Google Meet de una consulta online se envía solo por WhatsApp cuando el pago queda acreditado. No inventes un link ni lo pidas por el chat.",
     "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({
@@ -691,7 +702,7 @@ async function generateGenesisReply(
     loops += 1;
   }
 
-  const reply = outputText(response) || "Gracias por escribir. Te ayudo en un momento 🐾";
+  const reply = plainReply(outputText(response) || "Gracias por escribir. Te ayudo en un momento 🐾");
   await db.from("wa_messages").insert({
     conversation_id: conversationId,
     direction: "out",
