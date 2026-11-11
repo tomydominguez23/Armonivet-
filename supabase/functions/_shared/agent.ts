@@ -219,9 +219,18 @@ const AGENDA_RULE = [
   "Usa modalidad online, presencial o todas, según lo que dijo.",
   "Ofrece exactamente 2 horarios copiados de slots, con su label, en hora de Chile. Esos horarios ya están libres.",
   "No inventes otros ni ofrezcas una hora que no venga en slots.",
-  "No pidas nombre, teléfono ni datos de la mascota antes de mostrar esas 2 opciones.",
+  "No pidas nombre ni teléfono antes de mostrar esas 2 opciones.",
   "Si slots está vacío, di que no hay horas en ese período y no propongas ninguna.",
-  "Crea la cita solo cuando elija una de las horas ofrecidas.",
+  "No crees la cita ni el pago dentro del chat. Las 2 horas son solo una orientación.",
+].join(" ");
+
+const FUNNEL_RULE = [
+  "Cierre en la web: asesora y después redirige a https://armonivet.com/#agendar para que la persona elija la hora y pague ahí.",
+  "En cada respuesta que hable de precio u hora, recuerda que la reserva se confirma pagando en esa página. No des un link de pago distinto ni digas que la hora ya quedó tomada por WhatsApp.",
+  "En el primer mensaje donde des valores, pregunta también el motivo de consulta si todavía no lo dijo.",
+  "Si la atención es presencial y no sabes la comuna, no enumeres los sectores ni todas las comunas. Pregunta de qué comuna es.",
+  "Cuando diga la comuna, llama listar_servicios y responde solo el sector cuyo zones_text la incluye, con su valor. Si no está en ninguno, dilo y ofrece la consulta online.",
+  "Si pide explícitamente qué comunas cubre un sector, ahí sí puedes nombrarlas, en una frase corta.",
 ].join(" ");
 
 function plainReply(text: string) {
@@ -383,6 +392,7 @@ async function executeTool(
         zones: zones || [],
         deposit: ctx.settings.deposit_amount ?? 20000,
         min_price: ctx.settings.min_price ?? 45000,
+        hint: "Para presencial, no listes todas las comunas. Si no sabes la comuna, pregúntala. Si ya la dijo, responde solo el sector que la contiene y su precio.",
       };
     });
   }
@@ -658,7 +668,8 @@ async function generateGenesisReply(
     settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
     "Usa herramientas para datos reales. No inventes horas ni precios.",
     AGENDA_RULE,
-    "Escribe como un WhatsApp, en texto plano. No uses asteriscos, negritas, markdown ni símbolos para destacar palabras.",
+    FUNNEL_RULE,
+    "Escribe como un WhatsApp, en texto plano. No uses asteriscos, negritas, markdown ni símbolos para destacar palabras. Mensajes breves.",
     "El link de Google Meet de una consulta online se envía solo por WhatsApp cuando el pago queda acreditado. No inventes un link ni lo pidas por el chat.",
     "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({

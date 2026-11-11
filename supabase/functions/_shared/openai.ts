@@ -87,7 +87,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "crear_cita",
-    description: "Crea una cita provisional solo si scheduled_at salió de consultar_disponibilidad. Se confirma pagando el valor total de la consulta.",
+    description: "No la uses para cerrar la reserva. La persona agenda y paga en https://armonivet.com/#agendar. Solo crea la cita si ya pagó en la web y hay que registrarla.",
     parameters: {
       type: "object",
       properties: {
