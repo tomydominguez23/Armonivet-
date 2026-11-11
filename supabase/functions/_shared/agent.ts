@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { GENESIS_TOOLS, outputText, resolveModel, runOpenAI } from "./openai.ts";
-import { sendWhatsAppText } from "./whatsapp.ts";
+import { sendWhatsAppText, wazendDestination } from "./whatsapp.ts";
 import { normalizePhone } from "./supabase.ts";
 
 type Settings = {
@@ -41,13 +41,17 @@ export async function loadGenesisSettings(db: SupabaseClient): Promise<Settings>
 
 export async function upsertInbound(db: SupabaseClient, input: {
   phone: string;
+  aliasPhone?: string;
+  chatId?: string;
   name?: string;
   text: string;
   waMessageId?: string;
   type?: string;
 }) {
   const phone = normalizePhone(input.phone);
+  const alias = normalizePhone(input.aliasPhone);
   if (!phone) throw new Error("Teléfono vacío");
+  const chatMetadata = input.chatId ? { wazend_chat_id: input.chatId } : {};
 
   if (input.waMessageId) {
     const { data: existing } = await db
@@ -59,9 +63,17 @@ export async function upsertInbound(db: SupabaseClient, input: {
   }
 
   let { data: client } = await db.from("clients").select("*").eq("wa_phone", phone).maybeSingle();
+  if (!client && alias) {
+    const { data: byAlias } = await db.from("clients").select("*").eq("wa_phone", alias).maybeSingle();
+    client = byAlias;
+  }
   if (!client) {
     const { data: byPhone } = await db.from("clients").select("*").eq("phone", phone).maybeSingle();
     client = byPhone;
+  }
+  if (!client && alias) {
+    const { data: byAliasPhone } = await db.from("clients").select("*").eq("phone", alias).maybeSingle();
+    client = byAliasPhone;
   }
   if (!client) {
     const { data: created, error } = await db
@@ -78,8 +90,8 @@ export async function upsertInbound(db: SupabaseClient, input: {
       .single();
     if (error) throw error;
     client = created;
-  } else if (!client.wa_phone) {
-    await db.from("clients").update({ wa_phone: phone, wa_name: input.name || client.wa_name }).eq("id", client.id);
+  } else if (!client.wa_phone || client.wa_phone === alias) {
+    await db.from("clients").update({ phone, wa_phone: phone, wa_name: input.name || client.wa_name }).eq("id", client.id);
   }
 
   let { data: lead } = await db
@@ -108,6 +120,11 @@ export async function upsertInbound(db: SupabaseClient, input: {
   }
 
   let { data: conv } = await db.from("wa_conversations").select("*").eq("wa_phone", phone).maybeSingle();
+  if (!conv && alias) {
+    const { data: byAlias } = await db.from("wa_conversations").select("*").eq("wa_phone", alias).maybeSingle();
+    conv = byAlias;
+  }
+  const previousMeta = conv?.metadata && typeof conv.metadata === "object" ? conv.metadata : {};
   if (!conv) {
     const { data: created, error } = await db
       .from("wa_conversations")
@@ -116,6 +133,7 @@ export async function upsertInbound(db: SupabaseClient, input: {
         lead_id: lead.id,
         wa_phone: phone,
         wa_name: input.name || client.name,
+        metadata: chatMetadata,
         last_message_at: new Date().toISOString(),
         last_inbound_at: new Date().toISOString(),
         unread_count: 1,
@@ -128,6 +146,9 @@ export async function upsertInbound(db: SupabaseClient, input: {
     await db
       .from("wa_conversations")
       .update({
+        wa_phone: phone,
+        client_id: conv.client_id || client.id,
+        metadata: { ...previousMeta, ...chatMetadata },
         last_message_at: new Date().toISOString(),
         last_inbound_at: new Date().toISOString(),
         unread_count: (conv.unread_count || 0) + 1,
@@ -716,7 +737,7 @@ async function generateGenesisReply(
     .eq("id", conversationId);
 
   if (opts?.deliver !== false) {
-    const sent = await sendWhatsAppText(String(conversation.wa_phone), reply);
+    const sent = await sendWhatsAppText(wazendDestination(conversation), reply);
     if (!sent.ok) {
       await insertSystemNote(
         db,
@@ -747,7 +768,7 @@ export async function processDueReminders(db: SupabaseClient) {
     if (item.conversation_id && item.body) {
       const { data: conv } = await db.from("wa_conversations").select("wa_phone,assigned_to").eq("id", item.conversation_id).maybeSingle();
       if (conv?.wa_phone && conv.assigned_to !== "humano") {
-        sent = await sendWhatsAppText(conv.wa_phone, item.body);
+        sent = await sendWhatsAppText(wazendDestination(conv), item.body);
         await db.from("wa_messages").insert({
           conversation_id: item.conversation_id,
           direction: "out",

@@ -1,5 +1,5 @@
 import { json, serviceClient } from "../_shared/supabase.ts";
-import { sendWhatsAppText } from "../_shared/whatsapp.ts";
+import { sendWhatsAppText, wazendDestination } from "../_shared/whatsapp.ts";
 
 function corsHeaders() {
   return {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     if (!content) return json({ error: "content requerido" }, 400);
 
-    const sent = await sendWhatsAppText(String(conv.wa_phone), content);
+    const sent = await sendWhatsAppText(wazendDestination(conv), content);
     const { error: msgErr } = await db.from("wa_messages").insert({
       conversation_id: conversationId,
       direction: "out",
