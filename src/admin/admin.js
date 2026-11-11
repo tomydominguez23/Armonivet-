@@ -1532,7 +1532,7 @@ async function openWaThread(id) {
         .map((m) => {
           const sys = m.author === "sistema" ? " wa-bubble--sys" : "";
           const label = WA_AUTHOR_LABEL[m.author] || m.author;
-          return `<div class="wa-bubble wa-bubble--${m.direction}${sys}"><small>${escapeHtml(label)}</small><p>${escapeHtml(m.content || "")}</p></div>`;
+          return `<div class="wa-bubble wa-bubble--${m.direction}${sys}"><small>${escapeHtml(label)}</small><p>${escapeHtml(plainChat(m.content || ""))}</p></div>`;
         })
         .join("") || `<p class="empty">Sin mensajes</p>`}
     </div>
@@ -3679,6 +3679,15 @@ async function uploadImage(file, path) {
   }
   const { data } = client.storage.from("site-images").getPublicUrl(clean);
   return data.publicUrl;
+}
+
+function plainChat(text) {
+  return String(text || "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/\*\*/g, "");
 }
 
 function escapeHtml(str) {
