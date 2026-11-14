@@ -65,14 +65,14 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "listar_servicios",
-    description: "Lista servicios y precios vigentes de Armonivet.",
+    description: "Lista servicios y precios vigentes de Armonivet. Llamala cuando pregunten precio, valor, cuánto sale o cotización.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
     strict: true,
   },
   {
     type: "function",
     name: "consultar_disponibilidad",
-    description: "Lee la agenda en vivo de Armonivet, la misma de la web. Llamala en el mismo turno en que la persona pida una hora, un control, un cambio de día o pregunte si hay disponibilidad, antes de responder. Devuelve solo horarios libres. Ofrece exactamente 2 de esa lista, en hora de Chile, y no inventes otros.",
+    description: "Lee la agenda en vivo de Armonivet, la misma de la web. Llamala solo cuando ya sepas el motivo de consulta, o cuando pregunten explícitamente por horas, disponibilidad o un cambio de día. No la uses si solo quieren agendar y todavía falta el motivo, ni para un saludo o un precio. Devuelve solo horarios libres. Ofrece exactamente 2 de esa lista, en hora de Chile, y no inventes otros.",
     parameters: {
       type: "object",
       properties: {
@@ -147,7 +147,7 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "consultar_pago",
-    description: "Consulta el estado de pagos del cliente.",
+    description: "Consulta el estado de pagos del cliente. Úsala solo si preguntan si su pago se acreditó, si no les llegó el comprobante, o por una reserva que ya hicieron. No la uses para agendar, saludar o cotizar.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
     strict: true,
   },
