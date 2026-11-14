@@ -214,10 +214,36 @@ async function logAction(
 
 type SlotRow = { at?: string; date?: string; time?: string; label?: string; mode?: string };
 
+const LIVE_AGENDA_SENTENCE =
+  "Si el cliente quiere agendar o una consulta y todavía no dijo el motivo, pregunta el motivo primero y no ofrezcas horarios en ese mensaje. Recién cuando sepas el motivo consulta la agenda en vivo y ofrece exactamente 2 horarios libres en hora de Chile. No inventes otros ni pidas nombre o teléfono antes de mostrar esas 2 opciones. Si no hay disponibilidad, dilo y no propongas ninguna hora. Agendar, precio o el link de armonivet.com/#agendar es una reserva nueva: no hables de Google Meet ni de conectarse a una consulta ya pagada.";
+
+const STALE_AGENDA_SENTENCES = [
+  "Si el cliente necesita una hora, ofrece 2 opciones reales. Si no hay disponibilidad, dilo.",
+  "Si el cliente quiere una hora, un control, cambiar el día o pregunta si hay disponibilidad, consulta la agenda en vivo en ese mismo turno y ofrece exactamente 2 horarios libres que devolvió la agenda, en hora de Chile. No inventes otros ni pidas nombre, teléfono o datos de la mascota antes de mostrar esas 2 opciones. Si no hay disponibilidad, dilo y no propongas ninguna hora.",
+];
+
+export function sanitizeGenesisPrompt(raw: string) {
+  let text = String(raw || "");
+  for (const snippet of STALE_AGENDA_SENTENCES) {
+    if (text.includes(snippet)) text = text.replaceAll(snippet, LIVE_AGENDA_SENTENCE);
+  }
+  return text;
+}
+
+const INTAKE_RULE = [
+  "Orden obligatorio para agendar, no lo inviertas:",
+  "1) Si quieren agendar, una consulta o una hora y todavía no dijeron el motivo, pregunta el motivo primero. Si no sabes si es perro o gato, pregúntalo en el mismo mensaje.",
+  "2) Con el motivo, decide la modalidad (online o presencial) según las reglas de abajo.",
+  "3) Da el precio de esa modalidad. Si preguntan cuánto sale, llama listar_servicios y responde el valor. No ofrezcas horarios si todavía falta el motivo.",
+  "4) Recién ahí llama consultar_disponibilidad y ofrece 2 horarios.",
+  "5) Cierra con el link de reserva en el modo correcto.",
+  "Si te piden agendar y no hay motivo, responde SOLO pidiendo el motivo. Nada de horarios, nada de Google Meet, nada de pago acreditado, nada de consulta de hoy, nada de que no puedes llamar.",
+].join(" ");
+
 const AGENDA_RULE = [
-  "Agenda en vivo: si la persona quiere una hora, un control, cambiar el día o pregunta si hay disponibilidad, llama consultar_disponibilidad en ese mismo turno, antes de responder.",
+  "Agenda en vivo: llama consultar_disponibilidad solo cuando ya sepas el motivo, o cuando pregunten explícitamente por horas, disponibilidad o cambiar el día.",
   "Si el caso prioriza online, llama consultar_disponibilidad con modalidad online aunque hayan pedido presencial. Si no, usa la modalidad que pidieron.",
-  "Ofrece exactamente 2 horarios copiados de slots, con su label, en hora de Chile. Esos horarios ya están libres.",
+  "Ofrece exactamente 2 horarios copiados de offer o slots, con su label, en hora de Chile. Esos horarios ya están libres.",
   "No inventes otros ni ofrezcas una hora que no venga en slots.",
   "No pidas nombre ni teléfono antes de mostrar esas 2 opciones.",
   "Si slots está vacío, di que no hay horas en ese período y no propongas ninguna.",
@@ -227,12 +253,19 @@ const AGENDA_RULE = [
 const FUNNEL_RULE = [
   "Cierre en la web: asesora y después redirige al calendario que corresponde. Online: https://armonivet.com/#agendar?modo=online. Presencial: https://armonivet.com/#agendar?modo=presencial.",
   "No mandes el link sin modo. En cada respuesta de precio u hora, recuerda que la reserva se confirma pagando en ese link. No digas que la hora ya quedó tomada por WhatsApp.",
-  "En el primer mensaje donde des valores, pregunta también el motivo de consulta si todavía no lo dijo.",
   "Solo online, aunque pidan visita a domicilio, cuando haya miedo o agresividad con personas desconocidas, la mascota se lleve mal con extraños, ansiedad por separación o no pueda quedar sola, miedo o fobia a la pirotecnia, introducción entre gatos, agresividad en gatos, cualquier consulta de gatos, o perros grandes que tiren de la correa o se suban encima de las personas.",
   "Esta regla pisa cualquier instrucción anterior. En esos casos la única reserva es online: dos horarios online, el precio online y el link online. No preguntes comuna, no cotices sector y no mandes el link presencial.",
   "Convence con cercanía y en una frase corta, sin discurso ni tono pesado. Reconoce lo que cuentan y explica que el primer acercamiento se hace online porque es más seguro para la doctora y para el tutor. No asustes, no enumeres riesgos y no repitas el mismo argumento en cada mensaje.",
   "Si insisten en presencial, sigue cercana: valida que quieren verla en casa y mantén la consulta online como el camino. No ofrezcas la hora presencial ni la dejes como alternativa.",
   "Si pide presencial y el caso no está en esa lista, pregunta la comuna sin enumerar sectores ni comunas. Cuando la diga, llama listar_servicios y responde solo el sector cuyo zones_text la incluye. Si pide qué comunas cubre un sector, nómbralas en una frase corta.",
+].join(" ");
+
+const MEET_RULE = [
+  "Agendar, quiero una consulta, cuánto sale o un link de armonivet.com/#agendar es siempre una reserva nueva.",
+  "No preguntes si se refieren a conectarse a una consulta, ni hables de Google Meet, ni de pago acreditado, ni de la consulta de hoy.",
+  "El link de Meet lo envía el sistema solo en el comprobante cuando el pago queda acreditado. Tú no lo mandes ni lo expliques, salvo que la persona tenga una cita online pagada próxima y pregunte explícitamente por el enlace, cómo ingresar, o que no le llegó.",
+  "No uses consultar_pago ni consultar_disponibilidad para responder un saludo, un agendar o un precio.",
+  "Si payments está vacío, no hay ningún pago pendiente: no digas que falta acreditar un pago.",
 ].join(" ");
 
 function plainReply(text: string) {
@@ -243,6 +276,78 @@ function plainReply(text: string) {
     .replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,!?:;]|$)/g, "$1$2")
     .replace(/\*\*/g, "")
     .trim();
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function appointmentContext(appts: Array<Record<string, unknown>> | null | undefined) {
+  const now = Date.now();
+  const upcoming: Array<Record<string, unknown>> = [];
+  let past = 0;
+  for (const item of appts || []) {
+    const at = item?.scheduled_at ? new Date(String(item.scheduled_at)).getTime() : NaN;
+    const status = String(item?.status || "");
+    const done = /cancel|atendid|ausente/i.test(status) || !Number.isFinite(at) || at < now - 4 * 3600_000;
+    if (done) {
+      past += 1;
+      continue;
+    }
+    upcoming.push({
+      id: item.id,
+      scheduled_at: item.scheduled_at,
+      status: item.status,
+      service_title: item.service_title,
+      amount: item.amount,
+      deposit_paid: item.deposit_paid,
+    });
+  }
+  return {
+    citas_proximas: upcoming,
+    citas_pasadas: past,
+    hint: "Si piden agendar, una consulta o el precio, es una reserva NUEVA. No asumas que quieren conectarse a una cita previa ni menciones Meet.",
+  };
+}
+
+async function latestInbound(db: SupabaseClient, conversationId: string) {
+  const { data } = await db
+    .from("wa_messages")
+    .select("id, created_at")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "in")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+async function coalesceInbound(db: SupabaseClient, conversationId: string) {
+  const first = await latestInbound(db, conversationId);
+  if (!first?.id) return { skip: false };
+  await sleep(1500);
+  const latest = await latestInbound(db, conversationId);
+  if (latest?.id && latest.id !== first.id) return { skip: true };
+
+  const { data: conv } = await db.from("wa_conversations").select("metadata").eq("id", conversationId).maybeSingle();
+  const previous = conv?.metadata && typeof conv.metadata === "object" ? conv.metadata as Record<string, unknown> : {};
+  const turn = previous.genesis_turn && typeof previous.genesis_turn === "object"
+    ? previous.genesis_turn as { inbound_id?: string; at?: string }
+    : null;
+  const claimedAt = turn?.at ? Date.parse(turn.at) : 0;
+  if (turn?.inbound_id === first.id && Number.isFinite(claimedAt) && Date.now() - claimedAt < 45_000) {
+    return { skip: true };
+  }
+  await db
+    .from("wa_conversations")
+    .update({
+      metadata: {
+        ...previous,
+        genesis_turn: { inbound_id: first.id, at: new Date().toISOString() },
+      },
+    })
+    .eq("id", conversationId);
+  return { skip: false };
 }
 
 async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string | null) {
@@ -628,6 +733,10 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
   if (conversation.assigned_to === "humano" || conversation.status === "pausada_humano") {
     return { skipped: true, reason: "human_takeover" };
   }
+  if (opts?.deliver !== false) {
+    const coalesced = await coalesceInbound(db, conversationId);
+    if (coalesced.skip) return { skipped: true, reason: "coalesced" };
+  }
 
   try {
     return await generateGenesisReply(db, conversationId, conversation, settings, opts);
@@ -667,12 +776,13 @@ async function generateGenesisReply(
     Object.fromEntries(Object.entries(record).filter(([, value]) => value !== null && value !== undefined && value !== ""));
 
   const instructions = [
-    settings.system_prompt || "Eres Génesis, secretaria de Armonivet.",
+    sanitizeGenesisPrompt(settings.system_prompt || "Eres Génesis, secretaria de Armonivet."),
     "Usa herramientas para datos reales. No inventes horas ni precios.",
+    INTAKE_RULE,
     AGENDA_RULE,
     FUNNEL_RULE,
+    MEET_RULE,
     "Escribe como un WhatsApp, en texto plano. No uses asteriscos, negritas, markdown ni símbolos para destacar palabras. Mensajes breves.",
-    "El link de Google Meet de una consulta online se envía solo por WhatsApp cuando el pago queda acreditado. No inventes un link ni lo pidas por el chat.",
     "Si el contexto incluye formulario_previo, úsalo como antecedente del paciente. No inventes datos clínicos ni de conducta. No vuelvas a pedir lo que ya está respondido, salvo que falte un dato imprescindible para agendar o confirmar la hora.",
     `Contexto cliente: ${JSON.stringify({
       client: client
@@ -699,7 +809,7 @@ async function generateGenesisReply(
         : null,
       formulario_previo: intake?.raw_answers || null,
       pipeline: conversation.pipeline,
-      appointments: appts || [],
+      appointments: appointmentContext(appts as Array<Record<string, unknown>> | null),
       payments: payments || [],
     })}`,
   ].join("\n\n");

@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
 
     const db = serviceClient();
     const processed = [];
+    const pendingTurns = new Set<string>();
     for (const msg of inbound) {
       const up = await upsertInbound(db, {
         phone: msg.from,
@@ -58,12 +59,13 @@ Deno.serve(async (req) => {
         waMessageId: msg.id,
         type: msg.type,
       });
-      if (!up.duplicate) {
-        try {
-          processed.push(await runGenesisTurn(db, up.conversationId));
-        } catch (err) {
-          processed.push({ error: err instanceof Error ? err.message : String(err) });
-        }
+      if (!up.duplicate) pendingTurns.add(up.conversationId);
+    }
+    for (const conversationId of pendingTurns) {
+      try {
+        processed.push(await runGenesisTurn(db, conversationId));
+      } catch (err) {
+        processed.push({ error: err instanceof Error ? err.message : String(err) });
       }
     }
     return json({ ok: true, processed, provider: wazend ? "wazend" : "meta" });

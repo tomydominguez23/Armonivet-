@@ -21,6 +21,7 @@ En el SQL Editor de Supabase, en este orden:
 7. `calendar_settings.sql`  ← duración, anticipación, descansos y fechas de Calendario
 8. `checkout.sql`  ← carrito y Mercado Pago
 9. `payment_holds.sql`  ← monto real, comprobante por WhatsApp y liberación de la hora si el pago no se completa
+10. `genesis_intake.sql`  ← motivo de consulta antes de horarios; agendar no es Meet
 
 `payment_holds.sql` se corre en el SQL Editor aunque ya hayas corrido los anteriores. Ajusta citas viejas: copia el monto del pago acreditado, estima el precio del servicio cuando nunca se guardó el cobro, y cancela reservas **web** que siguen en `agendada` sin pago hace más de 20 minutos. No cancela citas de WhatsApp ni las que ya están abonadas.
 
@@ -105,6 +106,7 @@ Podés usar un cron de GitHub Actions, pg_cron + pg_net, o el scheduler de Supab
 ## Qué hace Génesis hoy
 
 - Crea lead + cliente al primer mensaje
+- Pregunta el motivo de consulta antes de ofrecer horarios o el link de Meet
 - Consulta horas libres reales (`list_available_slots`, misma agenda que la web)
 - Califica, agenda, reagenda, cancela
 - Crea abono de $20.000 con vencimiento a 12 h

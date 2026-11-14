@@ -92,13 +92,17 @@ async function sendPaymentReceipt(
   amount: number,
   mpId: number | string | undefined,
 ) {
+  let claimedAt = "";
   try {
-    const { data: payRow, error } = await db
+    claimedAt = new Date().toISOString();
+    const { data: claimed, error } = await db
       .from("payments")
-      .select("receipt_sent_at")
+      .update({ receipt_sent_at: claimedAt })
       .eq("id", paymentId)
+      .is("receipt_sent_at", null)
+      .select("id")
       .maybeSingle();
-    if (error || payRow?.receipt_sent_at) return;
+    if (error || !claimed) return;
 
     const { data: appt } = await db
       .from("appointments")
@@ -106,7 +110,10 @@ async function sendPaymentReceipt(
       .eq("id", appointmentId)
       .maybeSingle();
     const phone = String(appt?.client_phone || "").trim();
-    if (!phone) return;
+    if (!phone) {
+      await db.from("payments").update({ receipt_sent_at: null }).eq("id", paymentId).eq("receipt_sent_at", claimedAt);
+      return;
+    }
 
     let meetUrl = "";
     if (appt && isOnlineVisit(appt)) {
@@ -130,10 +137,13 @@ async function sendPaymentReceipt(
     ].filter(Boolean);
 
     const sent = await sendWhatsAppText(phone, lines.join("\n"));
-    if (sent?.ok) {
-      await db.from("payments").update({ receipt_sent_at: new Date().toISOString() }).eq("id", paymentId);
+    if (!sent?.ok) {
+      await db.from("payments").update({ receipt_sent_at: null }).eq("id", paymentId).eq("receipt_sent_at", claimedAt);
     }
   } catch (err) {
+    if (claimedAt) {
+      await db.from("payments").update({ receipt_sent_at: null }).eq("id", paymentId).eq("receipt_sent_at", claimedAt);
+    }
     console.warn("[receipt]", err instanceof Error ? err.message : err);
   }
 }
