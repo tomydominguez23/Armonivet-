@@ -1,6 +1,13 @@
 import { json, serviceClient, text } from "../_shared/supabase.ts";
 import { extractInbound, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
-import { runGenesisTurn, upsertInbound } from "../_shared/agent.ts";
+import { runGenesisTurn, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
+
+function enqueueBackground(work: Promise<unknown>) {
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (task: Promise<unknown>) => void } }).EdgeRuntime;
+  if (!runtime?.waitUntil) return false;
+  runtime.waitUntil(work);
+  return true;
+}
 
 function isWazendPayload(payload: Record<string, unknown>) {
   if (typeof payload.event === "string") return true;
@@ -47,7 +54,6 @@ Deno.serve(async (req) => {
     if (!inbound.length) return json({ ok: true, empty: true });
 
     const db = serviceClient();
-    const processed = [];
     const pendingTurns = new Set<string>();
     for (const msg of inbound) {
       const up = await upsertInbound(db, {
@@ -59,16 +65,29 @@ Deno.serve(async (req) => {
         waMessageId: msg.id,
         type: msg.type,
       });
-      if (!up.duplicate) pendingTurns.add(up.conversationId);
-    }
-    for (const conversationId of pendingTurns) {
-      try {
-        processed.push(await runGenesisTurn(db, conversationId));
-      } catch (err) {
-        processed.push({ error: err instanceof Error ? err.message : String(err) });
+      if (!up.duplicate || (await unansweredInbound(db, up.conversationId))) {
+        pendingTurns.add(up.conversationId);
       }
     }
-    return json({ ok: true, processed, provider: wazend ? "wazend" : "meta" });
+
+    const work = (async () => {
+      const processed = [];
+      for (const conversationId of pendingTurns) {
+        try {
+          processed.push(await runGenesisTurn(db, conversationId));
+        } catch (err) {
+          processed.push({ error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      return processed;
+    })();
+
+    if (enqueueBackground(work.catch((err) => {
+      console.error("[whatsapp-webhook]", err instanceof Error ? err.message : err);
+    }))) {
+      return json({ ok: true, accepted: true, pending: pendingTurns.size, provider: wazend ? "wazend" : "meta" });
+    }
+    return json({ ok: true, processed: await work, provider: wazend ? "wazend" : "meta" });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
