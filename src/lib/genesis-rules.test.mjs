@@ -24,7 +24,7 @@ assert.equal(stale.length, 2);
 function sanitizeGenesisPrompt(raw) {
   let text = String(raw || "");
   for (const snippet of stale) {
-    if (text.includes(snippet)) text = text.replaceAll(snippet, live);
+    if (text.includes(snippet)) text = text.split(snippet).join(live);
   }
   return text;
 }
@@ -50,8 +50,14 @@ const mp = readFileSync(join(root, "supabase/functions/_shared/mercadopago.ts"),
 assert.match(mp, /is\("receipt_sent_at", null\)/);
 assert.match(mp, /receipt_sent_at: null/);
 
+assert.equal(agent.includes("coalesceInbound"), false);
+assert.equal(agent.includes("await sleep("), false);
+assert.match(agent, /export async function unansweredInbound/);
+
 const webhook = readFileSync(join(root, "supabase/functions/whatsapp-webhook/index.ts"), "utf8");
 assert.match(webhook, /pendingTurns/);
+assert.match(webhook, /unansweredInbound/);
+assert.match(webhook, /waitUntil/);
 
 const sql = readFileSync(join(root, "supabase/genesis_intake.sql"), "utf8");
 assert.match(sql, /pregunta el motivo primero/);

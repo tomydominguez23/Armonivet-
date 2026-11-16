@@ -225,7 +225,7 @@ const STALE_AGENDA_SENTENCES = [
 export function sanitizeGenesisPrompt(raw: string) {
   let text = String(raw || "");
   for (const snippet of STALE_AGENDA_SENTENCES) {
-    if (text.includes(snippet)) text = text.replaceAll(snippet, LIVE_AGENDA_SENTENCE);
+    if (text.includes(snippet)) text = text.split(snippet).join(LIVE_AGENDA_SENTENCE);
   }
   return text;
 }
@@ -278,10 +278,6 @@ function plainReply(text: string) {
     .trim();
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function appointmentContext(appts: Array<Record<string, unknown>> | null | undefined) {
   const now = Date.now();
   const upcoming: Array<Record<string, unknown>> = [];
@@ -310,44 +306,16 @@ function appointmentContext(appts: Array<Record<string, unknown>> | null | undef
   };
 }
 
-async function latestInbound(db: SupabaseClient, conversationId: string) {
+export async function unansweredInbound(db: SupabaseClient, conversationId: string) {
   const { data } = await db
     .from("wa_messages")
-    .select("id, created_at")
+    .select("direction, author")
     .eq("conversation_id", conversationId)
-    .eq("direction", "in")
+    .neq("author", "sistema")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data;
-}
-
-async function coalesceInbound(db: SupabaseClient, conversationId: string) {
-  const first = await latestInbound(db, conversationId);
-  if (!first?.id) return { skip: false };
-  await sleep(1500);
-  const latest = await latestInbound(db, conversationId);
-  if (latest?.id && latest.id !== first.id) return { skip: true };
-
-  const { data: conv } = await db.from("wa_conversations").select("metadata").eq("id", conversationId).maybeSingle();
-  const previous = conv?.metadata && typeof conv.metadata === "object" ? conv.metadata as Record<string, unknown> : {};
-  const turn = previous.genesis_turn && typeof previous.genesis_turn === "object"
-    ? previous.genesis_turn as { inbound_id?: string; at?: string }
-    : null;
-  const claimedAt = turn?.at ? Date.parse(turn.at) : 0;
-  if (turn?.inbound_id === first.id && Number.isFinite(claimedAt) && Date.now() - claimedAt < 45_000) {
-    return { skip: true };
-  }
-  await db
-    .from("wa_conversations")
-    .update({
-      metadata: {
-        ...previous,
-        genesis_turn: { inbound_id: first.id, at: new Date().toISOString() },
-      },
-    })
-    .eq("id", conversationId);
-  return { skip: false };
+  return data?.direction === "in";
 }
 
 async function loadAvailableSlots(db: SupabaseClient, days = 21, mode?: string | null) {
@@ -732,10 +700,6 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
   }
   if (conversation.assigned_to === "humano" || conversation.status === "pausada_humano") {
     return { skipped: true, reason: "human_takeover" };
-  }
-  if (opts?.deliver !== false) {
-    const coalesced = await coalesceInbound(db, conversationId);
-    if (coalesced.skip) return { skipped: true, reason: "coalesced" };
   }
 
   try {
