@@ -179,35 +179,161 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
   return messages;
 }
 
+export function sessionMissingError(error: string) {
+  return /session .*does not exist|session not found|unknown session/i.test(String(error || ""));
+}
+
+export function pickWazendSession(
+  sessions: Array<{ name?: string; status?: string }> | null | undefined,
+  preferred: string,
+) {
+  const wanted = String(preferred || "").trim() || "default";
+  const list = Array.isArray(sessions) ? sessions : [];
+  const working = list.filter((item) =>
+    String(item?.status || "").toUpperCase() === "WORKING" && String(item?.name || "").trim()
+  );
+  const match = working.find((item) => item.name === wanted);
+  if (match?.name) return match.name;
+  return working[0]?.name || wanted;
+}
+
+export function formatWazendSessions(sessions: Array<{ name?: string; status?: string }> | null | undefined) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  return list
+    .map((item) => {
+      const name = String(item?.name || "").trim();
+      return name ? `${name}:${String(item?.status || "UNKNOWN")}` : "";
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function inboundSkipReasons(payload: Record<string, unknown>) {
+  const reasons: string[] = [];
+  for (const event of wazendEvents(payload)) {
+    const name = String(event.event || "");
+    if (name && name !== "message" && name !== "message.any") {
+      reasons.push(`event:${name || "unknown"}`);
+      continue;
+    }
+    const inner = (event.payload && typeof event.payload === "object"
+      ? event.payload
+      : event) as Record<string, unknown>;
+    if (inner.fromMe === true) {
+      reasons.push("fromMe");
+      continue;
+    }
+    const fromRaw = String(inner.from || inner.chatId || "");
+    if (!fromRaw) {
+      reasons.push("sin-origen");
+      continue;
+    }
+    if (fromRaw.includes("@g.us") || fromRaw.includes("@broadcast") || fromRaw.includes("@newsletter")) {
+      reasons.push("grupo");
+      continue;
+    }
+    const sender = resolveWazendSender(inner);
+    if (!sender.phone) {
+      reasons.push("sin-telefono");
+      continue;
+    }
+    const body = String(inner.body || inner.caption || inner.text || "").trim();
+    if (!body && !inner.hasMedia) reasons.push("sin-texto");
+  }
+  return reasons;
+}
+
+function wazendSendError(data: Record<string, unknown>, statusText: string) {
+  const exception = data.exception && typeof data.exception === "object"
+    ? String((data.exception as { message?: string }).message || "")
+    : "";
+  return exception || String(data.message || data.error || statusText || "send_failed");
+}
+
+async function listWazendSessions(base: string, key: string) {
+  try {
+    const res = await fetch(`${base}/api/sessions?all=true`, {
+      headers: { "X-Api-Key": key },
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json().catch(() => null);
+    if (Array.isArray(data)) return data as Array<{ name?: string; status?: string }>;
+    if (data && typeof data === "object" && Array.isArray((data as { sessions?: unknown }).sessions)) {
+      return (data as { sessions: Array<{ name?: string; status?: string }> }).sessions;
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+let cachedWazendSession = "";
+
+async function postWazendText(base: string, key: string, session: string, chatId: string, body: string) {
+  try {
+    const res = await fetch(`${base}/api/sendText`, {
+      method: "POST",
+      headers: {
+        "X-Api-Key": key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session,
+        chatId,
+        text: body.slice(0, 4096),
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+    return { ok: res.ok, data, error: wazendSendError(data, res.statusText) };
+  } catch (err) {
+    return {
+      ok: false,
+      data: {},
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 async function sendViaWazend(to: string, body: string) {
   const base = wazendBase();
   const key = env("WAZEND_API_KEY");
-  const session = env("WAZEND_SESSION") || "default";
+  const preferred = env("WAZEND_SESSION") || "default";
   const chatId = to.includes("@") ? to : toWazendChatId(to);
-  const res = await fetch(`${base}/api/sendText`, {
-    method: "POST",
-    headers: {
-      "X-Api-Key": key,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      session,
-      chatId,
-      text: body.slice(0, 4096),
-    }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const exception = data.exception && typeof data.exception === "object" ? data.exception.message : "";
+  let sessions: Array<{ name?: string; status?: string }> = [];
+  let session = cachedWazendSession || preferred;
+
+  if (!cachedWazendSession) {
+    sessions = await listWazendSessions(base, key);
+    session = pickWazendSession(sessions, preferred);
+  }
+
+  let sent = await postWazendText(base, key, session, chatId, body);
+  if (!sent.ok && sessionMissingError(sent.error)) {
+    sessions = await listWazendSessions(base, key);
+    const next = pickWazendSession(sessions, preferred);
+    if (next && next !== session) {
+      session = next;
+      sent = await postWazendText(base, key, session, chatId, body);
+    }
+  }
+
+  if (!sent.ok) {
+    const names = formatWazendSessions(sessions);
+    const hint = names
+      ? ` WAZEND_SESSION="${preferred}" no sirve. Sesiones: ${names}. Actualizá el secreto a una sesión WORKING.`
+      : ` WAZEND_SESSION="${preferred}" no existe. Actualizá el secreto al nombre real de la sesión WORKING en el panel de Wazend.`;
     return {
       ok: false,
       skipped: false,
-      error: exception || data.message || data.error || res.statusText,
+      error: `${sent.error}.${hint}`,
       provider: "wazend",
-      data,
+      data: sent.data,
     };
   }
-  return { ok: true, skipped: false, id: data.id || data.key?.id || null, provider: "wazend", data };
+
+  cachedWazendSession = session;
+  return { ok: true, skipped: false, id: sent.data.id || (sent.data.key as { id?: string } | undefined)?.id || null, provider: "wazend", data: sent.data };
 }
 
 async function sendViaMeta(to: string, body: string) {

@@ -57,8 +57,34 @@ assert.match(agent, /export async function unansweredInbound/);
 const webhook = readFileSync(join(root, "supabase/functions/whatsapp-webhook/index.ts"), "utf8");
 assert.match(webhook, /pendingTurns/);
 assert.match(webhook, /unansweredInbound/);
+assert.match(webhook, /inboundSkipReasons/);
 assert.equal(webhook.includes("waitUntil"), false);
 assert.equal(webhook.includes("accepted: true"), false);
+
+const whatsapp = readFileSync(join(root, "supabase/functions/_shared/whatsapp.ts"), "utf8");
+assert.match(whatsapp, /export function pickWazendSession/);
+assert.match(whatsapp, /api\/sessions\?all=true/);
+assert.match(whatsapp, /sessionMissingError/);
+
+function sessionMissingError(error) {
+  return /session .*does not exist|session not found|unknown session/i.test(String(error || ""));
+}
+function pickWazendSession(sessions, preferred) {
+  const wanted = String(preferred || "").trim() || "default";
+  const list = Array.isArray(sessions) ? sessions : [];
+  const working = list.filter((item) =>
+    String(item?.status || "").toUpperCase() === "WORKING" && String(item?.name || "").trim()
+  );
+  const match = working.find((item) => item.name === wanted);
+  if (match?.name) return match.name;
+  return working[0]?.name || wanted;
+}
+
+assert.equal(sessionMissingError('Session "S0260" does not exist'), true);
+assert.equal(sessionMissingError("timeout"), false);
+assert.equal(pickWazendSession([{ name: "S0260", status: "STOPPED" }, { name: "S0001", status: "WORKING" }], "S0260"), "S0001");
+assert.equal(pickWazendSession([{ name: "S0260", status: "WORKING" }], "S0260"), "S0260");
+assert.equal(pickWazendSession([], "S0260"), "S0260");
 
 const sql = readFileSync(join(root, "supabase/genesis_intake.sql"), "utf8");
 assert.match(sql, /pregunta el motivo primero/);

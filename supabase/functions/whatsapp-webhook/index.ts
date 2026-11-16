@@ -1,5 +1,5 @@
 import { json, serviceClient, text } from "../_shared/supabase.ts";
-import { extractInbound, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
+import { extractInbound, inboundSkipReasons, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
 import { runGenesisTurn, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
 
 function isWazendPayload(payload: Record<string, unknown>) {
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     }
 
     const inbound = extractInbound(payload);
-    if (!inbound.length) return json({ ok: true, empty: true });
+    if (!inbound.length) return json({ ok: true, empty: true, skipped: inboundSkipReasons(payload) });
 
     const db = serviceClient();
     const pendingTurns = new Set<string>();
