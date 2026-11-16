@@ -1,4 +1,5 @@
 import { json, serviceClient } from "../_shared/supabase.ts";
+import { loadGenesisSettings } from "../_shared/agent.ts";
 import { sendWhatsAppText, wazendDestination } from "../_shared/whatsapp.ts";
 
 function corsHeaders() {
@@ -37,7 +38,13 @@ Deno.serve(async (req) => {
 
     if (!content) return json({ error: "content requerido" }, 400);
 
-    const sent = await sendWhatsAppText(wazendDestination(conv), content);
+    const meta = conv.metadata && typeof conv.metadata === "object"
+      ? conv.metadata as { wazend_session?: string }
+      : {};
+    const settings = await loadGenesisSettings(db);
+    const sent = await sendWhatsAppText(wazendDestination(conv), content, {
+      session: meta.wazend_session || settings.wazend_session,
+    });
     const { error: msgErr } = await db.from("wa_messages").insert({
       conversation_id: conversationId,
       direction: "out",

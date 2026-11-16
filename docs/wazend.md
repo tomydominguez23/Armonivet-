@@ -59,4 +59,13 @@ Para hablar vos: **Admin → WhatsApp → elegí el chat → escribí abajo y En
 
 Si no responde: revisá que `OPENAI_API_KEY` tenga créditos y que la sesión Wazend esté `WORKING`. El envío humano desde el admin usa la misma función `whatsapp-send`.
 
-Si el recuadro **Sistema** dice `Session "…" does not exist`, el número de WhatsApp está bien y Génesis sí redactó: falla el envío porque `WAZEND_SESSION` apunta a una sesión que ya no existe (pasa al volver a escanear el QR). En el panel de Wazend copiá el nombre actual (ej. `S0001`) y actualizá el secreto en Supabase.
+Si el recuadro **Sistema** dice `Session "…" does not exist`, Génesis sí redactó: Wazend no tiene esa sesión. En el panel de Wazend:
+
+1. Confirmá que la sesión esté **WORKING** (QR vinculado).
+2. Copiá el nombre actual (ej. `S0001`, no `S0260` si ya no existe).
+3. Creá una **API Key de esa sesión** (las keys son por sesión).
+4. En Supabase → Edge Functions → Secrets actualizá `WAZEND_SESSION` y `WAZEND_API_KEY`.
+5. En la sesión, el webhook tiene que apuntar a `…/functions/v1/whatsapp-webhook` con evento `message`.
+6. En Admin → Génesis IA también podés guardar el nombre de sesión.
+
+No sirve escribir desde el celular vinculado a Wazend.

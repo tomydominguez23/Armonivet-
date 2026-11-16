@@ -15,6 +15,7 @@ type Settings = {
   slot_hours?: string[];
   workdays?: number[];
   system_prompt?: string;
+  wazend_session?: string;
 };
 
 const PIPELINE = new Set([
@@ -43,6 +44,7 @@ export async function upsertInbound(db: SupabaseClient, input: {
   phone: string;
   aliasPhone?: string;
   chatId?: string;
+  session?: string;
   name?: string;
   text: string;
   waMessageId?: string;
@@ -51,7 +53,10 @@ export async function upsertInbound(db: SupabaseClient, input: {
   const phone = normalizePhone(input.phone);
   const alias = normalizePhone(input.aliasPhone);
   if (!phone) throw new Error("Teléfono vacío");
-  const chatMetadata = input.chatId ? { wazend_chat_id: input.chatId } : {};
+  const chatMetadata = {
+    ...(input.chatId ? { wazend_chat_id: input.chatId } : {}),
+    ...(input.session ? { wazend_session: input.session } : {}),
+  };
 
   if (input.waMessageId) {
     const { data: existing } = await db
@@ -824,12 +829,17 @@ async function generateGenesisReply(
     .eq("id", conversationId);
 
   if (opts?.deliver !== false) {
-    const sent = await sendWhatsAppText(wazendDestination(conversation), reply);
+    const meta = conversation.metadata && typeof conversation.metadata === "object"
+      ? conversation.metadata as { wazend_session?: string }
+      : {};
+    const sent = await sendWhatsAppText(wazendDestination(conversation), reply, {
+      session: meta.wazend_session || settings.wazend_session,
+    });
     if (!sent.ok) {
       await insertSystemNote(
         db,
         conversationId,
-        `Génesis escribió, pero WhatsApp no salió (${sent.error || "Wazend no configurado"}). Revisá WAZEND_BASE_URL, WAZEND_API_KEY, WAZEND_SESSION y que la sesión esté WORKING.`,
+        `Génesis escribió, pero WhatsApp no salió (${sent.error || "Wazend no configurado"}). En el panel de Wazend la sesión tiene que estar WORKING, con webhook a whatsapp-webhook, y WAZEND_SESSION / WAZEND_API_KEY tienen que ser de ESA sesión (no de S0260 si ya no existe).`,
       );
       return { skipped: false, reply, deliverError: sent.error || "send_failed" };
     }

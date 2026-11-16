@@ -93,6 +93,7 @@ export function extractInbound(payload: Record<string, unknown>) {
     from: string;
     aliasPhone?: string;
     chatId?: string;
+    session?: string;
     name: string;
     id: string;
     type: string;
@@ -137,6 +138,7 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
     from: string;
     aliasPhone?: string;
     chatId?: string;
+    session?: string;
     name: string;
     id: string;
     type: string;
@@ -170,6 +172,7 @@ export function extractWazendInbound(payload: Record<string, unknown>) {
       from: phone,
       aliasPhone: sender.lid,
       chatId: sender.chatId,
+      session: String(event.session || inner.session || ""),
       name: pushName,
       id: String(inner.id || event.id || ""),
       type,
@@ -250,38 +253,93 @@ function wazendSendError(data: Record<string, unknown>, statusText: string) {
   return exception || String(data.message || data.error || statusText || "send_failed");
 }
 
-async function listWazendSessions(base: string, key: string) {
-  try {
-    const res = await fetch(`${base}/api/sessions?all=true`, {
-      headers: { "X-Api-Key": key },
-      signal: AbortSignal.timeout(8000),
-    });
-    const data = await res.json().catch(() => null);
-    if (Array.isArray(data)) return data as Array<{ name?: string; status?: string }>;
-    if (data && typeof data === "object" && Array.isArray((data as { sessions?: unknown }).sessions)) {
-      return (data as { sessions: Array<{ name?: string; status?: string }> }).sessions;
+export function normalizeWazendSessions(data: unknown) {
+  const raw = (() => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object") {
+      const record = data as Record<string, unknown>;
+      if (Array.isArray(record.sessions)) return record.sessions;
+      if (Array.isArray(record.data)) return record.data;
+      if (Array.isArray(record.result)) return record.result;
+      if (record.name || record.id || record.session) return [record];
     }
-  } catch {
     return [];
+  })();
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return { name: "", status: "" };
+      const row = item as Record<string, unknown>;
+      return {
+        name: String(row.name || row.id || row.session || "").trim(),
+        status: String(row.status || row.state || "").trim(),
+      };
+    })
+    .filter((item) => item.name);
+}
+
+export function wazendSessionCandidates(input: {
+  cached?: string;
+  hinted?: string;
+  preferred?: string;
+  listed?: Array<{ name?: string; status?: string }>;
+}) {
+  const listed = pickWazendSession(input.listed, input.hinted || input.preferred || "default");
+  const names = [
+    input.cached,
+    input.hinted,
+    listed,
+    input.preferred,
+    "default",
+    "S0001",
+  ];
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const name of names) {
+    const value = String(name || "").trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    unique.push(value);
   }
-  return [];
+  return unique;
+}
+
+async function listWazendSessions(base: string, key: string) {
+  const notes: string[] = [];
+  const paths = ["/api/sessions", "/api/sessions/", "/api/sessions?all=true"];
+  for (const path of paths) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        headers: { "X-Api-Key": key },
+        signal: AbortSignal.timeout(5000),
+      });
+      const text = await res.text();
+      notes.push(`${path} ${res.status} ${text.slice(0, 180)}`);
+      const data = JSON.parse(text) as unknown;
+      const sessions = normalizeWazendSessions(data);
+      if (sessions.length) return { sessions, notes };
+    } catch (err) {
+      notes.push(`${path} ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return { sessions: [] as Array<{ name: string; status: string }>, notes };
 }
 
 let cachedWazendSession = "";
 
 async function postWazendText(base: string, key: string, session: string, chatId: string, body: string) {
   try {
+    const payload: Record<string, string> = {
+      chatId,
+      text: body.slice(0, 4096),
+    };
+    if (session) payload.session = session;
     const res = await fetch(`${base}/api/sendText`, {
       method: "POST",
       headers: {
         "X-Api-Key": key,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        session,
-        chatId,
-        text: body.slice(0, 4096),
-      }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(15000),
     });
     const data = await res.json().catch(() => ({})) as Record<string, unknown>;
@@ -295,45 +353,61 @@ async function postWazendText(base: string, key: string, session: string, chatId
   }
 }
 
-async function sendViaWazend(to: string, body: string) {
+async function sendViaWazend(to: string, body: string, hinted?: string) {
   const base = wazendBase();
   const key = env("WAZEND_API_KEY");
   const preferred = env("WAZEND_SESSION") || "default";
   const chatId = to.includes("@") ? to : toWazendChatId(to);
-  let sessions: Array<{ name?: string; status?: string }> = [];
-  let session = cachedWazendSession || preferred;
+  const listed = cachedWazendSession ? { sessions: [], notes: [] } : await listWazendSessions(base, key);
+  const candidates = wazendSessionCandidates({
+    cached: cachedWazendSession,
+    hinted,
+    preferred,
+    listed: listed.sessions,
+  });
 
-  if (!cachedWazendSession) {
-    sessions = await listWazendSessions(base, key);
-    session = pickWazendSession(sessions, preferred);
+  let sent = { ok: false, data: {} as Record<string, unknown>, error: "sin sesión Wazend" };
+  let used = "";
+  for (const session of candidates) {
+    used = session;
+    sent = await postWazendText(base, key, session, chatId, body);
+    if (sent.ok) break;
+    if (!sessionMissingError(sent.error)) break;
   }
-
-  let sent = await postWazendText(base, key, session, chatId, body);
   if (!sent.ok && sessionMissingError(sent.error)) {
-    sessions = await listWazendSessions(base, key);
-    const next = pickWazendSession(sessions, preferred);
-    if (next && next !== session) {
-      session = next;
-      sent = await postWazendText(base, key, session, chatId, body);
-    }
+    used = "";
+    sent = await postWazendText(base, key, "", chatId, body);
   }
 
   if (!sent.ok) {
-    const names = formatWazendSessions(sessions);
-    const hint = names
-      ? ` WAZEND_SESSION="${preferred}" no sirve. Sesiones: ${names}. Actualizá el secreto a una sesión WORKING.`
-      : ` WAZEND_SESSION="${preferred}" no existe. Actualizá el secreto al nombre real de la sesión WORKING en el panel de Wazend.`;
+    const names = formatWazendSessions(listed.sessions);
+    const tried = candidates.join(", ");
+    const listHint = names
+      ? `Sesiones: ${names}.`
+      : `No pude listar sesiones (${listed.notes[0] || "vacío"}).`;
     return {
       ok: false,
       skipped: false,
-      error: `${sent.error}.${hint}`,
+      error: `${sent.error}. Probé ${tried || preferred}. ${listHint} En Wazend copiá el nombre WORKING, creá una API Key de ESA sesión y actualizá WAZEND_SESSION y WAZEND_API_KEY. El webhook también tiene que estar en esa sesión.`,
       provider: "wazend",
       data: sent.data,
     };
   }
 
-  cachedWazendSession = session;
+  cachedWazendSession = used || cachedWazendSession || preferred;
   return { ok: true, skipped: false, id: sent.data.id || (sent.data.key as { id?: string } | undefined)?.id || null, provider: "wazend", data: sent.data };
+}
+
+export async function wazendHealth() {
+  if (!wazendConfigured()) return { configured: false };
+  const preferred = env("WAZEND_SESSION") || "default";
+  const listed = await listWazendSessions(wazendBase(), env("WAZEND_API_KEY"));
+  return {
+    configured: true,
+    preferred,
+    sessions: formatWazendSessions(listed.sessions) || "",
+    list: listed.notes.slice(0, 3),
+  };
 }
 
 async function sendViaMeta(to: string, body: string) {
@@ -360,7 +434,7 @@ async function sendViaMeta(to: string, body: string) {
   return { ok: true, skipped: false, id: data.messages?.[0]?.id || null, provider: "meta", data };
 }
 
-export async function sendWhatsAppText(to: string, body: string) {
-  if (wazendConfigured()) return sendViaWazend(to, body);
+export async function sendWhatsAppText(to: string, body: string, opts?: { session?: string }) {
+  if (wazendConfigured()) return sendViaWazend(to, body, opts?.session);
   return sendViaMeta(to, body);
 }

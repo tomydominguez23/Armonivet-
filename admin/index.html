@@ -506,6 +506,8 @@
                   <label>Precio mínimo (CLP) <input type="number" name="min_price" /></label>
                 </div>
                 <label>Link de pago (Flow, Mercado Pago, etc.) <input name="payment_url" placeholder="https://…" /></label>
+                <label>Sesión Wazend <input name="wazend_session" placeholder="S0001" /></label>
+                <p class="hint">Copiá el nombre WORKING del panel de Wazend. Si recreaste la sesión, también actualizá <code>WAZEND_SESSION</code> y <code>WAZEND_API_KEY</code> en Supabase y poné el webhook en esa sesión.</p>
                 <p class="hint">Si configurás <code>MERCADOPAGO_ACCESS_TOKEN</code> y <code>MERCADOPAGO_PUBLIC_KEY</code> en Edge Functions, el carrito cobra en la web con Checkout API. Este link es el respaldo.</p>
                 <p class="hint">Los días, la duración y los límites de reserva se configuran en <button type="button" class="linkish" data-goto="calendar">Calendario</button>. Génesis ofrece las mismas horas que la web.</p>
                 <label>Prompt de Génesis
