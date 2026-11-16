@@ -1635,6 +1635,7 @@ async function loadGenesisConfig() {
   form.deposit_amount.value = v.deposit_amount ?? 20000;
   form.min_price.value = v.min_price ?? 40000;
   form.payment_url.value = v.payment_url || "";
+  form.wazend_session.value = v.wazend_session || "";
   form.system_prompt.value = v.system_prompt || "";
 }
 
@@ -1650,6 +1651,7 @@ $("[data-genesis-form]")?.addEventListener("submit", async (e) => {
     deposit_amount: Number(fd.get("deposit_amount") || 20000),
     min_price: Number(fd.get("min_price") || 40000),
     payment_url: String(fd.get("payment_url") || "").trim(),
+    wazend_session: String(fd.get("wazend_session") || "").trim(),
     system_prompt: String(fd.get("system_prompt") || "").trim(),
   };
   await requireSupabase().from("site_settings").upsert({ key: "genesis", value });

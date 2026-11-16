@@ -1,5 +1,5 @@
 import { json, serviceClient, text } from "../_shared/supabase.ts";
-import { extractInbound, inboundSkipReasons, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
+import { extractInbound, inboundSkipReasons, verifyMetaSignature, verifyWazendHmac, wazendHealth } from "../_shared/whatsapp.ts";
 import { runGenesisTurn, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
 
 function isWazendPayload(payload: Record<string, unknown>) {
@@ -18,6 +18,9 @@ Deno.serve(async (req) => {
       const challenge = url.searchParams.get("hub.challenge") || "";
       if (mode === "subscribe" && token && token === Deno.env.get("WHATSAPP_VERIFY_TOKEN")) {
         return text(challenge, 200);
+      }
+      if (url.searchParams.get("diag") === "1") {
+        return json({ ok: true, provider: "wazend", wazend: await wazendHealth() });
       }
       return json({ ok: true, provider: "wazend" });
     }
@@ -53,6 +56,7 @@ Deno.serve(async (req) => {
         phone: msg.from,
         aliasPhone: msg.aliasPhone,
         chatId: msg.chatId,
+        session: msg.session,
         name: msg.name,
         text: msg.text,
         waMessageId: msg.id,

@@ -63,8 +63,15 @@ assert.equal(webhook.includes("accepted: true"), false);
 
 const whatsapp = readFileSync(join(root, "supabase/functions/_shared/whatsapp.ts"), "utf8");
 assert.match(whatsapp, /export function pickWazendSession/);
+assert.match(whatsapp, /export function wazendSessionCandidates/);
+assert.match(whatsapp, /export function normalizeWazendSessions/);
 assert.match(whatsapp, /api\/sessions\?all=true/);
 assert.match(whatsapp, /sessionMissingError/);
+assert.match(whatsapp, /wazendHealth/);
+assert.match(agent, /wazend_session/);
+assert.match(webhook, /diag/);
+assert.match(webhook, /wazendHealth/);
+assert.match(webhook, /session: msg.session/);
 
 function sessionMissingError(error) {
   return /session .*does not exist|session not found|unknown session/i.test(String(error || ""));
@@ -85,6 +92,33 @@ assert.equal(sessionMissingError("timeout"), false);
 assert.equal(pickWazendSession([{ name: "S0260", status: "STOPPED" }, { name: "S0001", status: "WORKING" }], "S0260"), "S0001");
 assert.equal(pickWazendSession([{ name: "S0260", status: "WORKING" }], "S0260"), "S0260");
 assert.equal(pickWazendSession([], "S0260"), "S0260");
+
+function normalizeWazendSessions(data) {
+  const raw = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : data?.name ? [data] : [];
+  return raw.map((item) => ({
+    name: String(item.name || item.id || item.session || "").trim(),
+    status: String(item.status || item.state || "").trim(),
+  })).filter((item) => item.name);
+}
+function wazendSessionCandidates(input) {
+  const listed = pickWazendSession(input.listed, input.hinted || input.preferred || "default");
+  const names = [input.cached, input.hinted, listed, input.preferred, "default", "S0001"];
+  const seen = new Set();
+  const unique = [];
+  for (const name of names) {
+    const value = String(name || "").trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    unique.push(value);
+  }
+  return unique;
+}
+
+assert.deepEqual(normalizeWazendSessions({ data: [{ id: "S0001", state: "WORKING" }] }), [{ name: "S0001", status: "WORKING" }]);
+assert.deepEqual(
+  wazendSessionCandidates({ hinted: "S0001", preferred: "S0260", listed: [] }),
+  ["S0001", "S0260", "default"],
+);
 
 const sql = readFileSync(join(root, "supabase/genesis_intake.sql"), "utf8");
 assert.match(sql, /pregunta el motivo primero/);
