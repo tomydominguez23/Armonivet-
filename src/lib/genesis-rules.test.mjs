@@ -57,7 +57,8 @@ assert.match(agent, /export async function unansweredInbound/);
 const webhook = readFileSync(join(root, "supabase/functions/whatsapp-webhook/index.ts"), "utf8");
 assert.match(webhook, /pendingTurns/);
 assert.match(webhook, /unansweredInbound/);
-assert.match(webhook, /waitUntil/);
+assert.equal(webhook.includes("waitUntil"), false);
+assert.equal(webhook.includes("accepted: true"), false);
 
 const sql = readFileSync(join(root, "supabase/genesis_intake.sql"), "utf8");
 assert.match(sql, /pregunta el motivo primero/);
