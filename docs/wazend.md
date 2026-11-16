@@ -22,7 +22,7 @@ Dashboard → **Project Settings → Edge Functions → Secrets**:
 |---|---|
 | `WAZEND_BASE_URL` | URL del servidor, sin barra final. Ej. `https://eu-central-1.wazend.net` (la ves en el panel de Wazend). |
 | `WAZEND_API_KEY` | API Key del panel (header `X-Api-Key`). |
-| `WAZEND_SESSION` | Nombre de la sesión, ej. `S0001`. |
+| `WAZEND_SESSION` | Nombre de la sesión WORKING, ej. `S0001`. Si el nombre viejo ya no existe (Wazend responde `Session "S0260" does not exist`), Génesis intenta usar la sesión WORKING que liste la API; igual conviene actualizar este secreto. |
 | `WAZEND_WEBHOOK_HMAC` | Opcional. Misma clave HMAC que pongas en el webhook de Wazend. |
 | `OPENAI_API_KEY` | Ya tiene que estar para que Génesis redacte. |
 
@@ -58,3 +58,5 @@ Si Génesis no responde, en el hilo aparece un recuadro **Sistema** con el motiv
 Para hablar vos: **Admin → WhatsApp → elegí el chat → escribí abajo y Enviar**. Eso pausa a Génesis y manda el texto por Wazend. No sirve escribir desde el celular vinculado a Wazend (eso no entra al panel).
 
 Si no responde: revisá que `OPENAI_API_KEY` tenga créditos y que la sesión Wazend esté `WORKING`. El envío humano desde el admin usa la misma función `whatsapp-send`.
+
+Si el recuadro **Sistema** dice `Session "…" does not exist`, el número de WhatsApp está bien y Génesis sí redactó: falla el envío porque `WAZEND_SESSION` apunta a una sesión que ya no existe (pasa al volver a escanear el QR). En el panel de Wazend copiá el nombre actual (ej. `S0001`) y actualizá el secreto en Supabase.

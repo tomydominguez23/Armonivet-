@@ -36,7 +36,7 @@ Dashboard de Supabase → **Project Settings → Edge Functions → Secrets**:
 | `OPENAI_API_KEY` | Clave de OpenAI |
 | `WAZEND_BASE_URL` | URL del servidor Wazend (panel) |
 | `WAZEND_API_KEY` | API Key de Wazend |
-| `WAZEND_SESSION` | Nombre de la sesión (ej. `S0001`) |
+| `WAZEND_SESSION` | Nombre de la sesión WORKING (ej. `S0001`). Si Wazend dice que no existe, actualizalo al nombre actual del panel. |
 | `WAZEND_WEBHOOK_HMAC` | Opcional, firma del webhook |
 | `WHATSAPP_TOKEN` | (Respaldo Meta) Token permanente de Cloud API |
 | `WHATSAPP_PHONE_NUMBER_ID` | (Respaldo Meta) ID del número |
