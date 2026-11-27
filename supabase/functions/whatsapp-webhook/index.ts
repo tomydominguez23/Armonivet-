@@ -1,6 +1,6 @@
 import { json, serviceClient, text } from "../_shared/supabase.ts";
 import { extractInbound, inboundSkipReasons, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
-import { runGenesisTurn, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
+import { respondToConversation, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
 
 function isWazendPayload(payload: Record<string, unknown>) {
   if (typeof payload.event === "string") return true;
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const processed = [];
     for (const conversationId of pendingTurns) {
       try {
-        processed.push(await runGenesisTurn(db, conversationId));
+        processed.push(await respondToConversation(db, conversationId));
       } catch (err) {
         processed.push({ error: err instanceof Error ? err.message : String(err) });
       }

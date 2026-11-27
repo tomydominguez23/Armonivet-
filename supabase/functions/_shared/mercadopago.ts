@@ -187,6 +187,16 @@ export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment
     if (amount > 0) apptUpdate.amount = amount;
     await db.from("appointments").update(apptUpdate).eq("id", appointmentId);
 
+    // Si la cita tenía recordatorios de cobro pendientes ("paga para confirmar",
+    // "la hora se libera"), ya no corresponden: el pago entró.
+    const { error: reminderError } = await db
+      .from("reminders")
+      .update({ status: "cancelado" })
+      .eq("appointment_id", appointmentId)
+      .eq("status", "pendiente")
+      .like("kind", "abono_%");
+    if (reminderError) console.warn("[reminders]", reminderError.message);
+
     const { data: apptRow } = await db
       .from("appointments")
       .select("client_id, notes")

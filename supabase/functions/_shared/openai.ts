@@ -13,19 +13,11 @@ export type GenesisTool = {
   strict?: boolean;
 };
 
+// Génesis conversa con cualquier número que escriba al WhatsApp, así que solo
+// recibe herramientas que actúan sobre la conversación y el cliente actuales.
+// No hay búsqueda de otros clientes (exponía datos de terceros) ni creación de
+// citas o pagos: la reserva y el pago se hacen siempre en armonivet.com/#agendar.
 export const GENESIS_TOOLS: GenesisTool[] = [
-  {
-    type: "function",
-    name: "buscar_cliente",
-    description: "Busca cliente por teléfono o nombre.",
-    parameters: {
-      type: "object",
-      properties: { query: { type: "string" } },
-      required: ["query"],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
   {
     type: "function",
     name: "actualizar_lead",
@@ -86,24 +78,8 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   },
   {
     type: "function",
-    name: "crear_cita",
-    description: "No la uses para cerrar la reserva. La persona agenda y paga en https://armonivet.com/#agendar. Solo crea la cita si ya pagó en la web y hay que registrarla.",
-    parameters: {
-      type: "object",
-      properties: {
-        scheduled_at: { type: "string", description: "ISO 8601" },
-        service_title: { type: "string" },
-        amount: { type: "number" },
-      },
-      required: ["scheduled_at", "service_title", "amount"],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
-  {
-    type: "function",
     name: "reagendar_cita",
-    description: "Cambia la fecha de una cita existente.",
+    description: "Cambia la fecha de una cita existente de este mismo cliente (usa el id de citas_proximas). La nueva hora tiene que venir de consultar_disponibilidad.",
     parameters: {
       type: "object",
       properties: {
@@ -119,27 +95,11 @@ export const GENESIS_TOOLS: GenesisTool[] = [
   {
     type: "function",
     name: "cancelar_cita",
-    description: "Cancela una cita.",
+    description: "Cancela una cita de este mismo cliente (usa el id de citas_proximas).",
     parameters: {
       type: "object",
       properties: { appointment_id: { type: "string" }, motivo: { type: "string" } },
       required: ["appointment_id", "motivo"],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
-  {
-    type: "function",
-    name: "crear_pago",
-    description: "Crea un abono pendiente y devuelve el link de pago si está configurado.",
-    parameters: {
-      type: "object",
-      properties: {
-        appointment_id: { type: "string" },
-        amount: { type: "number" },
-        kind: { type: "string", description: "abono o saldo" },
-      },
-      required: ["appointment_id", "amount", "kind"],
       additionalProperties: false,
     },
     strict: true,

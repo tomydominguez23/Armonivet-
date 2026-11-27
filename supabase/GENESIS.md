@@ -22,6 +22,7 @@ En el SQL Editor de Supabase, en este orden:
 8. `checkout.sql`  ← carrito y Mercado Pago
 9. `payment_holds.sql`  ← monto real, comprobante por WhatsApp y liberación de la hora si el pago no se completa
 10. `genesis_intake.sql`  ← motivo de consulta antes de horarios; agendar no es Meet
+11. `genesis_lock.sql`  ← un solo turno de Génesis a la vez por chat (evita respuestas duplicadas)
 
 `payment_holds.sql` se corre en el SQL Editor aunque ya hayas corrido los anteriores. Ajusta citas viejas: copia el monto del pago acreditado, estima el precio del servicio cuando nunca se guardó el cobro, y cancela reservas **web** que siguen en `agendada` sin pago hace más de 20 minutos. No cancela citas de WhatsApp ni las que ya están abonadas.
 

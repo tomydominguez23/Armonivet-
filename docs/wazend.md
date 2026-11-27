@@ -60,3 +60,18 @@ Para hablar vos: **Admin → WhatsApp → elegí el chat → escribí abajo y En
 Si no responde: revisá que `OPENAI_API_KEY` tenga créditos y que la sesión Wazend esté `WORKING`. El envío humano desde el admin usa la misma función `whatsapp-send`.
 
 Si el recuadro **Sistema** dice `Session "…" does not exist`, el número de WhatsApp está bien y Génesis sí redactó: falla el envío porque `WAZEND_SESSION` apunta a una sesión que ya no existe (pasa al volver a escanear el QR). En el panel de Wazend copiá el nombre actual (ej. `S0001`) y actualizá el secreto en Supabase.
+
+## Por qué se desconecta y cómo evitarlo
+
+La API key de Wazend no tiene fecha de vencimiento publicada (ni en los términos, ni en precios, ni en la documentación). Lo que sí corta el servicio:
+
+1. **El plan de Wazend.** Se cobra por adelantado, mensual, por número conectado. Si es una prueba gratuita o el pago no entra, Wazend puede suspender la instancia sin aviso y, si se cancela, borrarla "tras un plazo razonable". Al recrearla cambia el nombre de la sesión (pasó con `S0260` → `S0249`) y se pierde el webhook. Revisá la columna **Eliminación** en *Tus números*: si muestra una fecha, la instancia se va a borrar ese día. Mantené el pago al día en el portal.
+2. **La regla de 14 días de WhatsApp.** Wazend es un "dispositivo vinculado". WhatsApp lo desconecta si el **celular de Armonivet no se usa por más de 14 días** (apagado, sin internet o sin abrir WhatsApp). Abrí WhatsApp en ese celular al menos una vez por semana.
+3. **Re-escanear el QR o cerrar sesión** en Wazend borra la autenticación (la configuración se mantiene, pero si se crea una sesión nueva hay que repetir todo).
+
+### Si cambia la sesión (checklist)
+
+1. Supabase → Edge Functions → Secrets: `WAZEND_SESSION` (y `WAZEND_BASE_URL` si cambió el servidor, sin `/` final). La API key solo si generaste una nueva.
+2. Wazend → ⚙️ de la sesión → **Webhooks**: URL `https://xcnxqhjthrdvjtqezzct.supabase.co/functions/v1/whatsapp-webhook`, evento `message` (no `message.any`), HMAC vacío salvo que exista `WAZEND_WEBHOOK_HMAC`.
+3. Confirmar que la sesión esté `WORKING` y mostrando el número.
+4. Probar con un "Hola" desde otro celular.
