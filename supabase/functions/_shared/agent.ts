@@ -268,6 +268,17 @@ const MEET_RULE = [
   "Si payments está vacío, no hay ningún pago pendiente: no digas que falta acreditar un pago.",
 ].join(" ");
 
+const HISTORY_LIMIT = 40;
+
+/** Recibe mensajes del más nuevo al más antiguo y los deja en orden de conversación. */
+export function chronological<T extends { created_at?: string | null }>(rows: T[]) {
+  const at = (row: T) => {
+    const ms = Date.parse(String(row.created_at || ""));
+    return Number.isFinite(ms) ? ms : 0;
+  };
+  return [...rows].sort((a, b) => at(a) - at(b));
+}
+
 function plainReply(text: string) {
   return text
     .replace(/\*\*([^*]+)\*\*/g, "$1")
@@ -385,6 +396,17 @@ async function ensureSlotFree(db: SupabaseClient, iso: string, ignoreId?: string
   };
 }
 
+// Génesis solo puede tocar citas del cliente con el que está hablando. Sin esto,
+// cualquiera que escriba podría mover o cancelar la cita de otra persona.
+async function ownedAppointment(db: SupabaseClient, id: string, clientId: string | null) {
+  if (!id || !clientId) return { error: "No encontré esa cita para este cliente." };
+  const { data } = await db.from("appointments").select("*").eq("id", id).maybeSingle();
+  if (!data || String(data.client_id || "") !== clientId) {
+    return { error: "No encontré esa cita para este cliente." };
+  }
+  return { appointment: data as Record<string, unknown> };
+}
+
 async function executeTool(
   db: SupabaseClient,
   ctx: { conversation: Record<string, unknown>; client: Record<string, unknown> | null; settings: Settings },
@@ -405,18 +427,6 @@ async function executeTool(
       return { error: message };
     }
   };
-
-  if (name === "buscar_cliente") {
-    return run(async () => {
-      const q = String(args.query || "");
-      const { data } = await db
-        .from("clients")
-        .select("id,name,phone,wa_phone,pet_name,pet_type,status,consultation_reason")
-        .or(`name.ilike.%${q}%,phone.ilike.%${q}%,wa_phone.ilike.%${q}%,pet_name.ilike.%${q}%`)
-        .limit(8);
-      return { clients: data || [] };
-    });
-  }
 
   if (name === "actualizar_lead") {
     return run(async () => {
@@ -503,92 +513,15 @@ async function executeTool(
     });
   }
 
-  if (name === "crear_cita") {
-    return run(async () => {
-      const scheduledAt = String(args.scheduled_at || "");
-      const taken = await ensureSlotFree(db, scheduledAt);
-      if (taken) return taken;
-      const amount = Number(args.amount || ctx.settings.min_price || 45000);
-      const deposit = Number(ctx.settings.deposit_amount || 0);
-      const { data, error } = await db
-        .from("appointments")
-        .insert({
-          client_id: clientId,
-          client_name: ctx.client?.name || ctx.conversation.wa_name || "WhatsApp",
-          client_phone: ctx.conversation.wa_phone,
-          pet_name: ctx.client?.pet_name || null,
-          pet_type: ctx.client?.pet_type || null,
-          service_title: String(args.service_title || "Consulta"),
-          scheduled_at: scheduledAt,
-          status: "agendada",
-          amount,
-          deposit_amount: deposit,
-          deposit_paid: false,
-          channel_slug: "whatsapp",
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
-      await db.from("wa_conversations").update({ pipeline: "esperando_pago" }).eq("id", convId);
-      const due = new Date(Date.now() + 12 * 3600000).toISOString();
-      const { data: payment } = await db
-        .from("payments")
-        .insert({
-          client_id: clientId,
-          appointment_id: data.id,
-          conversation_id: convId,
-          amount,
-          kind: "saldo",
-          status: "pendiente",
-          checkout_url: ctx.settings.payment_url || null,
-          due_at: due,
-        })
-        .select("*")
-        .single();
-      await db.from("reminders").insert([
-        {
-          conversation_id: convId,
-          client_id: clientId,
-          appointment_id: data.id,
-          payment_id: payment?.id,
-          kind: "abono_2h",
-          body: "Hola 😊 para confirmar la hora se paga el valor total de la consulta. Te dejo el dato para el pago.",
-          scheduled_at: new Date(Date.now() + 2 * 3600000).toISOString(),
-        },
-        {
-          conversation_id: convId,
-          client_id: clientId,
-          appointment_id: data.id,
-          payment_id: payment?.id,
-          kind: "abono_10h",
-          body: "Quedan pocas horas para confirmar con el pago total. Si no se acredita, la hora se libera.",
-          scheduled_at: new Date(Date.now() + 10 * 3600000).toISOString(),
-        },
-        {
-          conversation_id: convId,
-          client_id: clientId,
-          appointment_id: data.id,
-          payment_id: payment?.id,
-          kind: "abono_vence",
-          body: "La hora quedó liberada porque el pago no llegó a tiempo. Cuando quieras, te ayudo a agendar otra.",
-          scheduled_at: due,
-        },
-      ]);
-      return {
-        appointment: data,
-        payment,
-        message: "Cita provisional creada. Se confirma pagando el valor total de la consulta.",
-      };
-    });
-  }
-
   if (name === "reagendar_cita") {
     return run(async () => {
       const id = String(args.appointment_id || "");
       const nextAt = String(args.scheduled_at || "");
+      const owned = await ownedAppointment(db, id, clientId);
+      if ("error" in owned) return owned;
+      const prev = owned.appointment;
       const taken = await ensureSlotFree(db, nextAt, id);
       if (taken) return taken;
-      const { data: prev } = await db.from("appointments").select("*").eq("id", id).maybeSingle();
       let { error } = await db
         .from("appointments")
         .update({ scheduled_at: nextAt, slot_locked_at: new Date().toISOString() })
@@ -604,6 +537,8 @@ async function executeTool(
   if (name === "cancelar_cita") {
     return run(async () => {
       const id = String(args.appointment_id || "");
+      const owned = await ownedAppointment(db, id, clientId);
+      if ("error" in owned) return owned;
       const { error } = await db
         .from("appointments")
         .update({ status: "cancelada", notes: String(args.motivo || "") })
@@ -612,29 +547,6 @@ async function executeTool(
       await db.from("reminders").update({ status: "cancelado" }).eq("appointment_id", id).eq("status", "pendiente");
       await db.from("wa_conversations").update({ pipeline: "cancelado" }).eq("id", convId);
       return { cancelled: id };
-    });
-  }
-
-  if (name === "crear_pago") {
-    return run(async () => {
-      const deposit = Number(args.amount || ctx.settings.deposit_amount || 20000);
-      const { data, error } = await db
-        .from("payments")
-        .insert({
-          client_id: clientId,
-          appointment_id: args.appointment_id || null,
-          conversation_id: convId,
-          amount: deposit,
-          kind: String(args.kind || "abono"),
-          status: "pendiente",
-          checkout_url: ctx.settings.payment_url || null,
-          due_at: new Date(Date.now() + 12 * 3600000).toISOString(),
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
-      await db.from("wa_conversations").update({ pipeline: "esperando_pago" }).eq("id", convId);
-      return data;
     });
   }
 
@@ -715,6 +627,124 @@ export async function runGenesisTurn(db: SupabaseClient, conversationId: string,
   }
 }
 
+// ---------------------------------------------------------------------------
+// Un solo turno de Génesis a la vez por conversación.
+//
+// Wazend manda un webhook por mensaje y además reintenta si la función tarda.
+// Sin candado, "hola" + "quería consultar" + "por mi perro" en tres mensajes
+// generaban tres respuestas. Ahora el primer webhook toma el candado, espera un
+// momento para juntar la ráfaga y responde a todo junto; los demás webhooks ven
+// el candado y se van. Si llega algo nuevo mientras Génesis escribía, se hace
+// otra vuelta antes de soltarlo.
+//
+// El candado es la columna wa_conversations.genesis_lock_until
+// (supabase/genesis_lock.sql). Si todavía no se corrió ese SQL, se responde
+// como antes, sin candado, para no dejar a Génesis muda.
+// ---------------------------------------------------------------------------
+
+const LOCK_SECONDS = 120;
+const BURST_WAIT_MS = 3500;
+const MAX_ROUNDS = 3;
+
+type LockState = "claimed" | "busy" | "unsupported";
+
+function lockNotInstalled(error: { message?: string; code?: string }) {
+  return error.code === "PGRST202" || /genesis_try_lock|genesis_lock_until/i.test(error.message || "");
+}
+
+async function claimGenesisLock(db: SupabaseClient, conversationId: string): Promise<LockState> {
+  // genesis_try_lock es un único UPDATE condicionado en Postgres: aunque lleguen
+  // varios webhooks juntos, solo uno recibe true.
+  const { data, error } = await db.rpc("genesis_try_lock", {
+    p_conversation: conversationId,
+    p_seconds: LOCK_SECONDS,
+  });
+  if (error) {
+    if (lockNotInstalled(error)) {
+      console.warn("[genesis] falta correr supabase/genesis_lock.sql; respondo sin candado");
+      return "unsupported";
+    }
+    throw error;
+  }
+  return data === true ? "claimed" : "busy";
+}
+
+async function extendGenesisLock(db: SupabaseClient, conversationId: string) {
+  const until = new Date(Date.now() + LOCK_SECONDS * 1000).toISOString();
+  await db.from("wa_conversations").update({ genesis_lock_until: until }).eq("id", conversationId);
+}
+
+async function releaseGenesisLock(db: SupabaseClient, conversationId: string) {
+  await db.from("wa_conversations").update({ genesis_lock_until: null }).eq("id", conversationId);
+}
+
+async function latestInboundAt(db: SupabaseClient, conversationId: string) {
+  const { data } = await db
+    .from("wa_messages")
+    .select("created_at")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "in")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.created_at ? String(data.created_at) : "";
+}
+
+async function hasInboundAfter(db: SupabaseClient, conversationId: string, since: string) {
+  if (!since) return false;
+  const { data } = await db
+    .from("wa_messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "in")
+    .gt("created_at", since)
+    .limit(1);
+  return Boolean(data && data.length);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Responde una conversación desde el webhook, sin turnos en paralelo. */
+export async function respondToConversation(
+  db: SupabaseClient,
+  conversationId: string,
+  opts: { waitForBurst?: boolean; recheck?: boolean } = {},
+): Promise<Record<string, unknown>> {
+  const lock = await claimGenesisLock(db, conversationId);
+  if (lock === "busy") return { skipped: true, reason: "turn_in_progress" };
+
+  const results: unknown[] = [];
+  let since = "";
+  let lastSkipped = false;
+  try {
+    if (opts.waitForBurst !== false) await sleep(BURST_WAIT_MS);
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const before = await latestInboundAt(db, conversationId);
+      const turn = await runGenesisTurn(db, conversationId) as Record<string, unknown>;
+      results.push(turn);
+      // Lo último que Génesis alcanzó a leer; si no lee nada (apagada o en
+      // manos de un humano), no tiene sentido otra vuelta.
+      since = String(turn.lastInboundAt || before);
+      lastSkipped = Boolean(turn.skipped);
+      if (lastSkipped) break;
+      if (!(await hasInboundAfter(db, conversationId, since))) break;
+      if (lock === "claimed") await extendGenesisLock(db, conversationId);
+    }
+  } finally {
+    if (lock === "claimed") await releaseGenesisLock(db, conversationId);
+  }
+
+  // Un mensaje que entró justo entre la última revisión y soltar el candado
+  // encontró el candado tomado y se fue: se le responde aquí una vez.
+  if (
+    lock === "claimed" && !lastSkipped && opts.recheck !== false &&
+    (await hasInboundAfter(db, conversationId, since))
+  ) {
+    results.push(await respondToConversation(db, conversationId, { waitForBurst: false, recheck: false }));
+  }
+  return results.length === 1 ? (results[0] as Record<string, unknown>) : { rounds: results };
+}
+
 async function generateGenesisReply(
   db: SupabaseClient,
   conversationId: string,
@@ -726,7 +756,10 @@ async function generateGenesisReply(
     conversation.client_id
       ? db.from("clients").select("*").eq("id", conversation.client_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    db.from("wa_messages").select("direction,author,content,created_at").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(30),
+    // Los MÁS RECIENTES primero (se dan vuelta abajo). Antes se pedían en orden
+    // ascendente con limit, lo que traía los 30 más antiguos: pasado ese número
+    // Génesis ya no veía lo último que escribió el cliente.
+    db.from("wa_messages").select("direction,author,content,created_at").eq("conversation_id", conversationId).neq("author", "sistema").order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
     conversation.client_id
       ? db.from("appointments").select("id,scheduled_at,status,service_title,amount,deposit_paid").eq("client_id", conversation.client_id).order("scheduled_at", { ascending: false }).limit(8)
       : Promise.resolve({ data: [] }),
@@ -778,7 +811,10 @@ async function generateGenesisReply(
     })}`,
   ].join("\n\n");
 
-  const input: unknown[] = (messages || [])
+  const history = chronological(messages || []);
+  const lastInboundAt = [...history].reverse().find((m) => m.direction === "in")?.created_at || "";
+
+  const input: unknown[] = history
     .filter((m) => m.author !== "sistema" && m.content)
     .map((m) => ({
       role: m.direction === "in" ? "user" : "assistant",
@@ -831,10 +867,28 @@ async function generateGenesisReply(
         conversationId,
         `Génesis escribió, pero WhatsApp no salió (${sent.error || "Wazend no configurado"}). Revisá WAZEND_BASE_URL, WAZEND_API_KEY, WAZEND_SESSION y que la sesión esté WORKING.`,
       );
-      return { skipped: false, reply, deliverError: sent.error || "send_failed" };
+      return { skipped: false, reply, lastInboundAt, deliverError: sent.error || "send_failed" };
     }
   }
-  return { skipped: false, reply };
+  return { skipped: false, reply, lastInboundAt };
+}
+
+async function paymentReminderSettled(db: SupabaseClient, item: Record<string, unknown>) {
+  if (item.payment_id) {
+    const { data: payment } = await db.from("payments").select("status").eq("id", item.payment_id).maybeSingle();
+    if (payment && payment.status !== "pendiente") return true;
+  }
+  if (item.appointment_id) {
+    const { data: appt } = await db
+      .from("appointments")
+      .select("status,deposit_paid")
+      .eq("id", item.appointment_id)
+      .maybeSingle();
+    if (!appt) return true;
+    if (appt.deposit_paid === true) return true;
+    if (["abonada", "llegó", "completada", "cancelada", "no_asistió"].includes(String(appt.status || ""))) return true;
+  }
+  return false;
 }
 
 export async function processDueReminders(db: SupabaseClient) {
@@ -846,30 +900,59 @@ export async function processDueReminders(db: SupabaseClient) {
     .limit(20);
   const results = [];
   for (const item of due || []) {
+    const now = new Date().toISOString();
+    const isPaymentReminder = String(item.kind || "").startsWith("abono_");
+
+    // Un cobro que ya se pagó (o una cita que ya no existe) no se recuerda ni se
+    // cancela: antes "abono_vence" cancelaba la cita aunque estuviera pagada.
+    if (isPaymentReminder && (await paymentReminderSettled(db, item))) {
+      await db.from("reminders").update({ status: "cancelado", sent_at: now }).eq("id", item.id);
+      results.push({ id: item.id, ok: true, skipped: "ya_resuelto" });
+      continue;
+    }
+
     if (item.kind === "abono_vence" && item.appointment_id) {
       await db.from("appointments").update({ status: "cancelada", notes: "Abono no pagado a las 12h" }).eq("id", item.appointment_id);
       if (item.payment_id) await db.from("payments").update({ status: "vencido" }).eq("id", item.payment_id);
       if (item.conversation_id) await db.from("wa_conversations").update({ pipeline: "cancelado" }).eq("id", item.conversation_id);
     }
-    let sent = { ok: true, skipped: true };
+
+    let status: "enviado" | "cancelado" | "error" = "cancelado";
     if (item.conversation_id && item.body) {
-      const { data: conv } = await db.from("wa_conversations").select("wa_phone,assigned_to").eq("id", item.conversation_id).maybeSingle();
+      // metadata trae el chat id real de Wazend (incluye contactos @lid); con
+      // solo wa_phone esos recordatorios salían a un chat que no existe.
+      const { data: conv } = await db
+        .from("wa_conversations")
+        .select("wa_phone,assigned_to,metadata")
+        .eq("id", item.conversation_id)
+        .maybeSingle();
       if (conv?.wa_phone && conv.assigned_to !== "humano") {
-        sent = await sendWhatsAppText(wazendDestination(conv), item.body);
-        await db.from("wa_messages").insert({
-          conversation_id: item.conversation_id,
-          direction: "out",
-          author: "genesis",
-          message_type: "text",
-          content: item.body,
-        });
+        const sent = await sendWhatsAppText(wazendDestination(conv), item.body);
+        if (sent.ok) {
+          status = "enviado";
+          await db.from("wa_messages").insert({
+            conversation_id: item.conversation_id,
+            direction: "out",
+            author: "genesis",
+            message_type: "text",
+            content: item.body,
+          });
+          await db
+            .from("wa_conversations")
+            .update({ last_message_at: now, last_outbound_at: now })
+            .eq("id", item.conversation_id);
+        } else {
+          status = "error";
+          await insertSystemNote(
+            db,
+            item.conversation_id,
+            `No salió un recordatorio programado (${sent.error || "error de envío"}): "${item.body}"`,
+          );
+        }
       }
     }
-    await db
-      .from("reminders")
-      .update({ status: sent.ok ? "enviado" : "error", sent_at: new Date().toISOString() })
-      .eq("id", item.id);
-    results.push({ id: item.id, ok: sent.ok });
+    await db.from("reminders").update({ status, sent_at: now }).eq("id", item.id);
+    results.push({ id: item.id, ok: status !== "error", status });
   }
   return results;
 }
