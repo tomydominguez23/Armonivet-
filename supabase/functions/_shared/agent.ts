@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0
 import { GENESIS_TOOLS, outputText, resolveModel, runOpenAI } from "./openai.ts";
 import { sendWhatsAppText, wazendDestination } from "./whatsapp.ts";
 import { normalizePhone } from "./supabase.ts";
+import { notifyOwner } from "./admin.ts";
 
 type Settings = {
   enabled?: boolean;
@@ -590,6 +591,17 @@ async function executeTool(
           pipeline: "derivado_humano",
         })
         .eq("id", convId);
+      const who = String(ctx.client?.name || ctx.conversation.wa_name || "Un cliente");
+      const phone = String(ctx.conversation.wa_phone || "");
+      await notifyOwner(
+        db,
+        [
+          "Génesis te derivó un chat 🙋",
+          `${who}${phone ? ` · +${phone}` : ""}`,
+          args.motivo ? `Motivo: ${String(args.motivo)}` : "",
+          "Génesis quedó en pausa en ese chat; respóndele desde el panel (WhatsApp).",
+        ].filter(Boolean).join("\n"),
+      );
       return { paused: true, motivo: args.motivo };
     });
   }

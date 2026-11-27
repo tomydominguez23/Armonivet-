@@ -336,6 +336,25 @@ async function sendViaWazend(to: string, body: string) {
   return { ok: true, skipped: false, id: sent.data.id || (sent.data.key as { id?: string } | undefined)?.id || null, provider: "wazend", data: sent.data };
 }
 
+/** Traduce un chat @lid de WhatsApp al número real (dígitos), vía Wazend. "" si no se puede. */
+export async function wazendPhoneForLid(lidChatId: string) {
+  const base = wazendBase();
+  const key = env("WAZEND_API_KEY");
+  if (!base || !key || !lidChatId.endsWith("@lid")) return "";
+  const session = cachedWazendSession || env("WAZEND_SESSION") || "default";
+  try {
+    const res = await fetch(`${base}/api/${encodeURIComponent(session)}/lids/${encodeURIComponent(lidChatId)}`, {
+      headers: { "X-Api-Key": key },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return "";
+    const data = await res.json().catch(() => ({})) as { pn?: string };
+    return phoneFromUserJid(String(data.pn || ""));
+  } catch {
+    return "";
+  }
+}
+
 async function sendViaMeta(to: string, body: string) {
   const token = env("WHATSAPP_TOKEN");
   const phoneId = env("WHATSAPP_PHONE_NUMBER_ID");

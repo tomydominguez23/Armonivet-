@@ -23,6 +23,7 @@ En el SQL Editor de Supabase, en este orden:
 9. `payment_holds.sql`  ← monto real, comprobante por WhatsApp y liberación de la hora si el pago no se completa
 10. `genesis_intake.sql`  ← motivo de consulta antes de horarios; agendar no es Meet
 11. `genesis_lock.sql`  ← un solo turno de Génesis a la vez por chat (evita respuestas duplicadas)
+12. `genesis_admin.sql`  ← Génesis como asistente de la doctora (ver abajo)
 
 `payment_holds.sql` se corre en el SQL Editor aunque ya hayas corrido los anteriores. Ajusta citas viejas: copia el monto del pago acreditado, estima el precio del servicio cuando nunca se guardó el cobro, y cancela reservas **web** que siguen en `agendada` sin pago hace más de 20 minutos. No cancela citas de WhatsApp ni las que ya están abonadas.
 
@@ -116,3 +117,32 @@ Podés usar un cron de GitHub Actions, pg_cron + pg_net, o el scheduler de Supab
 - Deja rastro en `genesis_actions`
 
 Pagos reales (Flow / Mercado Pago / Webpay) y plantillas HSM son el siguiente paso, cuando tengas el link o la pasarela.
+
+## Asistente de la doctora
+
+Si la doctora le escribe al WhatsApp de Armonivet **desde su número personal**, Génesis no la trata como clienta: le responde como asistente interna.
+
+### Activarlo
+
+1. SQL Editor → correr `supabase/genesis_lock.sql` (si no está) y `supabase/genesis_admin.sql`.
+2. Supabase → Edge Functions → Secrets → `GENESIS_ADMIN_PHONES` = su número con código de país, ej. `56912345678`. Varios números se separan con coma.
+3. Listo: no hace falta redesplegar. Probá escribiéndole "¿qué tengo mañana?".
+
+### Qué puede pedirle
+
+| Pide | Ejemplo |
+|---|---|
+| Agenda | "¿Qué tengo mañana?", "¿cuántas citas hay esta semana?" |
+| Ingresos | "¿Cuánto ingresó este mes?", "¿y en octubre?" (pagos acreditados + consultas pagadas) |
+| Clientes | "Pásame la ficha de la dueña de Luna" (datos, formulario previo, citas, pagos y últimos mensajes) |
+| Chats | "¿Quién me escribió y no tiene respuesta?" |
+| Escribir a un cliente | "Escríbele a Pepa preguntando cómo sigue Luna" |
+
+**Mensajes a clientes:** Génesis arma el borrador y le muestra a quién va y el texto exacto. Solo se envía cuando ella responde **SÍ** (o "dale", "ok", "envíalo"); **NO** lo cancela. El borrador vence a los 30 minutos. El mensaje queda en el chat del cliente en el panel como enviado por humano y Génesis sigue atendiendo ese chat.
+
+### Avisos automáticos a su número
+
+- **Reserva pagada:** cliente, paciente, servicio, hora y monto. Una sola vez por pago.
+- **Chat derivado:** cuando Génesis pasa un chat a la doctora (`escalar_a_humano`), con el motivo.
+
+Su conversación con Génesis se guarda en `genesis_admin_messages` (no aparece entre los chats de clientes ni crea leads). Si WhatsApp la identifica con un ID interno (`@lid`), Génesis lo traduce a su número con Wazend.

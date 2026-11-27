@@ -16,6 +16,7 @@ Ejecuta estos SQL en el **SQL Editor** de tu proyecto Supabase, en este orden:
 12. `genesis_intake.sql` — Génesis pregunta el motivo antes de ofrecer horarios y no confunde agendar con el link de Meet.
 13. `genesis_lock.sql` — Génesis responde un turno a la vez por conversación: si el cliente manda varios mensajes seguidos o Wazend reintenta el webhook, sale una sola respuesta.
 14. `booking_hour_blocks.sql` — bloquear horas sueltas desde Agenda (no solo el día completo). Si volvés a correr un SQL que redefine `list_available_slots`, corré este después.
+15. `genesis_admin.sql` — Génesis como asistente de la doctora por WhatsApp (ver `GENESIS.md` → "Asistente de la doctora").
 
 La vinculación de WhatsApp + GPT está documentada en `GENESIS.md`. El webhook vive en Edge Functions; el dashboard solo lee Supabase.
 

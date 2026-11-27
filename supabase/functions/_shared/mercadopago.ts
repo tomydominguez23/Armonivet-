@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { sendWhatsAppText } from "./whatsapp.ts";
+import { notifyPaidBooking } from "./admin.ts";
 
 export const MP_API = "https://api.mercadopago.com";
 
@@ -215,6 +216,7 @@ export async function applyMercadoPagoPayment(db: SupabaseClient, pay: MpPayment
     }
 
     if (amount > 0) await sendPaymentReceipt(db, reference, appointmentId, amount, pay.id);
+    await notifyPaidBooking(db, reference, appointmentId, amount);
   }
   // Un pago rechazado no cancela la hora. El cliente puede intentar con otra
   // tarjeta mientras la reserva sigue en pendiente_pago. A los 20 minutos,
