@@ -1370,6 +1370,14 @@ async function renderAgendaCalendar(appointments) {
 
   const blocks = await safeSelect("booking_blocks", "id,day,reason");
   const blocked = new Set(blocks.map((b) => chileDateKey(b.day)));
+  const hourBlocks = await safeSelect("booking_slot_blocks", "id,starts_at,ends_at", (q) =>
+    q.gte("starts_at", new Date(Date.now() - 2 * 86400000).toISOString()),
+  );
+  const hourBlocksByDay = {};
+  for (const b of hourBlocks) {
+    const key = chileDateKey(b.starts_at);
+    hourBlocksByDay[key] = (hourBlocksByDay[key] || 0) + 1;
+  }
   const byDay = {};
   for (const a of agendaCalAppointments) {
     if (!a.scheduled_at || a.status === "cancelada") continue;
@@ -1397,7 +1405,7 @@ async function renderAgendaCalendar(appointments) {
     cells.push(
       `<button type="button" class="booking-day${blockedCls}${selected}" data-cal-day="${key}">
         <strong>${day}</strong>
-        <em>${isBlocked ? "Bloqueado" : count ? `${count} cita${count === 1 ? "" : "s"}` : "Libre"}</em>
+        <em>${isBlocked ? "Bloqueado" : dayCellLabel(count, hourBlocksByDay[key] || 0)}</em>
       </button>`,
     );
   }
@@ -1441,6 +1449,171 @@ async function renderAgendaCalendar(appointments) {
     toggle.textContent = isBlocked ? "Desbloquear día" : "Bloquear día";
     toggle.dataset.blocked = isBlocked ? "1" : "0";
   }
+  await renderDayHours(agendaCalSelected, blocked.has(agendaCalSelected), dayAppts);
+}
+
+function dayCellLabel(appts, hourBlocks) {
+  const parts = [];
+  if (appts) parts.push(`${appts} cita${appts === 1 ? "" : "s"}`);
+  if (hourBlocks) parts.push(`${hourBlocks} bloq.`);
+  return parts.length ? parts.join(" · ") : "Libre";
+}
+
+// ---------------------------------------------------------------------------
+// Bloqueo de horas sueltas. Un toque en una hora libre la bloquea; un toque en
+// una bloqueada la libera. Lo bloqueado sale de list_available_slots, así que
+// no aparece en la web ni Génesis lo ofrece (supabase/booking_hour_blocks.sql).
+// ---------------------------------------------------------------------------
+
+let dayHoursSeq = 0;
+let dayHoursNote = "";
+
+function chileTime(iso) {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+}
+
+function daysFromTodayChile(dayKey) {
+  const today = chileDateKey(new Date().toISOString());
+  const a = Date.UTC(...today.split("-").map((n, i) => (i === 1 ? Number(n) - 1 : Number(n))));
+  const b = Date.UTC(...dayKey.split("-").map((n, i) => (i === 1 ? Number(n) - 1 : Number(n))));
+  return Math.round((b - a) / 86400000);
+}
+
+async function loadDaySlots(dayKey) {
+  const ahead = daysFromTodayChile(dayKey);
+  if (ahead < 0) return { past: true, slots: [], durations: {} };
+  const supabase = requireSupabase();
+  const days = Math.min(ahead + 1, 180);
+  let { data, error } = await supabase.rpc("list_available_slots", { p_days: days, p_mode: null });
+  if (error) ({ data, error } = await supabase.rpc("list_available_slots", { p_days: days }));
+  if (error) return { error: error.message || "No pude leer la agenda.", slots: [], durations: {} };
+  const durations = {
+    online: Number(data?.duration_online) || 60,
+    presencial: Number(data?.duration_presencial) || 60,
+  };
+  const slots = (data?.slots || []).filter((slot) => slot?.at && chileDateKey(slot.at) === dayKey);
+  return { slots, durations };
+}
+
+async function renderDayHours(dayKey, dayBlocked, dayAppts) {
+  const section = $("[data-cal-hours]");
+  const list = $("[data-cal-hours-list]");
+  const note = $("[data-cal-hours-note]");
+  if (!section || !list) return;
+  const seq = ++dayHoursSeq;
+  const showNote = (text) => {
+    if (!note) return;
+    note.textContent = text || "";
+    note.hidden = !text;
+  };
+  showNote(dayHoursNote);
+  dayHoursNote = "";
+
+  if (dayBlocked) {
+    list.innerHTML = `<p class="empty">El día completo está bloqueado. Desbloquealo arriba para elegir horas.</p>`;
+    return;
+  }
+  list.innerHTML = `<p class="empty">Cargando horas…</p>`;
+
+  const [daySlots, blockRows] = await Promise.all([
+    loadDaySlots(dayKey),
+    requireSupabase()
+      .from("booking_slot_blocks")
+      .select("id,starts_at,ends_at")
+      .gte("starts_at", new Date(Date.parse(`${dayKey}T00:00:00Z`) - 86400000).toISOString())
+      .lt("starts_at", new Date(Date.parse(`${dayKey}T00:00:00Z`) + 2 * 86400000).toISOString()),
+  ]);
+  if (seq !== dayHoursSeq) return;
+
+  if (blockRows.error) {
+    list.innerHTML = `<p class="empty">Para bloquear horas sueltas falta correr <code>supabase/booking_hour_blocks.sql</code> en el SQL Editor de Supabase.</p>`;
+    return;
+  }
+  if (daySlots.past) {
+    list.innerHTML = `<p class="empty">Este día ya pasó.</p>`;
+    return;
+  }
+  if (daySlots.error) {
+    list.innerHTML = `<p class="empty">${escapeHtml(daySlots.error)}</p>`;
+    return;
+  }
+
+  // Una ficha por hora: libre (puede tener online y presencial a la vez),
+  // bloqueada o con cita.
+  const byTime = new Map();
+  for (const slot of daySlots.slots) {
+    const time = chileTime(slot.at);
+    const mode = slot.mode === "online" ? "online" : "presencial";
+    const minutes = daySlots.durations[mode] || 60;
+    const current = byTime.get(time) || { time, kind: "free", at: slot.at, minutes: 0, modes: new Set() };
+    current.minutes = Math.max(current.minutes, minutes);
+    current.modes.add(mode);
+    byTime.set(time, current);
+  }
+  for (const row of (blockRows.data || []).filter((b) => chileDateKey(b.starts_at) === dayKey)) {
+    byTime.set(chileTime(row.starts_at), { time: chileTime(row.starts_at), kind: "blocked", id: row.id });
+  }
+  for (const a of dayAppts || []) {
+    if (!a.scheduled_at) continue;
+    const time = chileTime(a.scheduled_at);
+    if (!byTime.has(time) || byTime.get(time).kind === "free") {
+      byTime.set(time, { time, kind: "booked", who: a.client_name || "Cita" });
+    }
+  }
+
+  const items = [...byTime.values()].sort((a, b) => a.time.localeCompare(b.time));
+  if (!items.length) {
+    list.innerHTML = `<p class="empty">No hay horas de atención este día (revisá Calendario o la ventana de reserva).</p>`;
+    return;
+  }
+
+  list.innerHTML = items
+    .map((item) => {
+      if (item.kind === "blocked") {
+        return `<button type="button" class="cal-hour is-blocked" data-hour-unblock="${escapeHtml(item.id)}" data-hour-time="${item.time}" aria-pressed="true">
+          <strong>${item.time}</strong><em>Bloqueada</em></button>`;
+      }
+      if (item.kind === "booked") {
+        return `<span class="cal-hour is-booked" title="${escapeHtml(item.who)}"><strong>${item.time}</strong><em>Reservada</em></span>`;
+      }
+      const modes = [...item.modes].map((m) => (m === "online" ? "Online" : "Presencial")).join(" / ");
+      return `<button type="button" class="cal-hour" data-hour-block="${escapeHtml(item.at)}" data-hour-minutes="${item.minutes}" data-hour-time="${item.time}" aria-pressed="false">
+        <strong>${item.time}</strong><em>${modes}</em></button>`;
+    })
+    .join("");
+
+  list.querySelectorAll("[data-hour-block], [data-hour-unblock]").forEach((btn) => {
+    btn.addEventListener("click", () => toggleHourBlock(btn));
+  });
+}
+
+async function toggleHourBlock(btn) {
+  const time = btn.getAttribute("data-hour-time");
+  const unblockId = btn.getAttribute("data-hour-unblock");
+  btn.disabled = true;
+  const supabase = requireSupabase();
+  if (unblockId) {
+    const { error } = await supabase.from("booking_slot_blocks").delete().eq("id", unblockId);
+    dayHoursNote = error ? `No se pudo liberar ${time}: ${error.message}` : `Listo: ${time} quedó libre otra vez.`;
+  } else {
+    const startsAt = new Date(btn.getAttribute("data-hour-block"));
+    const minutes = Number(btn.getAttribute("data-hour-minutes")) || 60;
+    const { error } = await supabase.from("booking_slot_blocks").insert({
+      starts_at: startsAt.toISOString(),
+      ends_at: new Date(startsAt.getTime() + minutes * 60000).toISOString(),
+      reason: "Bloqueo admin",
+    });
+    // Un doble toque choca con el índice único: la hora ya está bloqueada.
+    dayHoursNote = error && !/duplicate|unique/i.test(error.message || "")
+      ? `No se pudo bloquear ${time}: ${error.message}`
+      : `Listo: ${time} quedó bloqueada. Nadie la puede reservar en la web ni por WhatsApp.`;
+  }
+  await renderAgendaCalendar(agendaCalAppointments);
 }
 
 function bindAgendaCalendarOnce() {
