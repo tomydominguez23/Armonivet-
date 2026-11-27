@@ -1,6 +1,7 @@
 import { json, serviceClient, text } from "../_shared/supabase.ts";
 import { extractInbound, inboundSkipReasons, verifyMetaSignature, verifyWazendHmac } from "../_shared/whatsapp.ts";
 import { respondToConversation, unansweredInbound, upsertInbound } from "../_shared/agent.ts";
+import { handleAdminMessage, matchAdminSender } from "../_shared/admin.ts";
 
 function isWazendPayload(payload: Record<string, unknown>) {
   if (typeof payload.event === "string") return true;
@@ -48,7 +49,14 @@ Deno.serve(async (req) => {
 
     const db = serviceClient();
     const pendingTurns = new Set<string>();
+    const processed = [];
     for (const msg of inbound) {
+      // La doctora escribiendo desde su número: modo asistente, no es clienta.
+      const adminPhone = await matchAdminSender(msg);
+      if (adminPhone) {
+        processed.push(await handleAdminMessage(db, adminPhone, msg));
+        continue;
+      }
       const up = await upsertInbound(db, {
         phone: msg.from,
         aliasPhone: msg.aliasPhone,
@@ -63,7 +71,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    const processed = [];
     for (const conversationId of pendingTurns) {
       try {
         processed.push(await respondToConversation(db, conversationId));
