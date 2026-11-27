@@ -222,7 +222,7 @@
                   <h3 data-cal-month>Calendario</h3>
                   <button type="button" class="btn btn-ghost" data-cal-next aria-label="Mes siguiente">›</button>
                 </div>
-                <p class="empty">Los horarios salen de Calendario. Bloqueá un día para que no se reserve en la web ni por WhatsApp.</p>
+                <p class="empty">Los horarios salen de Calendario. Tocá un día para bloquearlo completo o solo algunas horas: lo bloqueado no se puede reservar en la web ni por WhatsApp.</p>
                 <div class="admin-cal-grid" data-cal-grid></div>
                 <div class="admin-cal-day" data-cal-day-panel hidden>
                   <header>
@@ -230,6 +230,12 @@
                     <button type="button" class="btn btn-ghost" data-cal-toggle-block>Bloquear día</button>
                   </header>
                   <ul data-cal-day-appts></ul>
+                  <section class="cal-hours" data-cal-hours>
+                    <h5>Horas de este día</h5>
+                    <p class="cal-hours-help">Tocá una hora libre para bloquearla. Tocala de nuevo para liberarla.</p>
+                    <div class="cal-hours-list" data-cal-hours-list></div>
+                    <p class="cal-hours-note" data-cal-hours-note hidden></p>
+                  </section>
                 </div>
               </article>
               <h3 class="subhead">Hoy</h3>

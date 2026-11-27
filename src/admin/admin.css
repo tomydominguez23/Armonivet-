@@ -1736,6 +1736,91 @@ th {
   padding-left: 1.1rem;
 }
 
+.cal-hours {
+  margin-top: 1rem;
+}
+
+.cal-hours h5 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+.cal-hours-help {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cal-hours-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 0.5rem;
+}
+
+.cal-hours-list .empty {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.cal-hour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.55rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f3faf7;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cal-hour strong {
+  font-size: 1rem;
+}
+
+.cal-hour em {
+  font-size: 0.68rem;
+  font-style: normal;
+  color: var(--muted);
+}
+
+button.cal-hour:hover,
+button.cal-hour:focus-visible {
+  border-color: var(--cta);
+  box-shadow: 0 0 0 2px rgba(31, 138, 110, 0.18);
+  outline: none;
+}
+
+.cal-hour.is-blocked {
+  background: #fdecec;
+  border-color: #f0b4ae;
+}
+
+.cal-hour.is-blocked em {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.cal-hour.is-booked {
+  background: #eef3f5;
+  cursor: default;
+  opacity: 0.85;
+}
+
+.cal-hour:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.cal-hours-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ok);
+}
+
 .admin-cal-head {
   display: flex;
   align-items: center;
